@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>Converter cachoeira</title>
+<style>
+  body { margin: 0; font: 15px system-ui, sans-serif; background: #1d2230; color: #eee; padding: 16px; }
+  a { display: inline-block; margin-top: 12px; padding: 8px 14px; background: #3d6df2; color: #fff; border-radius: 6px; text-decoration: none; }
+</style>
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.165.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.165.0/examples/jsm/","three-mesh-bvh":"https://cdn.jsdelivr.net/npm/three-mesh-bvh@0.7.6/build/index.module.js","meshoptimizer/simplifier":"https://cdn.jsdelivr.net/npm/meshoptimizer@0.21.0/meshopt_simplifier.module.js"}}</script>
+</head>
+<body>
+<h2>Converter cachoeira (FBX → cachoeira.bin)</h2>
+<p>Gera <code>assets/cachoeira/cachoeira.bin</code> a partir de <code>assets/cachoeira/cachoeira.fbx</code>.</p>
+<p id="status">Convertendo… (pode levar uns 20 segundos)</p>
+<div id="saida"></div>
+<script type="module">
+import { converterCachoeira } from '../src/cachoeira.js';
+const status = document.getElementById('status');
+const bin = await converterCachoeira();
+window.BIN = bin;
+status.textContent = `Pronto: ${(bin.byteLength / 1e6).toFixed(1)} MB. Salve em assets/cachoeira/cachoeira.bin`;
+const link = document.createElement('a');
+link.textContent = 'Baixar cachoeira.bin';
+link.download = 'cachoeira.bin';
+link.href = URL.createObjectURL(new Blob([bin]));
+document.getElementById('saida').append(link);
+</script>
+</body>
+</html>
