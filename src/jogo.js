@@ -178,7 +178,7 @@ addEventListener('resize', () => {
 
 // ---------- HUD / telas ----------
 const $ = id => document.getElementById(id);
-const hudMoedas = $('moedas'), hudTempo = $('tempo'), hudFps = $('fps');
+const hudFps = $('fps');
 const tela = $('tela'), msg = $('msg'), botao = $('botao'), barra = document.querySelector('#barra div');
 const dica = $('dica'), escuro = $('escuro'), painel = $('graficos');
 
@@ -426,7 +426,7 @@ let mapa = null, terreno = null, personagem = null;
 let mundo = null, inimigos = null, campanha = null, combate = null;
 const distancia = criarDistancia(); // objetos pequenos só são desenhados perto da câmera
 let estado = 'carregando'; // carregando | menu | jogando | fim
-let pausado = false, tempoJogo = 0;
+let pausado = false;
 let correntes = []; // correntes de vento (lançadores calculados pela análise do terreno)
 
 // ---------- Jogador ----------
@@ -437,13 +437,6 @@ const jogador = {
   puloDuploUsado: false, cambalhota: -1, comecouCambalhota: false, // cambalhota: progresso 0..1, -1 = nenhuma
   lancado: false, seguro: new THREE.Vector3(), tempoSeguro: 0,
 };
-
-function atualizarHud() {
-  if (!pausado) {
-    const s = Math.floor(tempoJogo);
-    hudTempo.textContent = `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
-  }
-}
 
 function respawn(ponto) {
   const j = jogador;
@@ -481,7 +474,7 @@ function mostrarGameOver() {
   estado = 'gameover';
   const r = campanha?.estado;
   $('gameoverMotivo').textContent = GAMEOVER[motivoMorte] ?? GAMEOVER.queda;
-  $('gameoverEstat').textContent = r ? `Fragmentos de Luz: ${r.pegos}/${campanha.fragmentos.length} · Tempo: ${hudTempo.textContent}` : '';
+  $('gameoverEstat').textContent = r ? `Fragmentos de Luz: ${r.pegos}/${campanha.fragmentos.length}` : '';
   const g = $('gameover');
   g.style.display = 'flex';
   requestAnimationFrame(() => requestAnimationFrame(() => g.classList.add('visivel')));
@@ -517,7 +510,6 @@ function reiniciar() {
   botao.blur();
   teclas.clear();
   if (primeiraVez) campanha.iniciar();
-  atualizarHud();
 }
 let campanhaTerminada = false;
 botao.addEventListener('click', reiniciar);
@@ -537,7 +529,7 @@ function terminarCapitulo(r) {
   // resumo da partida em números
   msg.innerHTML = `<span class="resumo">
       <span><b>${r.fragmentos}/${r.total}</b>Fragmentos</span><span><b>${r.memorias}</b>Memórias</span>
-      <span><b>${r.purificados}</b>Purificados</span><span><b>${hudTempo.textContent}</b>Tempo</span>
+      <span><b>${r.purificados}</b>Purificados</span>
     </span><em>Continua na Ilha das Agulhas…</em>`;
   botao.textContent = 'Jogar de novo';
   $('continuar').style.display = 'inline-block';
@@ -546,7 +538,7 @@ function terminarCapitulo(r) {
 function alternarPausa() {
   if (estado !== 'jogando') return;
   pausado = !pausado;
-  hudTempo.textContent = pausado ? 'PAUSA' : `${tempoJogo.toFixed(1)}s`;
+  const aviso = $('aviso'); aviso.textContent = pausado ? 'Pausado · P para continuar' : ''; aviso.style.opacity = pausado ? 1 : 0;
   pedidoPulo = false;
   if (pausado) document.exitPointerLock?.();
 }
@@ -1053,9 +1045,7 @@ renderer.setAnimationLoop(() => {
   if (estado === 'jogando' && mapa) {
     acumulado += dt;
     while (acumulado >= PASSO) { passoFisica(PASSO); acumulado -= PASSO; }
-    tempoJogo += dt;
-    atualizarHud();
-    if (jogador.morta) { tempoMorte -= dt; if (tempoMorte <= 0) mostrarGameOver(); }
+      if (jogador.morta) { tempoMorte -= dt; if (tempoMorte <= 0) mostrarGameOver(); }
   }
   mundo?.atualizar(dt, t);
   agua?.atualizar(dt, t, camera);
@@ -1158,8 +1148,7 @@ Promise.all([
     camera3p.yaw = Math.atan2(jogador.pos.x, jogador.pos.z);
     camera3p.alvo.copy(jogador.pos);
     tocar('parada');
-    atualizarHud();
-    // compila os shaders e sobe todos os níveis de detalhe do mapa para a GPU antes de começar
+      // compila os shaders e sobe todos os níveis de detalhe do mapa para a GPU antes de começar
     // (evita travadinhas na primeira vez que algo aparece ou quando a câmera vira)
     renderer.compile(cena, camera);
     aquecerMapa(m, renderer, cena, camera);
