@@ -1,8 +1,12 @@
 # Threadbound
 
-Jogo 3D de navegador (Three.js). Numi, uma boneca de pano costurada com a última Linha Viva,
-desperta numa oficina esquecida e precisa reacender as três Âncoras de Fio e o Coração do Fio
-antes que a ilha caia nas nuvens.
+Jogo 3D de navegador (Three.js). **Brisa**, uma boneca feita com os retalhos das roupas dos moradores
+da Vila de Maré Alta, acorda na praça vazia no dia em que os fios que prendem a ilha no céu começam a
+se romper. Ela precisa reacender as Âncoras de Maré nas ilhotas e o Coração da Ilha.
+
+- **Jogar online:** https://adielson2005.github.io/threadbound/
+- **Roteiro (4 capítulos):** [docs/ROTEIRO.md](docs/ROTEIRO.md)
+- **Progresso do desenvolvimento:** [docs/PROGRESSO.md](docs/PROGRESSO.md)
 
 ## Como jogar
 
@@ -25,6 +29,7 @@ O jogo carrega modelos por HTTP, então precisa de um servidor local (abrir o `i
 | E | interagir (purificar, restaurar âncoras) |
 | R | voltar ao ponto seguro |
 | T | avançar dia / noite |
+| Y | chuva liga / desliga |
 | G | gráficos · P pausa |
 
 ## Gráficos
