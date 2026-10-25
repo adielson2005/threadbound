@@ -97,17 +97,17 @@ async function baixarComProgresso(url, aoProgredir) {
 }
 
 // Divide cada nível de detalhe em blocos pela posição do centro de cada triângulo.
-function montarBlocos(geo, niveis) {
+export function montarBlocos(geo, niveis, TAM = TAM_BLOCO) {
   const pos = geo.attributes.position;
   const box = geo.boundingBox;
-  const nx = Math.ceil((box.max.x - box.min.x) / TAM_BLOCO), nz = Math.ceil((box.max.z - box.min.z) / TAM_BLOCO);
+  const nx = Math.ceil((box.max.x - box.min.x) / TAM), nz = Math.ceil((box.max.z - box.min.z) / TAM);
   const blocos = new Map(); // chave -> [índices por nível]
   niveis.forEach((ind, nivel) => {
     const listas = new Map();
     for (let t = 0; t < ind.length; t += 3) {
       const a = ind[t], b = ind[t + 1], c = ind[t + 2];
       const cx = (pos.getX(a) + pos.getX(b) + pos.getX(c)) / 3, cz = (pos.getZ(a) + pos.getZ(b) + pos.getZ(c)) / 3;
-      const i = Math.min(nx - 1, Math.floor((cx - box.min.x) / TAM_BLOCO)), j = Math.min(nz - 1, Math.floor((cz - box.min.z) / TAM_BLOCO));
+      const i = Math.min(nx - 1, Math.floor((cx - box.min.x) / TAM)), j = Math.min(nz - 1, Math.floor((cz - box.min.z) / TAM));
       const k = i * nz + j;
       let l = listas.get(k); if (!l) listas.set(k, (l = []));
       l.push(a, b, c);
@@ -288,7 +288,7 @@ export function aquecerMapa(mapa, renderer, cena, camera) {
 // No Low (Lambert) entra só a variação de cor e uma escala.
 const PASTA_EFEITOS = new URL('../assets/efeitos/', import.meta.url).href;
 let texDetalhe = null;
-function aplicarDetalhe(material, simples, renderer) {
+export function aplicarDetalhe(material, simples, renderer) {
   if (!texDetalhe) {
     texDetalhe = tl.load(PASTA_EFEITOS + 'detalhe.png');
     texDetalhe.wrapS = texDetalhe.wrapT = THREE.RepeatWrapping;
@@ -339,6 +339,20 @@ function aplicarDetalhe(material, simples, renderer) {
 
 // Troca material, texturas e distâncias de LOD conforme o nível gráfico.
 export async function aplicarQualidadeMapa(mapa, nivel) {
+  // ilha gerada por código (ilha.js): cor por vértice, sem texturas grandes para baixar
+  if (mapa.procedural) {
+    const antigoP = mapa.material;
+    mapa.material = nivel.materialSimples
+      ? new THREE.MeshLambertMaterial({ vertexColors: true })
+      : new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.95, metalness: 0 });
+    aplicarDetalhe(mapa.material, nivel.materialSimples, mapa.renderer);
+    mapa.material.customProgramCacheKey = () => 'ilha-detalhe-' + (nivel.materialSimples ? 's' : 'p');
+    trocarNiveis(mapa, nivel);
+    antigoP?.dispose();
+    mapa.aoMudarQualidade?.(nivel);
+    mapa.qualidade = nivel;
+    return;
+  }
   const t = nivel.texturaMapa;
   const [cor, normal, rugosidade, metal] = await Promise.all([
     textura(mapa, t.cor, true), textura(mapa, t.normal), textura(mapa, t.rugosidade), textura(mapa, t.metal),
@@ -351,22 +365,7 @@ export async function aplicarQualidadeMapa(mapa, nivel) {
     ? new THREE.MeshLambertMaterial({ map: cor })
     : new THREE.MeshStandardMaterial({ map: cor, normalMap: normal, roughnessMap: rugosidade, metalnessMap: metal, roughness: 1, metalness: metal ? 1 : 0 });
   aplicarDetalhe(mapa.material, nivel.materialSimples, mapa.renderer);
-  for (const lod of mapa.lods) {
-    while (lod.levels.length) { const l = lod.levels.pop(); lod.remove(l.object); }
-    const malhas = lod.userData.malhas;
-    nivel.lod.forEach((dist, i) => {
-      const m = malhas[Math.min(malhas.length - 1, Math.max(i, nivel.lodInicial))];
-      if (!m) return;
-      // o mesmo bloco pode aparecer em dois níveis (low pula o mais detalhado): usa uma cópia leve
-      const obj = lod.levels.some(l => l.object === m) ? m.clone() : m;
-      obj.material = mapa.material;
-      lod.addLevel(obj, dist);
-    });
-    // a troca de nível é feita por atualizarLodPorVisao (distância + direção do olhar), não pelo three.js
-    lod.autoUpdate = false;
-    lod.userData.nivelAtual = -1;
-    lod.userData.raio = malhas.find(Boolean).geometry.boundingSphere.radius;
-  }
+  trocarNiveis(mapa, nivel);
   antigo?.dispose();
   mapa.qualidade = nivel;
   // amostra de cor da textura (para distinguir chão de copa de árvore na análise do terreno)
@@ -383,5 +382,25 @@ export async function aplicarQualidadeMapa(mapa, nivel) {
       return [px[k], px[k + 1], px[k + 2]];
     };
     mapa.amostraPronta = true;
+  }
+}
+
+// monta os níveis de detalhe de cada bloco com o material atual e as distâncias do nível gráfico
+function trocarNiveis(mapa, nivel) {
+  for (const lod of mapa.lods) {
+    while (lod.levels.length) { const l = lod.levels.pop(); lod.remove(l.object); }
+    const malhas = lod.userData.malhas;
+    nivel.lod.forEach((dist, i) => {
+      const m = malhas[Math.min(malhas.length - 1, Math.max(i, nivel.lodInicial))];
+      if (!m) return;
+      // o mesmo bloco pode aparecer em dois níveis (low pula o mais detalhado): usa uma cópia leve
+      const obj = lod.levels.some(l => l.object === m) ? m.clone() : m;
+      obj.material = mapa.material;
+      lod.addLevel(obj, dist);
+    });
+    // a troca de nível é feita por atualizarLodPorVisao (distância + direção do olhar), não pelo three.js
+    lod.autoUpdate = false;
+    lod.userData.nivelAtual = -1;
+    lod.userData.raio = malhas.find(Boolean).geometry.boundingSphere.radius;
   }
 }

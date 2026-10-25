@@ -101,7 +101,9 @@ function criarGrama(mapa, terreno, tempo) {
   const cor = new THREE.Color();
   // agrupa por blocos de 16 m: cada bloco é descartado se estiver fora da tela ou longe
   const blocos = new Map();
-  const POR_CELULA = 12, passo = terreno.passo;
+  // densidade pelo tamanho do gramado: no máximo ~120 mil tufos no mapa inteiro (a ilha gerada é
+  // quase toda campina; com 12 por célula passava de 400 mil e o High ficava pesado)
+  const POR_CELULA = Math.max(2, Math.min(12, Math.round(120000 / Math.max(1, terreno.gramado.length)))), passo = terreno.passo;
   for (const c of terreno.gramado) {
     for (let k = 0; k < POR_CELULA; k++) {
       const x = c.x + (Math.random() - 0.5) * passo, z = c.z + (Math.random() - 0.5) * passo;

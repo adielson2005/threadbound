@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { criarBoneca, aplicarQualidadeBoneca } from './boneca.js';
 import { aplicarCambalhota, aplicarPose } from './cambalhota.js';
 import { carregarMapa, aplicarQualidadeMapa, atualizarLodPorVisao, aquecerMapa, CAMADA_SOMBRA } from './mapa.js';
+import { gerarIlha } from './ilha.js';
 import { analisarTerreno, calcularLancamento } from './terreno.js';
 import { moverComColisao, RAIO, ALTURA } from './fisica.js';
 import { incorporarSolidos } from './colisao.js';
@@ -1048,6 +1049,7 @@ renderer.setAnimationLoop(() => {
       if (jogador.morta) { tempoMorte -= dt; if (tempoMorte <= 0) mostrarGameOver(); }
   }
   mundo?.atualizar(dt, t);
+  mapa?.atualizarEnfeites?.(t, camera);
   agua?.atualizar(dt, t, camera);
   nevoa?.atualizar(dt, t);
   modeloCachoeira?.atualizar(t);
@@ -1080,7 +1082,8 @@ const mostrarProgresso = () => { barra.style.width = `${(progresso.personagem * 
 atualizarMenu();
 Promise.all([
   criarBoneca(renderer, nivel, e => { if (e.total) { progresso.personagem = e.loaded / e.total; mostrarProgresso(); } }),
-  carregarMapa(renderer, e => { if (e.total) { progresso.mapa = e.loaded / e.total; mostrarProgresso(); } }),
+  // a ilha é gerada por código (ilha.js); o mapa antigo do Meshy continua em ?mapa=antigo
+  (new URLSearchParams(location.search).get('mapa') === 'antigo' ? carregarMapa : gerarIlha)(renderer, e => { if (e.total) { progresso.mapa = e.loaded / e.total; mostrarProgresso(); } }),
   // a cachoeira é decoração: se faltar, o jogo segue sem ela
   carregarCachoeira(renderer).catch(e => { console.warn('cachoeira indisponível:', e.message); return null; }),
 ])
@@ -1091,6 +1094,7 @@ Promise.all([
     if (p.velocidades.correr > 0.5) velCorrer = p.velocidades.correr;
     await aplicarQualidadeMapa(m, nivel);
     cena.add(m.grupo, m.malha);
+    if (m.enfeites) cena.add(...m.enfeites); // vegetação e construções da ilha gerada
     terreno = analisarTerreno(m, { gravidade: FISICA.gravidade, quantidadeEstrelas: 22 });
     // primeiro mapa: oficina, âncoras, Coração do Fio, rochas flutuantes, correntes de vento…
     mundo = criarMundo({ cena, mapa: m, terreno });

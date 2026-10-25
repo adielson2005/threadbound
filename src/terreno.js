@@ -45,6 +45,8 @@ export function analisarTerreno(mapa, { gravidade, quantidadeEstrelas = 25 } = {
     if (!h) continue;
     const c = i * NZ + j;
     H[c] = h.point.y; NY[c] = h.face.normal.y;
+    // construções, troncos e pedras da ilha gerada (uv −1): não são chão para a análise
+    if (h.uv && h.uv.x < -0.5) { copa[c] = 1; continue; }
     const cor = h.uv && amostrar(h.uv);
     // copa de árvore: verde-escura (vermelho bem abaixo do verde); grama é oliva (vermelho ≈ verde)
     if (cor && cor[0] < 0.85 * cor[1] && cor[1] < 80) copa[c] = 1;
@@ -109,7 +111,9 @@ export function analisarTerreno(mapa, { gravidade, quantidadeEstrelas = 25 } = {
 
   // ---------- nascimento: centro da maior área ----------
   const maior = importantes.reduce((a, b) => (b.celulas.length > a.celulas.length ? b : a));
-  const media = maior.celulas.reduce((m, c) => m.add(centro(c)), new THREE.Vector3()).divideScalar(maior.celulas.length);
+  // o mapa pode pedir onde a protagonista acorda (a ilha gerada: a praça da vila)
+  const media = mapa.nascimentoPreferido?.clone()
+    ?? maior.celulas.reduce((m, c) => m.add(centro(c)), new THREE.Vector3()).divideScalar(maior.celulas.length);
   const nasc = maior.celulas.filter(interna).reduce((melhor, c) =>
     (!melhor || centro(c).distanceToSquared(media) < centro(melhor).distanceToSquared(media) ? c : melhor), null);
   const nascimento = centro(nasc ?? maior.celulas[0]);
