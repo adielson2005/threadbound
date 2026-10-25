@@ -400,6 +400,15 @@ export const BILHETE = T.BILHETE ?? BILHETE_1;
 export const CASAS = T.CASAS ?? CASAS_1;
 export const CARTAS = T.CARTAS ?? CARTAS_1;
 export const DICAS = { ...DICAS_1, ...T.DICAS };
+// na tela de toque as dicas falam dos botões, não do teclado (as que não estão aqui são adaptadas:
+// "aperte E" vira "toque em E", Espaço vira ▲)
+export const DICAS_TOQUE = {
+  andar: 'Arraste no lado esquerdo da tela para andar · arraste no direito para olhar em volta',
+  correr: 'Arraste o bastão além da borda para correr',
+  pular: '▲ pula · no ar, ▲ de novo dá um impulso · segure ▲ para planar',
+  planar: 'Caindo? Segure ▲ para planar devagar até o chão',
+};
+export const paraToque = texto => texto.replace(/[Aa]perte E/g, m => (m[0] === 'A' ? 'Toque em E' : 'toque em E')).replace(/Espaço/g, '▲');
 export const OBJETIVOS = { ...OBJETIVOS_1, ...T.OBJETIVOS };
 export const MEMORIAS = T.MEMORIAS ?? MEMORIAS_1;
 export const NOMES = { ...NOMES_1, ...T.NOMES };

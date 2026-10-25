@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { linhaLivre } from './colisao.js';
+import { DICAS_TOQUE, paraToque } from './historia.js';
 import { FALAS, DICAS, OBJETIVOS, MEMORIAS, AVISOS, BILHETE, CAPITULO, CARTAS, INTERACOES } from './historia.js';
 import { CAPITULO_ATUAL } from './capitulo.js';
 
@@ -8,6 +9,7 @@ import { CAPITULO_ATUAL } from './capitulo.js';
 // Everything here is lightweight and driven by the game loop (atualizar) and the E key (interagir).
 
 const VIDA_MAX = 5;
+const TOQUE = matchMedia('(pointer: coarse)').matches; // celular/tablet: dicas dos botões de toque
 
 const $ = id => document.getElementById(id);
 
@@ -86,7 +88,7 @@ export function criarCampanha({ cena, mapa, mundo, inimigos, jogador, respawn, c
   function dica(chave, forcar = false) {
     if (est.dicas.has(chave) && !forcar) return;
     est.dicas.add(chave);
-    ui.dica.textContent = DICAS[chave]; ui.dica.style.opacity = 1;
+    ui.dica.textContent = TOQUE ? (DICAS_TOQUE[chave] ?? paraToque(DICAS[chave])) : DICAS[chave]; ui.dica.style.opacity = 1;
     clearTimeout(tempoDica); tempoDica = setTimeout(() => { ui.dica.style.opacity = 0; }, 7000);
   }
   function falar(linhas) { est.falas.push(...linhas); if (!est.falaAtual) proximaFala(); }

@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { carregarTextura } from './texturas.js';
 import { FBXLoader } from 'three/addons/loaders/FBXLoader.js';
 import { mergeVertices } from 'three/addons/utils/BufferGeometryUtils.js';
 import { simplificar, simplificarIndices } from './simplificar.js';
@@ -62,17 +63,26 @@ export async function carregarCachoeira(renderer) {
     return g;
   });
 
-  const carregador = new THREE.TextureLoader();
+  // texturas carregadas à parte (KTX2 comprimida quando dá, texturas.js): o material nasce com um
+  // pixel neutro no lugar de cada uma (o shader já é o certo, nada recompila) e troca quando chega
+  const pixel = (r, g, b) => { const t = new THREE.DataTexture(new Uint8Array([r, g, b, 255]), 1, 1); t.needsUpdate = true; return t; };
+  const NEUTRAS = { map: pixel(255, 255, 255), normalMap: pixel(128, 128, 255), roughnessMap: pixel(255, 255, 255), metalnessMap: pixel(0, 0, 0) };
   const cache = new Map();
-  const tex = (nome, cor) => {
+  const usar = (mat, campo, nome, cor) => {
+    if (!nome) return;
+    mat[campo] = NEUTRAS[campo];
     if (!cache.has(nome)) {
-      const t = carregador.load(PASTA + nome);
-      t.flipY = true; // uv do FBX
-      if (cor) t.colorSpace = THREE.SRGBColorSpace;
-      t.anisotropy = renderer.capabilities.getMaxAnisotropy() >= 4 ? 4 : 1;
-      cache.set(nome, t);
+      const reg = { textura: null, usos: [] };
+      cache.set(nome, reg);
+      carregarTextura(renderer, PASTA + nome).then(t => {
+        if (cor) t.colorSpace = THREE.SRGBColorSpace;
+        t.anisotropy = renderer.capabilities.getMaxAnisotropy() >= 4 ? 4 : 1;
+        reg.textura = t;
+        for (const [m, c] of reg.usos) m[c] = t;
+      }).catch(e => console.warn('cachoeira: textura', nome, e.message));
     }
-    return cache.get(nome);
+    const reg = cache.get(nome);
+    if (reg.textura) mat[campo] = reg.textura; else reg.usos.push([mat, campo]);
   };
   let material = null;
   const tempo = { value: 0 };
@@ -80,13 +90,10 @@ export async function carregarCachoeira(renderer) {
     const t = TEXTURAS[nomeNivel] ?? TEXTURAS.medium;
     material?.dispose();
     material = simples
-      ? new THREE.MeshLambertMaterial({ map: tex(t.cor, true) })
-      : new THREE.MeshStandardMaterial({
-        map: tex(t.cor, true),
-        normalMap: t.normal ? tex(t.normal) : null,
-        roughnessMap: t.rugosidade ? tex(t.rugosidade) : null, roughness: 1,
-        metalnessMap: t.metal ? tex(t.metal) : null, metalness: t.metal ? 1 : 0,
-      });
+      ? new THREE.MeshLambertMaterial()
+      : new THREE.MeshStandardMaterial({ roughness: 1, metalness: t.metal ? 1 : 0 });
+    usar(material, 'map', t.cor, true);
+    if (!simples) { usar(material, 'normalMap', t.normal); usar(material, 'roughnessMap', t.rugosidade); usar(material, 'metalnessMap', t.metal); }
     aguaCorrendo(material, tempo);
     return material;
   }

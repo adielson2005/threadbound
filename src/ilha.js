@@ -923,6 +923,7 @@ export async function gerarIlha(renderer, aoProgredir = () => {}) {
   const mapa = {
     malha, geo, grupo, lods, renderer, texturas: new Map(), amostrar, qualidade: null, procedural: true,
     enfeites: [vegetacao, construcoes],
+    setores: setoresLod, // setores de vegetação (occlusion culling: oclusao.js)
     nascimentoPreferido: new THREE.Vector3(VILA.x, alturaVila, VILA.z),
     pontos: { vila: VILA, morro: MORRO, ilhotas: ILHOTAS.map(i => ({ nome: i.nome, x: i.cx, z: i.cz, topo: alturaEm(i.cx, i.cz) })), casas },
     alturaEm,

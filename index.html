@@ -253,6 +253,20 @@
     #aviso { font-size: 22px; }
     .pilula, .engrenagem { height: 30px; } #hud .engrenagem { width: 30px; }
   }
+  @media (pointer: coarse) { #hud .engrenagem { width: 44px; height: 44px; } }
+  /* (no fim: vale por cima das regras de tela pequena acima)
+     celular: a fala, a dica e o aviso de interação nunca ficam por baixo dos botões de toque
+     (que ocupam o canto de baixo à direita: ~190 × 250 px) */
+  @media (pointer: coarse) and (orientation: landscape) {
+    #fala { left: 12px; right: 196px; width: auto; transform: none; bottom: 14px; }
+    #dicaTutorial { left: 12px; right: 196px; transform: rotate(-0.6deg); max-width: none; top: auto; bottom: 120px; }
+    #interagir { bottom: 205px; left: calc(50% - 92px); }
+  }
+  @media (pointer: coarse) and (orientation: portrait) {
+    #fala { bottom: 262px; }
+    #dicaTutorial { top: auto; bottom: 372px; }
+    #interagir { bottom: 470px; }
+  }
 </style>
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.165.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.165.0/examples/jsm/","three-mesh-bvh":"https://cdn.jsdelivr.net/npm/three-mesh-bvh@0.7.6/build/index.module.js","meshoptimizer/simplifier":"https://cdn.jsdelivr.net/npm/meshoptimizer@0.21.0/meshopt_simplifier.module.js"}}</script>
 </head>

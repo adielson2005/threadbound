@@ -4,6 +4,7 @@ import { aplicarCambalhota, aplicarPose } from './cambalhota.js';
 import { carregarMapa, aplicarQualidadeMapa, atualizarLodPorVisao, aquecerMapa, CAMADA_SOMBRA } from './mapa.js';
 import { gerarIlha } from './ilha.js';
 import { criarChuva } from './chuva.js';
+import { criarOclusao } from './oclusao.js';
 import { lerProgresso, salvarProgresso, apagarProgresso, lerConfig, salvarConfig, lerConcluidos, ultimoCapitulo } from './salvar.js';
 import { CAPITULO_ATUAL, TOTAL_CAPITULOS, CONFIG, urlCapitulo } from './capitulo.js';
 import { analisarTerreno, calcularLancamento } from './terreno.js';
@@ -311,7 +312,7 @@ const T = {
   frente: ['KeyW', 'ArrowUp'], tras: ['KeyS', 'ArrowDown'],
   esq: ['KeyA', 'ArrowLeft'], dir: ['KeyD', 'ArrowRight'],
   pulo: ['Space', 'GamepadPulo', 'ToquePulo'],
-  disparar: ['ShiftLeft', 'ShiftRight', 'GamepadDisparar'],
+  disparar: ['ShiftLeft', 'ShiftRight', 'GamepadDisparar', 'ToqueCorrer'],
   camEsq: ['KeyZ'], camDir: ['KeyC'], // E é interagir
   defender: ['KeyQ', 'GamepadDefender', 'ToqueDefesa'], // segurar
   devagar: ['KeyX'], // segurar: anda devagar
@@ -389,12 +390,14 @@ canvas.addEventListener('pointermove', e => {
   if (t.esquerda) {
     analogico.x = THREE.MathUtils.clamp((e.clientX - t.x0) / 50, -1, 1);
     analogico.y = THREE.MathUtils.clamp(-(e.clientY - t.y0) / 50, -1, 1);
+    // arrastar o bastão bem além da borda (75 px) é correr, como o Shift no teclado
+    if (Math.hypot(e.clientX - t.x0, e.clientY - t.y0) > 75) teclas.add('ToqueCorrer'); else teclas.delete('ToqueCorrer');
   } else girarCamera((e.clientX - t.x) * 1.6, (e.clientY - t.y) * 1.6);
   t.x = e.clientX; t.y = e.clientY;
 });
 for (const ev of ['pointerup', 'pointercancel']) canvas.addEventListener(ev, e => {
   const t = toques.get(e.pointerId);
-  if (t?.esquerda) { analogico.x = analogico.y = 0; if (bastao) bastao.style.display = 'none'; }
+  if (t?.esquerda) { analogico.x = analogico.y = 0; teclas.delete('ToqueCorrer'); if (bastao) bastao.style.display = 'none'; }
   toques.delete(e.pointerId);
 });
 const botaoPulo = $('tPulo');
@@ -445,7 +448,7 @@ function entradaMovimento() {
 
 // ---------- Mundo (preenchido ao carregar) ----------
 let mapa = null, terreno = null, personagem = null;
-let mundo = null, inimigos = null, campanha = null, combate = null;
+let mundo = null, inimigos = null, campanha = null, combate = null, oclusao = null;
 const distancia = criarDistancia(); // objetos pequenos só são desenhados perto da câmera
 let estado = 'carregando'; // carregando | menu | jogando | fim
 let pausado = false;
@@ -1312,6 +1315,9 @@ renderer.setAnimationLoop(() => {
   // detalhe do mapa pela visão: costas no nível mais leve, o lado para onde a câmera vira já pronto
   if (mapa) atualizarLodPorVisao(mapa, camera, dtReal);
   distancia.atualizar(dtReal, camera);
+  // o que o relevo esconde não é desenhado (setores de vegetação e blocos de terreno)
+  camera.updateMatrixWorld();
+  oclusao?.atualizar(camera);
   chuva.atualizar(dt, t, estado === 'jogando');
   ceuJogo.definirChuva(chuva.intensidade);
   ceuJogo.atualizar(estado === 'jogando' ? dt : 0, t);
@@ -1321,7 +1327,9 @@ renderer.setAnimationLoop(() => {
     assarSombra = false;
     renderer.shadowMap.needsUpdate = true;
     camera.layers.enable(CAMADA_SOMBRA);
+    oclusao?.mostrarTudo(); // a sombra fixa é de tudo, não só do que está à vista agora
     desenhar();
+    oclusao?.reaplicar();
     camera.layers.disable(CAMADA_SOMBRA);
   } else desenhar();
 });
@@ -1391,6 +1399,8 @@ Promise.all([
     });
     aplicarEfeitos();
     configurarSombra();
+    oclusao = criarOclusao({ malha: m.malha });
+    for (const o of [...(m.lods ?? []), ...(m.setores ?? [])]) oclusao.adicionar(o);
 
     // cópia separada do início do pulo, para a pose da cambalhota não brigar com o pulo normal
     p.acoes.cambalhota = p.mixer.clipAction(p.acoes.puloInicio.getClip().clone());
@@ -1420,7 +1430,7 @@ Promise.all([
     if (salvo) { $('continuarJogo').style.display = 'block'; $('continuarJogo').focus(); } else botao.focus();
     window.__jogo = {
       jogador, personagem, camera, camera3p, mapa, terreno, correntes, renderer, cena, sol, medidor, altos, mundo, inimigos, campanha, agua, nevoa, cachoeiras, praia, ceu: ceuJogo, get combate() { return combate; },
-      animacao: () => animAtual, estado: () => estado, nivel: () => nomeNivel, aplicarNivel, ocioso,
+      animacao: () => animAtual, estado: () => estado, nivel: () => nomeNivel, aplicarNivel, ocioso, get oclusao() { return oclusao; },
     };
     // veio do "Continuar" de outro capítulo: continua sem esperar outro clique
     if (new URLSearchParams(location.search).has('continuar') && lerProgresso()) continuarJogo();
