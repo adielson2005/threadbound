@@ -56,3 +56,17 @@ export function incorporarSolidos(mapa, malhas) {
   geoMapa.boundsTree = null; // a antiga (só do terreno) não é mais usada
   return partes.length;
 }
+
+// Linha de visão: nada da malha de colisão (terreno + objetos estáticos) entre a e b. Usada para
+// que golpes, investidas, "acalmar" e a visão dos Retalhos não atravessem paredes.
+const rcVisao = new THREE.Raycaster(), dirVisao = new THREE.Vector3();
+rcVisao.firstHitOnly = true;
+rcVisao.layers.enableAll();
+export function linhaLivre(mapa, a, b) {
+  dirVisao.subVectors(b, a);
+  const d = dirVisao.length();
+  if (d < 1e-4) return true;
+  rcVisao.set(a, dirVisao.divideScalar(d));
+  rcVisao.far = d;
+  return rcVisao.intersectObject(mapa.malha).length === 0;
+}

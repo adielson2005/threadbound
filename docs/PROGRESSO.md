@@ -1,12 +1,12 @@
 # Progresso do "Prompt Mestre" — onde parei
 
-Última atualização: 24/10/2026. Repositório: https://github.com/adielson2005/threadbound (branch `main`).
+Última atualização: 25/10/2026. Repositório: https://github.com/adielson2005/threadbound (branch `main`).
 Ponto de restauração anterior a tudo isto: tag `restauro-antes-reconstrucao`.
 
 ## Resumo para retomar
 
-**Parei depois da FASE 8 (menu) e da FASE 9 (história).**
-O próximo passo exato é a **FASE 5 (hitboxes e colisões)** e depois os **testes da FASE 12 num celular Android de verdade**.
+**Parei depois da FASE 5 (hitboxes e colisões).**
+O próximo passo exato são os **testes da FASE 12 num celular Android de verdade**.
 A ordem completa do que falta está no fim deste arquivo.
 
 ## Situação de cada fase
@@ -17,7 +17,7 @@ A ordem completa do que falta está no fim deste arquivo.
 | 2. Mapa | ✅ feito (base) | Arquipélago gerado por código (`src/ilha.js`, `src/casas.js`): ilha principal de ~230 m, morro em terraços, trilhas, florestas variadas (pinheiro, frondosa, bétula, arbusto, flores, pedras), vila com 5 casas abandonadas onde dá para entrar, farol, ruínas, pomar, falésias em camadas e base de rocha. O mapa antigo segue em `?mapa=antigo`. **Falta:** áreas secretas, praia de areia na própria ilha principal e mais pontos de interesse. |
 | 3. Renderização / FPS | ✅ feito (parcial) | Frustum culling, setores de vegetação com nível leve para longe, instancing (destroços, grama), lotes de peças estáticas, distância de desenho, qualidade adaptativa e resolução dinâmica nos 3 modos, perfil de PC sem placa de vídeo. **Falta:** occlusion culling, texturas comprimidas (KTX2) e medir FPS num Android modesto. |
 | 4. Boneca | 🔄 pela escolha do usuário | O usuário pediu para **manter a boneca original** e só melhorar as animações. Feito: a corrida rápida não desliza os pés, o tronco inclina ao acelerar e nas curvas, e a cabeça olha fragmentos, âncoras e Retalhos por perto. Uma boneca refeita por código ficou guardada em `?boneca=costurada` (não é o padrão). **Falta:** variações da animação parada, uma tecla para andar devagar e transições de virada. |
-| 5. Hitboxes | ⏳ **próxima** | Hoje: cápsula única da protagonista (`fisica.js`), esfera e raycast nos Retalhos, malha de colisão com BVH. **Falta:** revisar a hitbox dos inimigos, testar atravessamentos rápidos e paredes das casas. |
+| 5. Hitboxes | ✅ feito | Retalhos: hitbox elipsoide que segue o corpo (balanço, inclinação do bote, encolher ao purificar), usada na investida (contato real com a cápsula da Brisa), nos golpes (cápsula de golpe à frente dela) e no empurrão entre os dois. Golpes, investidas, "Acalmar" e a visão deles exigem linha de visão livre: nada atravessa paredes. O Retalho anda em passos curtos e, encostado numa parede, só pode se afastar dela (antes podia entrar). Testado no navegador: cápsula da Brisa contra as paredes das 5 casas de 6 a 90 m/s, 400 quedas a 40 m/s na vila, empurrão de 30 m/s contra parede, soco/investida/"Acalmar" através da parede e o ataque normal em campo aberto. |
 | 6. Dia/noite e chuva | ✅ feito | Ciclo de dia e noite; sol (disco com coroa) e lua (fases, mares e crateras) refeitos; chuva com gotas na GPU, som gerado, trovão e relâmpago (tecla Y). Temporizador de jogabilidade removido. |
 | 7. Interface | ✅ feito (base) | HUD artesanal, sem cronômetro, com pausa avisando na tela. **Falta:** testar o layout de toque num celular real. |
 | 8. Menu e imagem | ✅ feito | Menu com capa original renderizada no próprio jogo (`assets/menu/capa.jpg`), Continuar (salvamento automático), Novo jogo com confirmação, Capítulos, Configurações (volume, sensibilidade, tamanho do texto, tremor da tela, controles), Gráficos e Créditos. Não há "Sair": o navegador não permite fechar a aba pelo jogo. |
@@ -27,9 +27,8 @@ A ordem completa do que falta está no fim deste arquivo.
 
 ## Próximos passos, em ordem
 
-1. FASE 5: revisar a hitbox dos Retalhos (esfera → cápsula alinhada ao corpo) e testar atravessamento em alta velocidade e nas paredes das casas.
-2. FASE 12: abrir https://adielson2005.github.io/threadbound/ num Android modesto, anotar FPS e corrigir o layout de toque.
-3. FASE 3: texturas KTX2 (precisa da ferramenta `toktx` instalada) e occlusion culling simples por setor.
-4. FASE 2: áreas secretas (gruta sob a vila, mirante no farol), praia na ilha principal e mais detalhes na vila.
-5. FASE 4: animações da boneca original (parada com variações, andar devagar, virada).
-6. FASE 9: mapa do Capítulo 2 (O Recife das Vozes), usando `ilha.js` como base.
+1. FASE 12: abrir https://adielson2005.github.io/threadbound/ num Android modesto, anotar FPS e corrigir o layout de toque.
+2. FASE 3: texturas KTX2 (precisa da ferramenta `toktx` instalada) e occlusion culling simples por setor.
+3. FASE 2: áreas secretas (gruta sob a vila, mirante no farol), praia na ilha principal e mais detalhes na vila.
+4. FASE 4: animações da boneca original (parada com variações, andar devagar, virada).
+5. FASE 9: mapa do Capítulo 2 (O Recife das Vozes), usando `ilha.js` como base.

@@ -665,16 +665,17 @@ function impactoParede(v, n) {
   jogador.impacto = Math.max(jogador.impacto || 0, 0.1 + k * 0.2);
   if (n.y > -0.5) soltarPoeira(jogador.pos.clone().addScaledVector(n, -RAIO).add(new THREE.Vector3(0, 0.9, 0)), Math.round(3 + k * 6), 0.6 + k);
 }
-// Brisa e os Retalhos não se atravessam: cada um empurra o outro (ela é mais pesada que eles)
+// Brisa e os Retalhos não se atravessam: cada um empurra o outro (ela é mais pesada que eles).
+// O contato é entre a cápsula dela e o corpo dele (inimigos.js); o empurrão é na horizontal.
 function empurrarInimigos() {
   if (!inimigos) return;
   const j = jogador;
   for (const e of inimigos.lista) {
     if (!e.ativo) continue;
-    const dx = j.pos.x - e.pos.x, dz = j.pos.z - e.pos.z, dy = j.pos.y - e.pos.y;
-    const d = Math.hypot(dx, dz), min = RAIO + 0.42;
-    if (d >= min || dy > 0.9 || dy < -1.5) continue;
-    const nx = d > 1e-4 ? dx / d : 1, nz = d > 1e-4 ? dz / d : 0, sobra = min - d;
+    const sobra = -inimigos.distanciaJogadora(e, j.pos);
+    if (sobra <= 0) continue;
+    const dx = j.pos.x - e.pos.x, dz = j.pos.z - e.pos.z, d = Math.hypot(dx, dz);
+    const nx = d > 1e-4 ? dx / d : 1, nz = d > 1e-4 ? dz / d : 0;
     j.pos.x += nx * sobra * 0.4; j.pos.z += nz * sobra * 0.4;
     // o resto vira velocidade do inimigo (ele mesmo checa se tem chão antes de andar)
     e.vel.x -= nx * sobra * 4; e.vel.z -= nz * sobra * 4;
@@ -1236,7 +1237,7 @@ Promise.all([
     }
     inimigos = criarInimigos({ cena, mapa: m, posicoes: mundo.posicoesInimigos });
     campanha = criarCampanha({
-      cena, mundo, inimigos, jogador,
+      cena, mapa: m, mundo, inimigos, jogador,
       respawn: p => { respawn(p); jogador.seguro.copy(p); },
       comEscuro, aoTerminar: terminarCapitulo,
       aoSalvar: salvarProgresso, // progresso guardado no navegador (menu: Continuar)

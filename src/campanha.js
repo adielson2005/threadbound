@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { linhaLivre } from './colisao.js';
 import { FALAS, DICAS, OBJETIVOS, MEMORIAS, AVISOS, BILHETE, CAPITULO, CARTAS } from './historia.js';
 
 // Chapter 1 progression: fragments, purification by interaction, restoring the anchors and the
@@ -9,7 +10,7 @@ const VIDA_MAX = 5;
 
 const $ = id => document.getElementById(id);
 
-export function criarCampanha({ cena, mundo, inimigos, jogador, respawn, comEscuro, aoTerminar, aoAtaque, casas = [], aoSalvar = null }) {
+export function criarCampanha({ cena, mapa, mundo, inimigos, jogador, respawn, comEscuro, aoTerminar, aoAtaque, casas = [], aoSalvar = null }) {
   const ui = {
     vida: $('vida'), objetivo: $('objetivo'),
     fala: $('fala'), falaQuem: document.querySelector('#fala b'), falaTexto: document.querySelector('#fala span'),
@@ -128,10 +129,16 @@ export function criarCampanha({ cena, mundo, inimigos, jogador, respawn, comEscu
     return melhor;
   }
 
+  // (só o que ela alcança: nada de acalmar um Retalho do outro lado de uma parede)
+  const peito = new THREE.Vector3(), alvoVisto = new THREE.Vector3();
   function alvoPurificavel() {
     let melhor = null, distancia = 2.5;
-    for (const e of inimigos.lista) if (e.ativo) { const d = e.pos.distanceTo(jogador.pos); if (d < distancia) { melhor = { tipo: 'retalho', obj: e }; distancia = d; } }
-    for (const a of mundo.ancoras) for (const c of a.cristais) if (!c.quebrado) { const d = c.pos.distanceTo(jogador.pos); if (d < distancia) { melhor = { tipo: 'cristal', obj: c }; distancia = d; } }
+    peito.copy(jogador.pos).y += 1.1;
+    for (const e of inimigos.lista) if (e.ativo) { const d = e.pos.distanceTo(jogador.pos); if (d < distancia && inimigos.alcanca(e, peito)) { melhor = { tipo: 'retalho', obj: e }; distancia = d; } }
+    for (const a of mundo.ancoras) for (const c of a.cristais) if (!c.quebrado) {
+      const d = c.pos.distanceTo(jogador.pos);
+      if (d < distancia && linhaLivre(mapa, peito, alvoVisto.set(c.pos.x, c.pos.y + 0.3, c.pos.z))) { melhor = { tipo: 'cristal', obj: c }; distancia = d; }
+    }
     return melhor;
   }
   function purificar(alvo) {
