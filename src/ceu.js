@@ -40,7 +40,7 @@ const RUIDO_GLSL = /* glsl */`
 `;
 const CUPULA_FRAG = /* glsl */`
   uniform vec3 uTopo, uHorizonte, uBaixo, uSol, uLua, uCorBrilho;
-  uniform float uDia, uPor, uTempo, uBrilho;
+  uniform float uDia, uPor, uTempo, uBrilho, uChuva, uFase;
   varying vec3 vP;
   ${RUIDO_GLSL}
   // uma camada de estrelas: cada célula de uma grade 3D em volta da câmera tem (ou não) uma estrela
@@ -68,7 +68,18 @@ const CUPULA_FRAG = /* glsl */`
     c += uCorBrilho * halo * acima * max(uDia, uPor);
     // o lado do sol aquece em dourado perto do horizonte (o "céu ensolarado" das referências)
     c = mix(c, uCorBrilho * 1.05, pow(s, 2.0) * (1.0 - abs(h)) * (0.45 * uDia + 0.5 * uPor) * acima);
-    c = mix(c, vec3(1.0, 0.97, 0.88) * 1.8, smoothstep(0.99935, 0.99968, s) * acima * max(uDia, uPor));
+    // disco do sol: centro branco-quente, borda dourada (escurece na borda) e coroa de raios girando devagar
+    float limpo = 1.0 - uChuva;
+    float angSol = acos(clamp(dot(d, uSol), -1.0, 1.0));
+    float rSol = 0.03;
+    float discoSol = smoothstep(rSol, rSol * 0.86, angSol);
+    float borda = clamp(angSol / rSol, 0.0, 1.0);
+    vec3 corDisco = mix(vec3(1.0, 0.98, 0.9) * 2.0, uCorBrilho * 1.6, borda * borda);
+    c = mix(c, corDisco, discoSol * acima * max(uDia, uPor) * limpo);
+    vec3 sx = normalize(cross(uSol, vec3(0.0, 1.0, 0.0))), sy = cross(sx, uSol);
+    float angRaio = atan(dot(d, sy), dot(d, sx));
+    float raios = pow(0.5 + 0.5 * sin(angRaio * 14.0 + uTempo * 0.15), 8.0) + pow(0.5 + 0.5 * sin(angRaio * 9.0 - uTempo * 0.1 + 1.7), 10.0) * 0.6;
+    c += uCorBrilho * raios * exp(-angSol * 16.0) * smoothstep(rSol * 0.9, rSol * 1.6, angSol) * 0.35 * acima * max(uDia, uPor) * limpo;
 
     // ---- noite: estrelas, Via Láctea e lua ----
     if (noite > 0.01) {
@@ -82,18 +93,38 @@ const CUPULA_FRAG = /* glsl */`
       c += vec3(0.4, 0.25, 0.55) * faixa * smoothstep(0.55, 0.95, poeira) * 0.25 * noite * ceuAberto;
       // estrelas: miúdas por todo o céu, mais densas dentro da Via Láctea, e algumas brilhantes
       float e = estrelas(d, 170.0, 0.972 - faixa * 0.03) * 1.4 + estrelas(d, 60.0, 0.988) * 2.4;
-      c += vec3(0.92, 0.95, 1.0) * e * noite * ceuAberto;
-      // lua
+      c += vec3(0.92, 0.95, 1.0) * e * noite * ceuAberto * (1.0 - uChuva);
+      // lua: esfera iluminada de lado conforme a fase (a parte escura ainda aparece de leve),
+      // com mares escuros e crateras
       float l = dot(d, uLua);
-      float disco = smoothstep(0.99905, 0.99935, l);
+      float rLua = 0.05;
+      float angLua = acos(clamp(l, -1.0, 1.0));
+      float disco = smoothstep(rLua, rLua * 0.93, angLua);
       if (disco > 0.0) {
         vec3 eixoX = normalize(cross(uLua, vec3(0.0, 1.0, 0.0))), eixoY = cross(eixoX, uLua);
-        vec2 uvLua = vec2(dot(d, eixoX), dot(d, eixoY)) * 700.0;
-        float crateras = ruido(uvLua * 0.5) * 0.55 + ruido(uvLua * 1.3 + 7.0) * 0.45;
-        vec3 corLua = mix(vec3(0.62, 0.65, 0.74), vec3(1.0, 1.0, 0.97), smoothstep(0.3, 0.65, crateras)) * 1.5;
-        c = mix(c, corLua, disco * noite);
+        vec2 q2 = vec2(dot(d, eixoX), dot(d, eixoY)) / sin(rLua);
+        vec3 nl = vec3(q2, sqrt(max(0.0, 1.0 - dot(q2, q2))));
+        float fase = uFase * 6.2831853;
+        vec3 luzLua = normalize(vec3(sin(fase), 0.15, -cos(fase)));
+        float acesa = smoothstep(-0.08, 0.12, dot(nl, luzLua));
+        float mares = smoothstep(0.45, 0.7, ruido(q2 * 2.2 + 4.0) * 0.6 + ruido(q2 * 4.5) * 0.4);
+        // crateras redondas: algumas células de uma grade têm uma cratera (fundo escuro, borda clara)
+        float cr = 0.0;
+        vec2 gq = q2 * 3.2, gc = floor(gq);
+        for (int i = -1; i <= 1; i++) for (int j = -1; j <= 1; j++) {
+          vec2 cc = gc + vec2(float(i), float(j));
+          float hh = fract(sin(dot(cc, vec2(127.1, 311.7))) * 43758.5453);
+          if (hh < 0.45) continue;
+          vec2 o = vec2(fract(hh * 13.7), fract(hh * 71.3));
+          float rr = 0.14 + 0.22 * fract(hh * 5.1), dd = length(gq - cc - o);
+          cr += -0.3 * smoothstep(rr, rr * 0.7, dd) + 0.22 * (smoothstep(rr * 1.3, rr, dd) - smoothstep(rr, rr * 0.8, dd));
+        }
+        vec3 corLua = mix(vec3(0.92, 0.92, 0.87), vec3(0.5, 0.52, 0.6), mares * 0.85) * (1.0 + cr) * (0.6 + 0.4 * nl.z);
+        corLua *= mix(0.06, 1.05, acesa);
+        c = mix(c, corLua, disco * noite * (1.0 - uChuva * 0.9));
       }
-      c += vec3(0.55, 0.65, 1.0) * (pow(max(l, 0.0), 350.0) * 0.5 + pow(max(l, 0.0), 25.0) * 0.08) * noite;
+      float clarao = 0.3 + 0.7 * abs(cos(uFase * 3.14159265)); // lua cheia ilumina mais o céu em volta
+      c += vec3(0.55, 0.65, 1.0) * (pow(max(l, 0.0), 300.0) * 0.45 + pow(max(l, 0.0), 22.0) * 0.08) * noite * clarao * (1.0 - uChuva);
     }
     gl_FragColor = vec4(c * uBrilho, 1.0);
     #include <tonemapping_fragment>
@@ -186,7 +217,7 @@ export function criarCeu({ cena, camera, corHorizonte }) {
   const uniCupula = {
     uTopo: { value: PAL.dia.topo.clone() }, uHorizonte: { value: corHorizonte.clone() }, uBaixo: { value: PAL.dia.baixo.clone() },
     uSol: { value: DIR_SOL.clone() }, uLua: { value: DIR_SOL.clone() }, uCorBrilho: { value: PAL.dia.brilho.clone() },
-    uDia: { value: 1 }, uPor: { value: 0 }, uTempo: { value: 0 }, uBrilho: { value: 1 },
+    uDia: { value: 1 }, uPor: { value: 0 }, uTempo: { value: 0 }, uBrilho: { value: 1 }, uChuva: { value: 0 }, uFase: { value: 0.5 },
   };
   const cupula = new THREE.Mesh(new THREE.SphereGeometry(1, 32, 16), new THREE.ShaderMaterial({
     side: THREE.BackSide, depthWrite: false, fog: false, uniforms: uniCupula, vertexShader: CUPULA_VERT, fragmentShader: CUPULA_FRAG,
@@ -226,6 +257,7 @@ export function criarCeu({ cena, camera, corHorizonte }) {
   // ---- relógio ----
   let hora = 10;           // começa de manhã
   let chuva = 0;           // 0..1 (chuva.js)
+  let dias = 4;            // dias passados (a lua começa quase cheia)
   let alvoAvanco = null;   // "T": avança rápido até esta hora
   // estado de luz para o resto do jogo (luzes, neblina, mar, névoa)
   const estado = {
@@ -245,6 +277,7 @@ export function criarCeu({ cena, camera, corHorizonte }) {
       const falta = (alvoAvanco - hora + 24) % 24;
       if (falta <= horas) { hora = alvoAvanco; alvoAvanco = null; return; }
     }
+    if (hora + horas >= 24) dias++;
     hora = (hora + horas) % 24;
   }
   function calcularLuz() {
@@ -289,7 +322,8 @@ export function criarCeu({ cena, camera, corHorizonte }) {
     cupula.position.copy(camera.position); cupula.scale.setScalar(r);
     nuvens.position.copy(camera.position); nuvens.scale.setScalar(r * 0.97);
     uniNuvens.uTempo.value = t;
-    uniNuvens.uChuva.value = chuva;
+    uniNuvens.uChuva.value = chuva; uniCupula.uChuva.value = chuva;
+    uniCupula.uFase.value = ((dias + hora / 24) / 8) % 1; // ciclo da lua: 8 dias do jogo
     uniNuvens.uCobertura.value = 0.6 - chuva * 0.32;
     uniCupula.uTempo.value = t;
     uniCupula.uTopo.value.copy(estado.topo); uniCupula.uHorizonte.value.copy(estado.neblina); uniCupula.uBaixo.value.copy(estado.baixo);
