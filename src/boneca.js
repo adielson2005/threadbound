@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { costurarBoneca } from './costura.js';
 import { FBXLoader } from 'three/addons/loaders/FBXLoader.js';
 import { mergeVertices } from 'three/addons/utils/BufferGeometryUtils.js';
 import { corrigirPernas, corrigirTrilhasPernas, removerPicos, fecharCiclo, alinharGolpe, velocidadeNatural } from './reparos.js';
@@ -365,6 +366,11 @@ function textura(renderer, nome, cor) {
 }
 
 export async function aplicarQualidadeBoneca(boneca, renderer, nivel) {
+  // Brisa costurada por código (costura.js): tecidos pintados, mesma luz de contorno
+  if (boneca.costura) {
+    boneca.costura.aplicarNivel(nivel, m => contorno(m, nivel.materialSimples ? 0.22 : nivel.nome === 'High' ? 0.3 : 0.24));
+    return;
+  }
   const t = nivel.texturaBoneca;
   const [cor, normal, rugosidade, metal] = await Promise.all([
     textura(renderer, t.cor, true), textura(renderer, t.normal), textura(renderer, t.rugosidade), textura(renderer, t.metal),
@@ -454,6 +460,14 @@ export async function criarBoneca(renderer, nivel, aoProgredir) {
   // volta a boneca ao repouso (o retarget só lê a pose dela)
   for (const o of ossos) { const l = ligacao.get(o.name); o.quaternion.copy(l.q); o.position.copy(l.p); }
 
+  // corpo novo da Brisa, costurado no mesmo esqueleto (a malha do Meshy fica em ?boneca=antiga)
+  let costura = null, malhaVisivel = malha;
+  if (new URLSearchParams(location.search).get('boneca') !== 'antiga') {
+    costura = costurarBoneca(fbx, 1 / metrosPorUnidade);
+    malha.visible = false; malha.parent?.remove(malha); malha.geometry.dispose();
+    malhaVisivel = costura.grupo;
+  }
+
   // hierarquia: raiz (posição e direção) -> corpo (pivô) -> modelo
   const escala = ALTURA / (caixa.max.y - caixa.min.y);
   const pivo = ALTURA * 0.5;
@@ -470,7 +484,7 @@ export async function criarBoneca(renderer, nivel, aoProgredir) {
   const mixer = new THREE.AnimationMixer(fbx);
   const acoes = Object.fromEntries(Object.entries(clipes).map(([k, c]) => [k, mixer.clipAction(c)]));
   const perna = l => ({ coxa: fbx.getObjectByName(M(`${l}UpLeg`)), canela: fbx.getObjectByName(M(`${l}Leg`)), pe: fbx.getObjectByName(M(`${l}Foot`)) });
-  const boneca = { raiz, corpo, malha, mixer, acoes, velocidades, diagnostico, pernas: [perna('Left'), perna('Right')], rig: { ossos: Object.fromEntries(ossos.map(o => [o.name, o])), lista: ossos, ligacao, papeis: PAPEIS } };
+  const boneca = { raiz, corpo, malha: malhaVisivel, costura, mixer, acoes, velocidades, diagnostico, pernas: [perna('Left'), perna('Right')], rig: { ossos: Object.fromEntries(ossos.map(o => [o.name, o])), lista: ossos, ligacao, papeis: PAPEIS } };
   await aplicarQualidadeBoneca(boneca, renderer, nivel);
   return boneca;
 }
