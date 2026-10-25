@@ -3,6 +3,7 @@ import { criarBoneca, aplicarQualidadeBoneca } from './boneca.js';
 import { aplicarCambalhota, aplicarPose } from './cambalhota.js';
 import { carregarMapa, aplicarQualidadeMapa, atualizarLodPorVisao, aquecerMapa, CAMADA_SOMBRA } from './mapa.js';
 import { gerarIlha } from './ilha.js';
+import { criarChuva } from './chuva.js';
 import { analisarTerreno, calcularLancamento } from './terreno.js';
 import { moverComColisao, RAIO, ALTURA } from './fisica.js';
 import { incorporarSolidos } from './colisao.js';
@@ -102,6 +103,8 @@ camera.position.set(0, 10, 10);
 
 // céu: degradê com sol (Low/Medium), nuvens andando e reflexos de lente (ceu.js)
 const ceuJogo = criarCeu({ cena, camera, corHorizonte: COR_CEU });
+// clima: pancadas de chuva que vêm e vão (Y liga/desliga)
+const chuva = criarChuva({ cena, camera });
 
 // luz do céu: azul clarinho de cima e, de baixo, o tom quente da areia e da grama refletindo
 const luzCeu = new THREE.HemisphereLight('#dcecff', '#b9a77e', 1.4);
@@ -237,6 +240,7 @@ function aplicarEfeitos() {
   nevoa?.aplicarNivel(nivel);
   praia?.aplicarNivel(nivel);
   mundo?.aplicarNivel(nivel);
+  chuva.aplicarNivel(nivel);
   ceuJogo?.aplicarNivel(nivel);
   if (cachoeiras) cachoeiras.aplicarMaterial(modeloCachoeira.materialPara(nomeNivel, nivel.materialSimples));
   if (!usaFXAA()) suavizacao.liberar();
@@ -265,8 +269,11 @@ function aplicarHora() {
   sol.color.copy(e.corLuz);
   sol.intensity = (nivel.efeitos ? 4.0 : 3.1) * e.forcaLuz;
   luzCeu.color.copy(e.corCeuLuz); luzCeu.groundColor.copy(e.corChaoLuz);
-  luzCeu.intensity = luzCeuBase() * e.forcaCeuLuz;
+  luzCeu.intensity = luzCeuBase() * e.forcaCeuLuz + chuva.relampago * 2.5; // relâmpago clareia tudo por um instante
   cena.fog.color.copy(e.neblina);
+  // na chuva a neblina chega mais perto
+  const fb = cena.userData.neblinaBase;
+  if (fb) { cena.fog.near = fb[0] * (1 - 0.45 * chuva.intensidade); cena.fog.far = fb[1] * (1 - 0.4 * chuva.intensidade); }
   if (cena.background?.isColor) cena.background.copy(e.neblina);
   tintaHora.copy(branco).lerp(e.corLuz, 0.45).multiplyScalar(THREE.MathUtils.lerp(0.28, 1, e.dia));
   if (altos?.ativo) {
@@ -313,6 +320,7 @@ addEventListener('keydown', e => {
   if (TECLAS_COMBATE[e.code] && !e.repeat && estado === 'jogando' && !pausado) combate?.pedir(TECLAS_COMBATE[e.code]);
   // T: o tempo corre rápido até a próxima fase (dia → noite estrelada, noite → manhã)
   if (e.code === 'KeyT' && !e.repeat && estado === 'jogando') ceuJogo.avancar();
+  if (e.code === 'KeyY' && !e.repeat && estado === 'jogando') chuva.alternar();
   // R: volta ao último ponto seguro (se ficar presa em algum lugar)
   if (e.code === 'KeyR' && !e.repeat && estado === 'jogando') comEscuro(() => respawn());
   if ((e.code === 'KeyP' || e.code === 'Escape') && !e.repeat) alternarPausa();
@@ -1022,6 +1030,7 @@ function aplicarOrcamento() {
   altos?.definirCusto({ pos: nivel.posProcesso !== false, gtao: p.gtao, bloom: p.bloom, smaa: p.smaa, distGrama: p.grama });
   distancia.definirAlcance(nivel.alcanceObjetos * p.alcance);
   cena.fog.near = nivel.neblina[0] * p.longe; cena.fog.far = nivel.neblina[1] * p.longe;
+  cena.userData.neblinaBase = [cena.fog.near, cena.fog.far];
   camera.far = nivel.distancia * p.longe; camera.updateProjectionMatrix();
   if (RESOLUCAO.atual < pisoResolucao()) { RESOLUCAO.atual = pisoResolucao(); renderer.setPixelRatio(RESOLUCAO.atual); redimensionarPos(); }
 }
@@ -1064,6 +1073,8 @@ renderer.setAnimationLoop(() => {
   // detalhe do mapa pela visão: costas no nível mais leve, o lado para onde a câmera vira já pronto
   if (mapa) atualizarLodPorVisao(mapa, camera, dtReal);
   distancia.atualizar(dtReal, camera);
+  chuva.atualizar(dt, t, estado === 'jogando');
+  ceuJogo.definirChuva(chuva.intensidade);
   ceuJogo.atualizar(estado === 'jogando' ? dt : 0, t);
   aplicarHora();
   altos?.atualizar(dt, t, jogador.pos);

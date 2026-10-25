@@ -102,7 +102,7 @@ const CUPULA_FRAG = /* glsl */`
 `;
 
 const NUVENS_FRAG = (oitavas) => /* glsl */`
-  uniform float uTempo, uCobertura, uBrilho, uDia, uPor;
+  uniform float uTempo, uCobertura, uBrilho, uDia, uPor, uChuva;
   uniform vec3 uSol, uLua, uCorBrilho;
   uniform vec2 uVento;
   varying vec3 vP;
@@ -134,6 +134,9 @@ const NUVENS_FRAG = (oitavas) => /* glsl */`
     vec3 noite = mix(vec3(0.1, 0.12, 0.22), vec3(0.05, 0.06, 0.12), miolo) + vec3(0.5, 0.6, 0.9) * pow(l, 6.0) * 0.4 * (1.0 - miolo);
     vec3 c = mix(noite, dia, uDia);
     c = mix(c, por, uPor * 0.85);
+    // chuva: nuvens carregadas, cinza-chumbo, cobrindo mais o céu
+    c = mix(c, vec3(0.42, 0.45, 0.5) * mix(0.35, 1.0, uDia) * (1.0 - miolo * 0.35), uChuva * 0.85);
+    a = mix(a, min(1.0, a * 1.6 + uChuva * 0.25), uChuva);
     // o reforço de brilho do High é para o dia; à noite as nuvens ficam escuras e discretas
     gl_FragColor = vec4(c * mix(1.0, uBrilho, max(uDia, uPor)), a);
     #include <tonemapping_fragment>
@@ -193,7 +196,7 @@ export function criarCeu({ cena, camera, corHorizonte }) {
 
   // ---- nuvens (compartilham sol, lua, hora e cor do brilho com a cúpula) ----
   const uniNuvens = {
-    uTempo: { value: 0 }, uCobertura: { value: 0.6 }, uBrilho: { value: 1 }, uVento: { value: new THREE.Vector2(0.012, 0.006) },
+    uTempo: { value: 0 }, uCobertura: { value: 0.6 }, uBrilho: { value: 1 }, uChuva: { value: 0 }, uVento: { value: new THREE.Vector2(0.012, 0.006) },
     uSol: uniCupula.uSol, uLua: uniCupula.uLua, uCorBrilho: uniCupula.uCorBrilho, uDia: uniCupula.uDia, uPor: uniCupula.uPor,
   };
   const materialNuvens = oitavas => new THREE.ShaderMaterial({
@@ -222,6 +225,7 @@ export function criarCeu({ cena, camera, corHorizonte }) {
 
   // ---- relógio ----
   let hora = 10;           // começa de manhã
+  let chuva = 0;           // 0..1 (chuva.js)
   let alvoAvanco = null;   // "T": avança rápido até esta hora
   // estado de luz para o resto do jogo (luzes, neblina, mar, névoa)
   const estado = {
@@ -267,6 +271,15 @@ export function criarCeu({ cena, camera, corHorizonte }) {
     mistura(estado.corCeuLuz, LUZ.ceu.dia, LUZ.ceu.por, LUZ.ceu.noite, dia, por);
     mistura(estado.corChaoLuz, LUZ.chao.dia, LUZ.chao.por, LUZ.chao.noite, dia, por);
     estado.forcaCeuLuz = THREE.MathUtils.lerp(0.32, 1, dia) * (1 - por * 0.15);
+    // chuva: céu e horizonte acinzentados, sol bem mais fraco (a luz difusa do céu cai menos)
+    if (chuva > 0) {
+      const k = chuva * 0.75;
+      tmp.setRGB(0.36, 0.4, 0.46).multiplyScalar(THREE.MathUtils.lerp(0.18, 1, dia));
+      estado.topo.lerp(tmp, k); estado.neblina.lerp(tmp.multiplyScalar(1.25), k); estado.baixo.lerp(tmp, k);
+      estado.forcaLuz *= 1 - chuva * 0.6;
+      estado.forcaCeuLuz *= 1 - chuva * 0.25;
+    }
+    estado.chuva = chuva;
   }
 
   function atualizar(dt, t) {
@@ -276,6 +289,8 @@ export function criarCeu({ cena, camera, corHorizonte }) {
     cupula.position.copy(camera.position); cupula.scale.setScalar(r);
     nuvens.position.copy(camera.position); nuvens.scale.setScalar(r * 0.97);
     uniNuvens.uTempo.value = t;
+    uniNuvens.uChuva.value = chuva;
+    uniNuvens.uCobertura.value = 0.6 - chuva * 0.32;
     uniCupula.uTempo.value = t;
     uniCupula.uTopo.value.copy(estado.topo); uniCupula.uHorizonte.value.copy(estado.neblina); uniCupula.uBaixo.value.copy(estado.baixo);
     uniCupula.uSol.value.copy(estado.solVisivel); uniCupula.uLua.value.copy(estado.luaVisivel);
@@ -293,7 +308,7 @@ export function criarCeu({ cena, camera, corHorizonte }) {
       alvoVisivel = livre ? 1 : 0;
     }
     visivel += (alvoVisivel - visivel) * Math.min(1, dt * 8);
-    const forcaDia = Math.max(estado.dia, estado.por) * visivel;
+    const forcaDia = Math.max(estado.dia, estado.por) * visivel * (1 - chuva);
     grupoLente.visible = forcaDia > 0.01;
     if (!grupoLente.visible) return;
     const centro = 1 - Math.min(1, Math.hypot(ndc.x, ndc.y) / 1.3);
@@ -326,5 +341,6 @@ export function criarCeu({ cena, camera, corHorizonte }) {
     cupula, nuvens, estado, atualizar, aplicarNivel, avancar,
     definirMapa: m => { mapaColisao = m.malha; },
     definirHora: h => { hora = ((h % 24) + 24) % 24; alvoAvanco = null; calcularLuz(); },
+    definirChuva: k => { chuva = k; },
   };
 }
