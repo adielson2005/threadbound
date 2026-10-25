@@ -61,6 +61,9 @@ const CARTAS_1 = {
   'Casa da Parteira': '“Trouxe mais um bebê ao mundo esta noite, uma menina forte. Choveu lá dentro da casa e no céu ao mesmo tempo. A Aurélia costurou uma manta para ela com as cores do pôr do sol.” — Dona Celeste',
   'Casa do Relojoeiro': '“Os relógios da vila pararam todos na mesma hora: 4h40. Desmontei três e não achei defeito. É como se o tempo estivesse esperando alguma coisa.” — Seu Inácio',
   'Casa das Redes': '“A Aurélia veio buscar as linhas mais fortes que eu tinha, as das redes de arrasto. Disse que era para uma costura grande. Não quis contar qual.” — Marisa, rendeira',
+  // áreas secretas
+  'Gruta dos Recados': '“Aqui embaixo a gente escondia os recados que o mar não podia ler. Se alguém achar este: a Aurélia não é bruxa, é só uma avó com medo. Cuidem dela.” — As crianças da vila',
+  'Mirante do Farol': '“Daqui de cima dá para ver as três ilhotas e, num dia limpo, uma tempestade que nunca sai do lugar. Eu sei o que tem lá dentro. Um dia alguém vai ter que ir.” — Tomé',
   'Casa da Costureira': '“Ilma, minha neta, hoje você riu tanto que o vestido rasgou no peito. Remendei com um retalho azul. Prometo que, aconteça o que acontecer, esse pedaço de você não vai se perder.” — Aurélia',
 };
 

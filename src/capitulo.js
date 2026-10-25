@@ -43,6 +43,10 @@ export const CAPITULOS = {
       },
       vegetacao: 'campo',
       construcoes: 'vila',
+      // enseada de areia na borda da ilha principal (ângulo a partir do centro, largura em radianos)
+      praia: { ang: -1.75, largura: 0.42 },
+      // áreas secretas: a gruta no morro da floresta e o mirante no alto do farol
+      gruta: { x: -54, z: 47 },
     },
     ambiente: { chuva: 0, nevoa: 1, ceu: null },
     marcos: { ancora: 'ancora', coracao: 'coracao', chegada: 'oficina' },

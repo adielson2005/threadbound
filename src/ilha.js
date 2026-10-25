@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { mergeGeometries, mergeVertices } from 'three/addons/utils/BufferGeometryUtils.js';
 import { MeshBVH, acceleratedRaycast } from 'three-mesh-bvh';
 import { montarBlocos, CAMADA_SOMBRA } from './mapa.js';
-import { construirVila, construirFarol, construirRuinas, construirNaufragios, construirMarcoIlhota, construirJardim, construirCostura } from './casas.js';
+import { construirVila, construirFarol, construirRuinas, construirGruta, construirCais, construirNaufragios, construirMarcoIlhota, construirJardim, construirCostura } from './casas.js';
 import { CONFIG } from './capitulo.js';
 import { CASAS } from './historia.js';
 
@@ -75,6 +75,13 @@ function distCaminho(x, z) {
   return d;
 }
 
+// enseada de areia (Cap. 1): quanto um ponto está dentro dela (0 fora, 1 no meio da areia)
+const PRAIA = MAPA.praia;
+function naPraia(x, z, d) {
+  if (!PRAIA) return 0;
+  let da = Math.atan2(z, x) - PRAIA.ang; da = Math.atan2(Math.sin(da), Math.cos(da));
+  return (1 - suave(Math.abs(da), PRAIA.largura * 0.55, PRAIA.largura)) * suave(d, 0.6, 0.8);
+}
 function alturaBasePrincipal(x, z, d) {
   let h = (fbm(x * 0.016 + 3, z * 0.016 - 7, 4, 11) - 0.5) * 14;
   h += MORRO.altura * gauss(x, z, MORRO.x, MORRO.z, 30) + 10 * gauss(x, z, 52, -42, 20) + 7 * gauss(x, z, -58, 52, 22);
@@ -82,6 +89,9 @@ function alturaBasePrincipal(x, z, d) {
   const kt = suave(h, 5, 13), q = 3.4;
   h += (Math.round(h / q) * q - h) * 0.5 * kt;
   h -= suave(d, 0.84, 1.0) * 4; // borda arredondada
+  // a enseada desce em rampa suave até a borda, quase plana (areia não segura barranco)
+  const kp = naPraia(x, z, d);
+  if (kp > 0) h = misturar(h, misturar(1.5, -2.5, suave(d, 0.6, 1.0)) + (fbm(x * 0.06, z * 0.06, 2, 13) - 0.5) * 0.6, kp);
   return h;
 }
 let alturaVila = 0;
@@ -151,6 +161,12 @@ function corTopo(x, z, d, out) {
   if (dc < 3) lerpCor(_c1, TRILHA, 1 - suave(dc, 0.9, 2.6), _c1);
   // borda da ilha: terra escura e capim ralo
   lerpCor(_c1, TERRA, suave(d, 0.9, 1.0) * 0.6, _c1);
+  // areia da enseada: clara, com a faixa úmida e mais escura perto da borda
+  const kp = naPraia(x, z, d);
+  if (kp > 0) {
+    lerpCor(_c1, C(0.86, 0.78, 0.6), suave(kp, 0.15, 0.6), _c1);
+    lerpCor(_c1, C(0.7, 0.63, 0.5), suave(d, 0.9, 0.99) * kp * 0.7, _c1);
+  }
   out[0] = _c1[0]; out[1] = _c1[1]; out[2] = _c1[2];
   return out;
 }
@@ -705,6 +721,7 @@ export async function gerarIlha(renderer, aoProgredir = () => {}) {
   const longeDeConstrucoes = (x, z, folga) => livreDe.every(([cx, cz, r]) => Math.hypot(x - cx, z - cz) > r + folga);
   livreDe.push([VILA.x, VILA.z, VILA.r + 6]);
   livreDe.push([MORRO.x, MORRO.z, 11]); // clareira no topo do morro (onde fica o Coração do Fio)
+  if (MAPA.gruta) livreDe.push([MAPA.gruta.x, MAPA.gruta.z, 6]);
   for (const il of ILHOTAS) {
     livreDe.push([il.cx, il.cz, 7]);
     if (il.obra) livreDe.push([il.cx + il.obra.x, il.cz + il.obra.z, il.obra.r + 4]);
@@ -753,6 +770,11 @@ export async function gerarIlha(renderer, aoProgredir = () => {}) {
       const r = rnd();
       if (incl > 0.55) { if (r < 0.1) colocar(x, z, 'pedra'); continue; }
       if (dc < 2.6 || !longeDeConstrucoes(x, z, 2)) continue;
+      // na areia só conchas e um capim ralo de restinga
+      if (il === PRINCIPAL && naPraia(x, z, l.d) > 0.4) {
+        if (r < 0.08) colocar(x, z, 'concha'); else if (r < 0.12) colocar(x, z, 'capim'); else if (r > 0.985) colocar(x, z, 'pedra');
+        continue;
+      }
       if (VEG !== 'campo') { vegetarCapitulo(x, z, l, r, floresta, campina); continue; }
       if (il.nome === 'pomar') { continue; }
       if (r < floresta * 0.62 + 0.025) {
@@ -804,6 +826,12 @@ export async function gerarIlha(renderer, aoProgredir = () => {}) {
     obras.push(construirVila({ centro: centroPraca, raio: VILA.r, alturaEm, rnd, nomes: CASAS }));
     obras.push(construirFarol({ centro: naObra(farolI), alturaEm, rnd, evitar: centroIlhota(farolI) }));
     obras.push(construirRuinas({ centro: naObra(ruinasI), alturaEm, rnd, evitar: centroIlhota(ruinasI) }));
+    if (MAPA.gruta) { const { x, z } = MAPA.gruta; obras.push(construirGruta({ centro: new THREE.Vector3(x, alturaEm(x, z), z), alturaEm, rnd, nome: 'Gruta dos Recados' })); }
+    if (PRAIA) {
+      // o cais sai da areia e avança sobre a borda (o mar fica lá embaixo)
+      const r = raioBorda(PRINCIPAL, PRAIA.ang) * 0.9, x = Math.cos(PRAIA.ang) * r, z = Math.sin(PRAIA.ang) * r;
+      obras.push(construirCais({ inicio: new THREE.Vector3(x, alturaEm(x, z), z), direcao: new THREE.Vector3(Math.cos(PRAIA.ang), 0, Math.sin(PRAIA.ang)), alturaEm, rnd }));
+    }
   } else if (MAPA.construcoes === 'naufragios') {
     obras.push(construirNaufragios({ centro: centroPraca, raio: VILA.r, alturaEm, rnd, nomes: CASAS }));
     for (const il of ILHOTAS) obras.push(construirMarcoIlhota({ tipo: 'mastro', centro: naObra(il), alturaEm, rnd, evitar: centroIlhota(il) }));

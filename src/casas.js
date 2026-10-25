@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { mergeVertices } from 'three/addons/utils/BufferGeometryUtils.js';
 import { fundirEstaticos } from './lotes.js';
 
 // Construções da ilha gerada (ilha.js): a Vila de Maré Alta (casas abandonadas onde dá para entrar),
@@ -188,6 +189,40 @@ export function construirVila({ centro, raio, alturaEm, rnd, nomes, antiga = fal
     grupo.add(c);
     casas.push({ nome: nomes[k], pos: new THREE.Vector3(x, y, z), frente: new THREE.Vector3(centro.x - x, 0, centro.z - z).normalize() });
   }
+  // a praça: poço, varal com retalhos, barris, caixotes e uma carroça sem roda (longe do meio,
+  // onde Brisa acorda)
+  if (!antiga) {
+    const noChao = (x, z) => alturaEm(x, z) ?? centro.y;
+    const em = (a, r) => [centro.x + Math.cos(a) * r, centro.z + Math.sin(a) * r];
+    { const [x, z] = em(2.0, raio * 0.5); const p = new THREE.Group(); p.position.set(x, noChao(x, z), z);
+      const borda = new THREE.Mesh(new THREE.CylinderGeometry(0.9, 1.0, 0.8, 14), A.pedra); borda.position.y = 0.4; borda.userData.solido = true; borda.castShadow = true;
+      const agua = new THREE.Mesh(new THREE.CircleGeometry(0.75, 14), A.escuro); agua.rotation.x = -Math.PI / 2; agua.position.y = 0.81;
+      p.add(borda, agua);
+      for (const sx of [-0.85, 0.85]) p.add(caixa(0.12, 1.9, 0.12, A.madeiraEscura, sx, 0.95, 0));
+      p.add(caixa(1.9, 0.1, 0.1, A.madeiraEscura, 0, 1.85, 0, false));
+      grupo.add(p); }
+    { const [x1, z1] = em(3.2, raio * 0.55), [x2, z2] = em(3.65, raio * 0.55);
+      const y1 = noChao(x1, z1), y2 = noChao(x2, z2);
+      for (const [x, z, y] of [[x1, z1, y1], [x2, z2, y2]]) grupo.add(caixa(0.12, 2.2, 0.12, A.madeiraEscura, x, y + 1.1, z));
+      const corda = new THREE.Mesh(new THREE.CylinderGeometry(0.015, 0.015, Math.hypot(x2 - x1, z2 - z1), 4), A.corda);
+      corda.position.set((x1 + x2) / 2, (y1 + y2) / 2 + 2.05, (z1 + z2) / 2); corda.rotation.set(Math.PI / 2, 0, 0); corda.lookAt(x2, (y1 + y2) / 2 + 2.05, z2); corda.rotateX(Math.PI / 2);
+      grupo.add(corda);
+      for (let k = 1; k <= 4; k++) {
+        const t = k / 5, pano = new THREE.Mesh(new THREE.PlaneGeometry(0.55, 0.7), A.tecido[k % 3].clone());
+        pano.material.side = THREE.DoubleSide;
+        pano.position.set(x1 + (x2 - x1) * t, (y1 + y2) / 2 + 1.7, z1 + (z2 - z1) * t); pano.rotation.y = Math.atan2(x2 - x1, z2 - z1) + Math.PI / 2; pano.castShadow = true;
+        grupo.add(pano);
+      } }
+    for (let k = 0; k < 5; k++) {
+      const [x, z] = em(4.6 + k * 0.22, raio * (0.6 + (k % 2) * 0.08)), y = noChao(x, z);
+      if (k < 3) { const b = new THREE.Mesh(new THREE.CylinderGeometry(0.32, 0.28, 0.8, 10), A.madeira); b.position.set(x, y + 0.4, z); b.userData.solido = true; b.castShadow = true; grupo.add(b); }
+      else { const c = caixa(0.7, 0.6, 0.7, A.madeira, x, y + 0.3, z); c.rotation.y = rnd(); grupo.add(c); }
+    }
+    { const [x, z] = em(5.7, raio * 0.6), y = noChao(x, z); const c = new THREE.Group(); c.position.set(x, y, z); c.rotation.set(0.25, rnd() * 3, 0);
+      c.add(caixa(1.4, 0.12, 2.2, A.madeira, 0, 0.55, 0), caixa(0.08, 0.35, 2.2, A.madeira, 0.66, 0.78, 0), caixa(0.08, 0.35, 2.2, A.madeira, -0.66, 0.78, 0));
+      const roda = new THREE.Mesh(new THREE.TorusGeometry(0.42, 0.06, 6, 14), A.madeiraEscura); roda.position.set(0.75, 0.42, 0.6); roda.rotation.y = Math.PI / 2; c.add(roda);
+      grupo.add(c); }
+  }
   // cercas quebradas entre as casas
   for (let k = 0; k < n; k++) {
     const a = ((k + 0.5) / n) * Math.PI * 2 + 0.4, r = raio * 0.95;
@@ -219,6 +254,18 @@ export function construirFarol({ centro, alturaEm, rnd, evitar }) {
   for (let k = 0; k < 16; k++) { const a = (k / 16) * Math.PI * 2; g.add(caixa(0.07, 0.9, 0.07, A.madeiraEscura, Math.cos(a) * 2.15, topo + 0.55, Math.sin(a) * 2.15, false)); }
   const corrimao = new THREE.Mesh(new THREE.TorusGeometry(2.15, 0.05, 6, 32), A.madeiraEscura); corrimao.rotation.x = Math.PI / 2; corrimao.position.y = topo + 1.0; g.add(corrimao);
   const lanterna = new THREE.Mesh(new THREE.CylinderGeometry(1.2, 1.2, 1.8, 10, 1, true), A.vidro); lanterna.position.y = topo + 1.05; g.add(lanterna);
+  // escada em espiral por fora da torre até a galeria (o mirante, área secreta): degraus de 22 cm,
+  // que a cápsula sobe andando; o raio é o da borda da galeria, para a cabeça não bater nela no fim
+  const DEGRAU = 0.22, nDegraus = Math.ceil((topo + 0.12 - 0.8) / DEGRAU), r = 2.85;
+  let angDegrau = Math.PI * 0.75;
+  for (let k = 1; k <= nDegraus; k++) {
+    const y = 0.8 + k * DEGRAU;
+    const d = caixa(1.05, DEGRAU, 0.62, A.madeira, Math.cos(angDegrau) * r, y - DEGRAU / 2, Math.sin(angDegrau) * r);
+    d.rotation.y = -angDegrau; g.add(d);
+    // um poste de corrimão a cada três degraus (não bloqueia: só enfeite)
+    if (k % 3 === 0) g.add(caixa(0.06, 0.9, 0.06, A.madeiraEscura, Math.cos(angDegrau) * (r + 0.48), y + 0.45, Math.sin(angDegrau) * (r + 0.48), false));
+    angDegrau += 0.52 / r; // meio metro de pisada por degrau
+  }
   const cupula = new THREE.Mesh(new THREE.ConeGeometry(1.55, 1.5, 10), A.vermelho); cupula.position.y = topo + 2.7; g.add(cupula);
   // porta de ferro (fechada) e casinha do faroleiro
   g.add(caixa(1.0, 1.9, 0.12, A.madeiraEscura, 0, 1.75, 2.27, false));
@@ -231,10 +278,14 @@ export function construirFarol({ centro, alturaEm, rnd, evitar }) {
     const cone = new THREE.Mesh(new THREE.ConeGeometry(2.6, 26, 16, 1, true).rotateZ(-Math.PI / 2).translate(13, 0, 0), A.feixe);
     cone.rotation.y = lado; feixe.add(cone);
   }
+  // a carta escondida no mirante, na galeria entre a lanterna e o parapeito
+  g.updateMatrixWorld(true);
+  const posCarta = g.localToWorld(new THREE.Vector3(-1.72, topo + 0.125 - 0.22, 0.4));
   fundirEstaticos(g, [lanterna, ...feixe.children]);
   const cache = new Map();
   return {
     grupo, topo: new THREE.Vector3(centro.x, centro.y + topo + 1, centro.z),
+    casas: [{ nome: 'Mirante do Farol', pos: posCarta, frente: new THREE.Vector3(1, 0, 0) }],
     // o feixe gira sempre, mas só aparece com pouca luz (entardecer e noite)
     atualizar(t, noite = 0) {
       feixe.rotation.y = t * 0.6;
@@ -484,4 +535,82 @@ export function construirCostura({ centro, raio, alturaEm, rnd }) {
   fundirEstaticos(grupo);
   const cache = new Map();
   return { grupo, casas: [], aplicarNivel: nivel => trocarMateriais(grupo, nivel.materialSimples, cache) };
+}
+
+
+// ---------------- Cap. 1: a Gruta dos Recados (área secreta) ----------------
+// Uma casca de rocha meio enterrada no morro da floresta, com uma entrada baixa de um lado; dentro,
+// cogumelos que brilham e a carta escondida das crianças da vila. A casca entra inteira na colisão.
+export function construirGruta({ centro, alturaEm, rnd, nome }) {
+  const A = materiais(), grupo = new THREE.Group(); grupo.name = 'gruta';
+  const R = 5.6, ALT = 3.9;
+  // malha indexada (normais suaves): o morro é deformado com ruído barato e achatado embaixo
+  const geo = mergeVertices(new THREE.IcosahedronGeometry(1, 4).deleteAttribute('normal').deleteAttribute('uv'));
+  const p = geo.attributes.position, v = new THREE.Vector3();
+  for (let i = 0; i < p.count; i++) {
+    v.fromBufferAttribute(p, i);
+    const n = 1 + 0.12 * Math.sin(v.x * 5.1 + 1) * Math.cos(v.z * 4.3) + 0.08 * Math.sin(v.y * 7.7);
+    p.setXYZ(i, v.x * R * n, Math.max(-0.4, v.y * ALT * n), v.z * R * n);
+  }
+  // abre a entrada (+x local, baixa) e tira o fundo (o chão é o terreno)
+  const ind = geo.index.array, fica = [], c = new THREE.Vector3();
+  for (let t = 0; t < ind.length; t += 3) {
+    c.set(0, 0, 0);
+    for (let k = 0; k < 3; k++) c.add(v.fromBufferAttribute(p, ind[t + k]));
+    c.divideScalar(3);
+    if ((Math.abs(Math.atan2(c.z, c.x)) < 0.42 && c.y < 2.2) || c.y < -0.3) continue;
+    fica.push(ind[t], ind[t + 1], ind[t + 2]);
+  }
+  geo.setIndex(fica);
+  geo.computeVertexNormals();
+  const uv = new Float32Array(p.count * 2);
+  for (let i = 0; i < p.count; i++) { uv[i * 2] = (p.getX(i) + p.getZ(i)) * 0.3; uv[i * 2 + 1] = p.getY(i) * 0.3; }
+  geo.setAttribute('uv', new THREE.BufferAttribute(uv, 2));
+  const rocha = new THREE.Mesh(geo, A.pedra.clone());
+  rocha.material.side = THREE.DoubleSide;
+  const y0 = Math.min(centro.y, alturaEm(centro.x + R, centro.z) ?? centro.y) - 0.15;
+  rocha.position.set(centro.x, y0, centro.z);
+  // a entrada fica de costas para a vila (escondida entre as árvores)
+  rocha.rotation.y = Math.atan2(centro.z, -centro.x) + rnd() * 0.3;
+  rocha.userData.solido = true; rocha.castShadow = true; rocha.receiveShadow = true;
+  grupo.add(rocha);
+  // cogumelos que brilham lá dentro, no chão de verdade
+  const brilho = new THREE.MeshStandardMaterial({ color: '#bfe8ff', emissive: '#6fc4ff', emissiveIntensity: 1.2, roughness: 0.6 });
+  for (let k = 0; k < 12; k++) {
+    const a = rnd() * Math.PI * 2, r = 1.4 + rnd() * 2.8, x = centro.x + Math.cos(a) * r, z = centro.z + Math.sin(a) * r;
+    const y = (alturaEm(x, z) ?? centro.y) - 0.02, h = 0.12 + rnd() * 0.25;
+    const pe = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.04, h, 5), A.pedraClara); pe.position.set(x, y + h / 2, z);
+    const chapeu = new THREE.Mesh(new THREE.SphereGeometry(0.1 + rnd() * 0.08, 8, 5, 0, Math.PI * 2, 0, Math.PI / 2), brilho); chapeu.position.set(x, y + h, z);
+    grupo.add(pe, chapeu);
+  }
+  fundirEstaticos(grupo);
+  const cache = new Map();
+  return {
+    grupo, casas: [{ nome, pos: new THREE.Vector3(centro.x, (alturaEm(centro.x, centro.z) ?? centro.y) - 0.2, centro.z), frente: new THREE.Vector3(1, 0, 0) }],
+    aplicarNivel: nivel => trocarMateriais(grupo, nivel.materialSimples, cache),
+  };
+}
+
+// ---------------- Cap. 1: o cais da enseada ----------------
+// tábuas sobre estacas, saindo da areia e avançando sobre a borda da ilha (o mar, lá embaixo)
+export function construirCais({ inicio, direcao, alturaEm, rnd }) {
+  const A = materiais(), grupo = new THREE.Group(); grupo.name = 'cais';
+  const g = new THREE.Group(); g.position.copy(inicio); g.rotation.y = Math.atan2(direcao.x, direcao.z); grupo.add(g);
+  const COMP = 14, y = 0.06; // a primeira tábua quase rente à areia: dá para subir andando
+  for (let k = 0; k < COMP / 0.5; k++) {
+    const t = caixa(2.2, 0.08, 0.42, k % 4 === 0 ? A.madeiraEscura : A.madeira, (rnd() - 0.5) * 0.06, y, k * 0.5);
+    t.rotation.y = (rnd() - 0.5) * 0.04; g.add(t);
+  }
+  for (let k = 0; k <= COMP; k += 3.5) for (const lado of [-1, 1]) {
+    const e = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.14, 6, 7), A.madeiraEscura); e.position.set(lado * 1.0, y - 3, k); e.userData.solido = true; e.castShadow = true; g.add(e);
+    g.add(caixa(0.08, 0.9, 0.08, A.madeiraEscura, lado * 1.05, y + 0.45, k, false));
+  }
+  // um barco a remo amarrado na ponta, balançando no ar
+  const barco = new THREE.Group();
+  for (const lado of [-1, 1]) { const t = caixa(0.08, 0.4, 2.4, A.madeira, lado * 0.45, 0.2, 0, false); t.rotation.z = -lado * 0.25; barco.add(t); }
+  barco.add(caixa(0.75, 0.06, 2.2, A.madeira, 0, 0.03, 0, false));
+  barco.position.set(1.9, y - 0.6, COMP - 1.5); barco.rotation.set(0.05, 0.2, 0.1); g.add(barco);
+  fundirEstaticos(g);
+  const cache = new Map();
+  return { grupo, aplicarNivel: nivel => trocarMateriais(grupo, nivel.materialSimples, cache) };
 }
