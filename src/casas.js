@@ -16,15 +16,17 @@ function tex(nome, cor, rx = 1, ry = 1) {
 let M = null;
 function materiais() {
   if (M) return M;
-  const madeira = tex('madeira_cor.jpg', true, 1, 1.5), madeiraN = tex('madeira_normal.png', false, 1, 1.5);
-  const pedra = tex('pedra_cor.jpg', true, 1.2, 1.2), pedraN = tex('pedra_normal.png', false, 1.2, 1.2);
+  // as caixas têm UV em metros (caixa()): repeat = quantas vezes a textura cabe em 1 m
+  const madeira = tex('madeira_cor.jpg', true, 0.9, 0.6), madeiraN = tex('madeira_normal.png', false, 0.9, 0.6);
+  const pedra = tex('pedra_cor.jpg', true, 0.75, 0.75), pedraN = tex('pedra_normal.png', false, 0.75, 0.75);
+  const telhas = texturaTelhas();
   M = {
     madeira: new THREE.MeshStandardMaterial({ map: madeira, normalMap: madeiraN, roughness: 0.85, color: '#c9a989' }),
     madeiraEscura: new THREE.MeshStandardMaterial({ map: madeira, normalMap: madeiraN, roughness: 0.85, color: '#6e5240' }),
     pedra: new THREE.MeshStandardMaterial({ map: pedra, normalMap: pedraN, roughness: 0.93, color: '#d6d2c8' }),
     pedraClara: new THREE.MeshStandardMaterial({ map: pedra, normalMap: pedraN, normalScale: new THREE.Vector2(0.6, 0.6), roughness: 0.88, color: '#f3ece0' }),
     reboco: ['#efe3c8', '#d9e3e6', '#f0d6cf', '#e8d49c'].map(c => new THREE.MeshStandardMaterial({ map: pedra, normalScale: new THREE.Vector2(0.3, 0.3), normalMap: pedraN, roughness: 0.97, color: c })),
-    telhado: ['#8f4a37', '#5f6470', '#7a5236'].map(c => new THREE.MeshStandardMaterial({ map: madeira, normalMap: madeiraN, roughness: 0.9, color: c })),
+    telhado: ['#d9a08a', '#a9b0bd', '#c9a07e'].map(c => new THREE.MeshStandardMaterial({ map: telhas, roughness: 0.85, color: c })),
     tecido: ['#b48fd6', '#d98fa8', '#8fb4d6'].map(c => new THREE.MeshStandardMaterial({ color: c, roughness: 1 })),
     escuro: new THREE.MeshStandardMaterial({ color: '#1d1712', roughness: 1 }),
     vermelho: new THREE.MeshStandardMaterial({ map: pedra, normalMap: pedraN, roughness: 0.9, color: '#b8433a' }),
@@ -46,8 +48,31 @@ function trocarMateriais(grupo, simples, cache) {
   });
 }
 
+// telhas de barro: fileiras sobrepostas (a textura é girada para as fileiras seguirem o telhado)
+function texturaTelhas() {
+  const c = document.createElement('canvas'); c.width = c.height = 256;
+  const g = c.getContext('2d');
+  g.fillStyle = '#7a3a28'; g.fillRect(0, 0, 256, 256);
+  for (let col = 0; col < 8; col++) for (let lin = -1; lin < 6; lin++) {
+    const x = col * 32, y = lin * 44 + (col % 2) * 22;
+    const gr = g.createLinearGradient(x, 0, x + 32, 0);
+    gr.addColorStop(0, '#5a2a1c'); gr.addColorStop(0.25, '#b4614a'); gr.addColorStop(0.8, '#9a4e39'); gr.addColorStop(1, '#4a2216');
+    g.fillStyle = gr; g.beginPath(); g.moveTo(x + 2, y); g.lineTo(x + 30, y); g.lineTo(x + 30, y + 40); g.quadraticCurveTo(x + 16, y + 47, x + 2, y + 40); g.closePath(); g.fill();
+    g.fillStyle = 'rgba(0,0,0,' + (0.05 + Math.random() * 0.12) + ')'; g.fillRect(x + 2, y, 28, 40);
+  }
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.wrapS = t.wrapT = THREE.RepeatWrapping; t.anisotropy = 8;
+  t.repeat.set(0.9, 0.9); t.rotation = Math.PI / 2;
+  return t;
+}
+
+// UV em metros em cada face da caixa: a textura repete no tamanho certo (pedra, tábua, telha)
+function uvEmMetros(geo, w, h, d) {
+  const uv = geo.attributes.uv, dims = [[d, h], [d, h], [w, d], [w, d], [w, h], [w, h]];
+  for (let f = 0; f < 6; f++) for (let k = 0; k < 4; k++) { const i = f * 4 + k; uv.setXY(i, uv.getX(i) * dims[f][0], uv.getY(i) * dims[f][1]); }
+  return geo;
+}
 const caixa = (w, h, d, mat, x = 0, y = 0, z = 0, solido = true) => {
-  const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat);
+  const m = new THREE.Mesh(uvEmMetros(new THREE.BoxGeometry(w, h, d), w, h, d), mat);
   m.position.set(x, y, z); m.userData.solido = solido; m.castShadow = true; m.receiveShadow = true;
   return m;
 };

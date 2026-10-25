@@ -243,6 +243,7 @@ export function criarEfeitosAltos({ renderer, cena, camera, mapa, terreno }) {
     // também as bordas que o GTAO e o bloom criam e o brilho fino de texturas e reflexos
     smaa = new SMAAPass(tam.x, tam.y);
     composer.addPass(smaa);
+    meiaResolucaoGtao();
     aplicarCusto();
   }
 
@@ -314,6 +315,13 @@ export function criarEfeitosAltos({ renderer, cena, camera, mapa, terreno }) {
     const tam = renderer.getDrawingBufferSize(new THREE.Vector2());
     composer.setSize(tam.x / renderer.getPixelRatio(), tam.y / renderer.getPixelRatio());
     composer.setPixelRatio(renderer.getPixelRatio());
+    meiaResolucaoGtao();
+  }
+  // oclusão de ambiente em meia resolução: ~1/4 do custo; o desfoque de limpeza esconde a diferença
+  function meiaResolucaoGtao() {
+    if (!gtao) return;
+    const tam = renderer.getDrawingBufferSize(new THREE.Vector2());
+    gtao.setSize(Math.max(1, Math.round(tam.x / 2)), Math.max(1, Math.round(tam.y / 2)));
   }
   return {
     ativar, atualizar, renderizar, redimensionar, definirCusto, get ativo() { return ativo; }, laminas: grama.instancias,

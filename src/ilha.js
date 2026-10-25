@@ -125,7 +125,8 @@ function inclinacao(x, z) {
 
 // ---------------- cores do chão ----------------
 const C = (r, g, b) => [r, g, b];
-const GRAMA = [C(0.42, 0.62, 0.24), C(0.53, 0.69, 0.29), C(0.35, 0.55, 0.24), C(0.64, 0.67, 0.34)];
+// tons naturais (menos saturados): verde de campo, verde-claro, verde-escuro úmido e capim seco
+const GRAMA = [C(0.40, 0.53, 0.25), C(0.50, 0.60, 0.30), C(0.31, 0.45, 0.22), C(0.62, 0.60, 0.38)];
 const TERRA = C(0.62, 0.52, 0.37), TRILHA = C(0.74, 0.64, 0.45), ROCHA = C(0.53, 0.5, 0.46), MUSGO = C(0.33, 0.45, 0.22);
 function lerpCor(a, b, t, out) { out[0] = misturar(a[0], b[0], t); out[1] = misturar(a[1], b[1], t); out[2] = misturar(a[2], b[2], t); return out; }
 const _c1 = [0, 0, 0], _c2 = [0, 0, 0];
@@ -252,28 +253,107 @@ function malhaIlha(ilha, dados) {
 }
 
 // ---------------- vegetação e pedras ----------------
-// Cada peça é uma geometria não indexada com posição, normal, cor e "balanco" (0 no chão, 1 nas
-// pontas das folhas: quanto o vento mexe). As peças de um setor viram uma malha só.
+// Realismo barato: as copas são "cartões" (planos com textura de folhas e transparência) em volta
+// de um núcleo opaco, com a normal apontando para fora do centro da copa (a luz trata a copa como
+// um volume); o pinheiro tem galhos-cartão com textura de agulhas. Casca, folhas, agulhas e capim
+// vêm de um único atlas pintado em canvas: um material e uma chamada de desenho por setor.
+// Cada peça tem posição, normal, uv (no atlas), cor (tinta e oclusão) e "balanco" (o vento).
 const _m = new THREE.Matrix4(), _q = new THREE.Quaternion(), _e = new THREE.Euler(), _s = new THREE.Vector3(), _p = new THREE.Vector3();
-function preparar(geo, cor, opcoes = {}) {
-  const { balanco = 0, liso = false, variar = 0.08, sombraBaixo = 0.35, semente = 1 } = opcoes;
+
+// regiões do atlas (u0, v0, u1, v1) e um quadradinho branco para peças só com cor de vértice
+const REG = { folhas: [0, 0.5, 0.5, 1], agulhas: [0.5, 0.5, 1, 1], casca: [0.02, 0.02, 0.48, 0.44], capim: [0.5, 0, 1, 0.5] };
+const UV_BRANCO = [16 / 1024, 1 - 1000 / 1024];
+let ATLAS = null;
+function atlasVegetacao() {
+  if (ATLAS) return ATLAS;
+  const c = document.createElement('canvas'); c.width = c.height = 1024;
+  const g = c.getContext('2d'), r = aleatorio(777);
+  const verde = (l) => `hsl(${88 + r() * 30}, ${35 + r() * 25}%, ${l}%)`;
+  // folhas (canto superior esquerdo): cachos de folhas ovais, mais densos no meio
+  for (let k = 0; k < 900; k++) {
+    const a = r() * Math.PI * 2, d = Math.pow(r(), 0.65) * 240;
+    const x = 256 + Math.cos(a) * d, y = 256 + Math.sin(a) * d * 0.95;
+    const tam = 9 + r() * 12, ang = r() * Math.PI;
+    g.save(); g.translate(x, y); g.rotate(ang);
+    g.fillStyle = verde(20 + r() * 26 + (1 - d / 240) * 6);
+    g.beginPath(); g.ellipse(0, 0, tam, tam * 0.45, 0, 0, Math.PI * 2); g.fill();
+    g.strokeStyle = 'rgba(0,0,0,0.25)'; g.lineWidth = 1; g.beginPath(); g.moveTo(-tam, 0); g.lineTo(tam, 0); g.stroke();
+    g.restore();
+  }
+  // agulhas (canto superior direito): galho com agulhas finas saindo para os lados
+  for (let b = 0; b < 3; b++) {
+    const y0 = 120 + b * 140;
+    g.strokeStyle = '#3b2a1c'; g.lineWidth = 4; g.beginPath(); g.moveTo(520, y0); g.lineTo(1010, y0 + 20); g.stroke();
+    for (let k = 0; k < 260; k++) {
+      const t = r(), x = 520 + t * 490, y = y0 + t * 20, l = 30 + r() * 55 * (1 - t * 0.5), a = (r() < 0.5 ? -1 : 1) * (0.5 + r() * 0.9);
+      g.strokeStyle = `hsl(${120 + r() * 25}, ${30 + r() * 20}%, ${14 + r() * 18}%)`; g.lineWidth = 2 + r() * 1.5;
+      g.beginPath(); g.moveTo(x, y); g.lineTo(x + Math.cos(a) * l * 0.35, y + Math.sin(a) * l); g.stroke();
+    }
+  }
+  // casca (canto inferior esquerdo): veios verticais e rachaduras
+  g.fillStyle = '#5a4434'; g.fillRect(0, 512, 512, 512);
+  for (let k = 0; k < 500; k++) { const x = r() * 512, w = 1 + r() * 4; g.fillStyle = r() < 0.5 ? `rgba(30,20,12,${0.2 + r() * 0.4})` : `rgba(140,115,90,${0.1 + r() * 0.25})`; g.fillRect(x, 512 + r() * 80, w, 120 + r() * 400); }
+  for (let k = 0; k < 60; k++) { g.fillStyle = 'rgba(15,10,6,0.6)'; g.fillRect(r() * 512, 512 + r() * 512, 2 + r() * 3, 30 + r() * 90); }
+  g.fillStyle = '#ffffff'; g.fillRect(0, 984, 34, 40); // quadrado branco (uv fixo)
+  // capim (canto inferior direito): lâminas finas afinando para cima, pontas mais claras
+  for (let k = 0; k < 420; k++) {
+    const x = 540 + r() * 460, h = 160 + r() * 300, curva = (r() - 0.5) * 90, w = 3 + r() * 5;
+    const gr = g.createLinearGradient(0, 1024, 0, 1024 - h);
+    gr.addColorStop(0, `hsl(${85 + r() * 20}, 40%, 18%)`); gr.addColorStop(1, `hsl(${60 + r() * 35}, ${40 + r() * 20}%, ${42 + r() * 18}%)`);
+    g.fillStyle = gr; g.beginPath(); g.moveTo(x - w, 1024); g.quadraticCurveTo(x + curva * 0.5, 1024 - h * 0.6, x + curva, 1024 - h); g.quadraticCurveTo(x + curva * 0.5 + w * 0.3, 1024 - h * 0.6, x + w, 1024); g.fill();
+  }
+  const t = new THREE.CanvasTexture(c);
+  t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4;
+  ATLAS = t;
+  return t;
+}
+
+// acumula triângulos de uma peça (não indexada) e devolve a geometria com todos os atributos
+class Peca {
+  constructor() { this.p = []; this.n = []; this.uv = []; this.c = []; this.b = []; }
+  vert(x, y, z, nx, ny, nz, u, v, cor, bal) { this.p.push(x, y, z); this.n.push(nx, ny, nz); this.uv.push(u, v); this.c.push(cor[0], cor[1], cor[2]); this.b.push(bal); }
+  geometria() {
+    const g = new THREE.BufferGeometry();
+    g.setAttribute('position', new THREE.Float32BufferAttribute(this.p, 3));
+    g.setAttribute('normal', new THREE.Float32BufferAttribute(this.n, 3));
+    g.setAttribute('uv', new THREE.Float32BufferAttribute(this.uv, 2));
+    g.setAttribute('color', new THREE.Float32BufferAttribute(this.c, 3));
+    g.setAttribute('balanco', new THREE.Float32BufferAttribute(this.b, 1));
+    return g;
+  }
+}
+// cartão: quadrado de lado "tam" centrado em "c", virado para "normalPlano"; normal de luz radial
+// a partir de "centroLuz" (copa como volume). uv cobre a região "reg" do atlas.
+const _a = new THREE.Vector3(), _b2 = new THREE.Vector3(), _nl = new THREE.Vector3(), _v = new THREE.Vector3();
+function cartao(peca, c, normalPlano, tam, reg, centroLuz, cor, balFn, giro = 0) {
+  _a.set(0, 1, 0); if (Math.abs(normalPlano.y) > 0.9) _a.set(1, 0, 0);
+  const lado = new THREE.Vector3().crossVectors(_a, normalPlano).normalize();
+  const cima = new THREE.Vector3().crossVectors(normalPlano, lado).normalize();
+  if (giro) { lado.applyAxisAngle(normalPlano, giro); cima.applyAxisAngle(normalPlano, giro); }
+  const h = tam / 2, cantos = [[-1, -1], [1, -1], [1, 1], [-1, 1]], uvs = [[reg[0], reg[1]], [reg[2], reg[1]], [reg[2], reg[3]], [reg[0], reg[3]]];
+  const ps = cantos.map(([sx, sy]) => c.clone().addScaledVector(lado, sx * h).addScaledVector(cima, sy * h));
+  for (const k of [0, 1, 2, 0, 2, 3]) {
+    _nl.subVectors(ps[k], centroLuz).normalize();
+    peca.vert(ps[k].x, ps[k].y, ps[k].z, _nl.x, _nl.y, _nl.z, uvs[k][0], uvs[k][1], cor, balFn(ps[k]));
+  }
+}
+// sólido (tronco, núcleo da copa, pedra, flor): uv vindo da geometria (dentro de "reg") ou fixo no branco
+function solida(peca, geo, cor, { reg = null, bal = () => 0, liso = false, oclusao = 0.35, variar = 0.08, semente = 1 } = {}) {
   let g = geo;
   if (liso) { g.deleteAttribute('uv'); g.deleteAttribute('normal'); g = mergeVertices(g); g.computeVertexNormals(); }
   g = g.index ? g.toNonIndexed() : g;
   if (!liso) g.computeVertexNormals();
-  if (g.attributes.uv) g.deleteAttribute('uv');
   g.computeBoundingBox();
-  const p = g.attributes.position, n = p.count, cores = new Float32Array(n * 3), bal = new Float32Array(n);
-  const y0 = g.boundingBox.min.y, y1 = g.boundingBox.max.y, rnd = aleatorio(semente);
-  for (let i = 0; i < n; i++) {
-    const k = (p.getY(i) - y0) / Math.max(1e-3, y1 - y0);
-    const f = (1 - sombraBaixo * (1 - k)) * (1 + (rnd() - 0.5) * variar * 2);
-    cores[i * 3] = cor[0] * f; cores[i * 3 + 1] = cor[1] * f; cores[i * 3 + 2] = cor[2] * f;
-    bal[i] = typeof balanco === 'function' ? balanco(k) : balanco * k;
+  const p = g.attributes.position, n = g.attributes.normal, uv = g.attributes.uv, rnd = aleatorio(semente);
+  const y0 = g.boundingBox.min.y, y1 = g.boundingBox.max.y;
+  for (let i = 0; i < p.count; i++) {
+    const k = (p.getY(i) - y0) / Math.max(1e-3, y1 - y0), f = (1 - oclusao * (1 - k)) * (1 + (rnd() - 0.5) * variar * 2);
+    const u = reg && uv ? reg[0] + uv.getX(i) * (reg[2] - reg[0]) : UV_BRANCO[0];
+    const v = reg && uv ? reg[1] + uv.getY(i) * (reg[3] - reg[1]) : UV_BRANCO[1];
+    _v.fromBufferAttribute(p, i);
+    peca.vert(_v.x, _v.y, _v.z, n.getX(i), n.getY(i), n.getZ(i), u, v, [cor[0] * f, cor[1] * f, cor[2] * f], bal(_v));
   }
-  g.setAttribute('color', new THREE.BufferAttribute(cores, 3));
-  g.setAttribute('balanco', new THREE.BufferAttribute(bal, 1));
-  return g;
+  g.dispose();
 }
 function deformar(geo, amp, freq, semente) {
   const p = geo.attributes.position, v = new THREE.Vector3();
@@ -289,98 +369,139 @@ function posicionar(g, x, y, z, rotY, sx, sy = sx, sz = sx) {
   _q.setFromEuler(_e.set(0, rotY, 0));
   return g.applyMatrix4(_m.compose(_p.set(x, y, z), _q, _s.set(sx, sy, sz)));
 }
+// direção aleatória (uniforme na esfera)
+const direcao = (rnd) => { const z = rnd() * 2 - 1, a = rnd() * Math.PI * 2, s = Math.sqrt(1 - z * z); return new THREE.Vector3(Math.cos(a) * s, z, Math.sin(a) * s); };
+// copa de cartões em volta de um núcleo opaco
+function copa(peca, rnd, centro, raios, n, tamanho, tinta, longe, reg = REG.folhas) {
+  const balFn = p => 0.3 + Math.min(0.7, Math.max(0, p.y - centro.y + raios.y) / (raios.y * 2) * 0.7);
+  // núcleo opaco verde-escuro (sombra de dentro da copa), menor que a copa: os cartões o cobrem
+  const nucleo = deformar(new THREE.IcosahedronGeometry(1, longe ? 0 : 1), 0.3, 1.2, rnd() * 100).scale(raios.x * 0.58, raios.y * 0.58, raios.z * 0.58).translate(centro.x, centro.y, centro.z);
+  solida(peca, nucleo, [0.2 * tinta[0], 0.32 * tinta[1], 0.13 * tinta[2]], { liso: true, oclusao: 0.5, bal: balFn, semente: rnd() * 1e6 });
+  for (let k = 0; k < n; k++) {
+    // direções bem espalhadas (sequência de Fibonacci na esfera + um pouco de acaso): sem buracos na copa
+    const fi = Math.acos(1 - 2 * (k + 0.5) / n), te = k * 2.399963 + rnd() * 0.6;
+    const d = new THREE.Vector3(Math.sin(fi) * Math.cos(te), Math.cos(fi), Math.sin(fi) * Math.sin(te)).lerp(direcao(rnd), 0.2).normalize();
+    const fora = 0.5 + rnd() * 0.5;
+    const pos = centro.clone().add(new THREE.Vector3(d.x * raios.x * fora, d.y * raios.y * fora, d.z * raios.z * fora));
+    // de dentro para fora: as folhas de dentro ficam mais escuras (oclusão)
+    const luz = 0.6 + 0.45 * fora + 0.15 * Math.max(0, d.y);
+    const cor = [tinta[0] * luz * (0.9 + rnd() * 0.2), tinta[1] * luz * (0.9 + rnd() * 0.2), tinta[2] * luz];
+    const plano = d.clone().lerp(direcao(rnd), 0.55).normalize();
+    cartao(peca, pos, plano, tamanho * (0.8 + rnd() * 0.4), reg, centro.clone().setY(centro.y - raios.y * 0.3), cor, balFn, rnd() * Math.PI * 2);
+  }
+}
 
-// modelos (perto = completo; longe = leve). Devolvem peças e o colisor (tronco/pedra).
+// modelos (perto = completo; longe = leve). Devolvem a geometria e o colisor (tronco/pedra).
 const MODELOS = {
   pinheiro(rnd, longe) {
-    const h = 2.2 + rnd() * 1.2, pecas = [];
-    pecas.push(preparar(new THREE.CylinderGeometry(0.16, 0.26, h, 6).translate(0, h / 2, 0), C(0.36, 0.25, 0.17), { semente: rnd() * 1e6 }));
-    const camadas = longe ? 2 : 4, verde = rnd() < 0.5 ? C(0.17, 0.36, 0.22) : C(0.21, 0.41, 0.25);
+    const peca = new Peca(), h = 2.2 + rnd() * 1.2, alturaTotal = h + 2.6;
+    solida(peca, new THREE.CylinderGeometry(0.05, 0.26, alturaTotal, 7).translate(0, alturaTotal / 2, 0), [1, 1, 1], { reg: REG.casca, semente: rnd() * 1e6 });
+    const tinta = rnd() < 0.5 ? [0.75, 0.85, 0.78] : [0.85, 0.95, 0.8];
+    const camadas = longe ? 3 : 5;
     for (let k = 0; k < camadas; k++) {
-      const f = k / camadas, r = misturar(2.0, 0.7, f) * (0.9 + rnd() * 0.2), ch = misturar(2.6, 1.6, f);
-      const cone = new THREE.ConeGeometry(r, ch, longe ? 6 : 8).translate(0, h * 0.55 + f * 3.4 + ch / 2, 0).rotateY(rnd() * 3);
-      pecas.push(preparar(cone, verde, { balanco: k => 0.25 + 0.75 * k, semente: rnd() * 1e6, sombraBaixo: 0.45 }));
+      const f = k / (camadas - 1), y = h * 0.55 + f * 3.6, r = misturar(2.1, 0.55, f) * (0.9 + rnd() * 0.2);
+      const balFn = p => Math.min(1, 0.2 + Math.hypot(p.x, p.z) / 2.2) * (0.5 + f * 0.5);
+      // núcleo escuro em cone (preenche: não se vê através do pinheiro)
+      const cone = new THREE.ConeGeometry(r * 0.45, 1.3, longe ? 6 : 8).translate(0, y + 0.35, 0);
+      solida(peca, cone, [0.09, 0.17, 0.11], { oclusao: 0.45, semente: rnd() * 1e6, bal: balFn });
+      // galhos-cartão caindo para fora, com agulhas
+      const galhos = longe ? 6 : 11;
+      for (let g = 0; g < galhos; g++) {
+        const a = (g / galhos) * Math.PI * 2 + rnd() * 0.5, cai = 0.35 + rnd() * 0.2;
+        const dir = new THREE.Vector3(Math.cos(a), -cai, Math.sin(a)).normalize();
+        const meio = new THREE.Vector3(0, y + 0.35, 0).addScaledVector(dir, r * 0.55);
+        const normal = new THREE.Vector3().crossVectors(dir, new THREE.Vector3(-Math.sin(a), 0, Math.cos(a))).normalize();
+        if (normal.y < 0) normal.negate();
+        const luz = 0.75 + 0.35 * f;
+        cartao(peca, meio, normal, r * 1.15, REG.agulhas, new THREE.Vector3(0, y - 1, 0), [tinta[0] * luz, tinta[1] * luz, tinta[2] * luz], balFn);
+      }
     }
-    return { pecas, colisor: new THREE.CylinderGeometry(0.26, 0.3, h + 1, 6).translate(0, (h + 1) / 2, 0) };
+    return { geo: peca.geometria(), colisor: new THREE.CylinderGeometry(0.26, 0.3, h + 1, 6).translate(0, (h + 1) / 2, 0) };
   },
   frondosa(rnd, longe, fruto = false) {
-    const h = 2.4 + rnd() * 1.4, pecas = [];
-    pecas.push(preparar(new THREE.CylinderGeometry(0.2, 0.32, h, 7).translate(0, h / 2, 0), C(0.4, 0.29, 0.2), { semente: rnd() * 1e6 }));
-    if (!longe) {
-      const galho = new THREE.CylinderGeometry(0.07, 0.12, 1.4, 5).translate(0, 0.7, 0).rotateZ(0.9).translate(0, h * 0.7, 0).rotateY(rnd() * 6);
-      pecas.push(preparar(galho, C(0.4, 0.29, 0.2), { semente: rnd() * 1e6 }));
+    const peca = new Peca(), h = 2.4 + rnd() * 1.4;
+    solida(peca, new THREE.CylinderGeometry(0.18, 0.32, h + 0.8, 8).translate(0, (h + 0.8) / 2, 0), [1, 1, 1], { reg: REG.casca, semente: rnd() * 1e6 });
+    for (let k = 0; k < (longe ? 0 : 3); k++) {
+      const galho = new THREE.CylinderGeometry(0.05, 0.11, 1.5, 5).translate(0, 0.75, 0).rotateZ(0.7 + rnd() * 0.4).translate(0, h * (0.65 + k * 0.1), 0).rotateY(rnd() * 6.28);
+      solida(peca, galho, [1, 1, 1], { reg: REG.casca, semente: rnd() * 1e6 });
     }
-    const outono = !fruto && rnd() < 0.12;
-    const verde = outono ? C(0.78, 0.52, 0.2) : rnd() < 0.5 ? C(0.3, 0.52, 0.22) : C(0.38, 0.58, 0.24);
-    const blobs = longe ? 1 : 3;
-    for (let k = 0; k < blobs; k++) {
-      const r = (longe ? 2.1 : 1.3 + rnd() * 0.6);
-      const b = deformar(new THREE.IcosahedronGeometry(r, longe ? 0 : 1), 0.35, 0.9, rnd() * 100);
-      b.translate((rnd() - 0.5) * 1.6 * (blobs > 1), h + 0.6 + rnd() * 1.1, (rnd() - 0.5) * 1.6 * (blobs > 1));
-      pecas.push(preparar(b, verde, { balanco: k => 0.35 + 0.65 * k, liso: true, semente: rnd() * 1e6, sombraBaixo: 0.5 }));
-    }
+    const outono = !fruto && rnd() < 0.1;
+    const tinta = outono ? [1.25, 0.82, 0.42] : rnd() < 0.5 ? [0.85, 1.0, 0.82] : [1.0, 1.05, 0.85];
+    const R = 1.8 + rnd() * 0.6;
+    copa(peca, rnd, new THREE.Vector3((rnd() - 0.5) * 0.4, h + 1.3, (rnd() - 0.5) * 0.4), new THREE.Vector3(R, R * 0.8, R), longe ? 9 : 26, 2.1, tinta, longe);
     if (fruto && !longe) for (let k = 0; k < 9; k++) {
-      const a = rnd() * Math.PI * 2, y = h + 0.4 + rnd() * 1.6;
-      const fr = new THREE.IcosahedronGeometry(0.13, 0).translate(Math.cos(a) * 1.55, y, Math.sin(a) * 1.55);
-      pecas.push(preparar(fr, rnd() < 0.7 ? C(0.85, 0.16, 0.14) : C(0.95, 0.62, 0.15), { balanco: 0.8, sombraBaixo: 0 }));
+      const a = rnd() * Math.PI * 2, y = h + 0.6 + rnd() * 1.4;
+      const fr = new THREE.IcosahedronGeometry(0.12, 0).translate(Math.cos(a) * R * 0.85, y, Math.sin(a) * R * 0.85);
+      solida(peca, fr, rnd() < 0.7 ? C(0.8, 0.14, 0.12) : C(0.92, 0.6, 0.14), { oclusao: 0, bal: () => 0.8 });
     }
-    return { pecas, colisor: new THREE.CylinderGeometry(0.32, 0.36, h + 0.8, 6).translate(0, (h + 0.8) / 2, 0) };
+    return { geo: peca.geometria(), colisor: new THREE.CylinderGeometry(0.32, 0.36, h + 0.8, 6).translate(0, (h + 0.8) / 2, 0) };
   },
   betula(rnd, longe) {
-    const h = 3.4 + rnd() * 1.6, pecas = [];
-    const tronco = preparar(new THREE.CylinderGeometry(0.1, 0.15, h, 6).translate(0, h / 2, 0), C(0.88, 0.86, 0.8), { semente: rnd() * 1e6 });
-    // manchas escuras da casca
-    const c = tronco.attributes.color, p = tronco.attributes.position;
-    for (let i = 0; i < p.count; i++) if (Math.sin(p.getY(i) * 7.3 + p.getX(i) * 20) > 0.7) c.setXYZ(i, 0.25, 0.24, 0.22);
-    pecas.push(tronco);
-    const verde = C(0.56, 0.72, 0.33);
-    for (let k = 0; k < (longe ? 1 : 2); k++) {
-      const b = deformar(new THREE.IcosahedronGeometry(1.0 + rnd() * 0.3, longe ? 0 : 1), 0.4, 1.1, rnd() * 100);
-      b.scale(1, 1.4, 1).translate((rnd() - 0.5) * 0.7, h - 0.2 + k * 1.1, (rnd() - 0.5) * 0.7);
-      pecas.push(preparar(b, verde, { balanco: k => 0.4 + 0.6 * k, liso: true, semente: rnd() * 1e6 }));
-    }
-    return { pecas, colisor: new THREE.CylinderGeometry(0.18, 0.2, h, 6).translate(0, h / 2, 0) };
+    const peca = new Peca(), h = 3.4 + rnd() * 1.6;
+    // casca clara com manchas: a textura de casca, clareada pela cor do vértice
+    const tronco = new THREE.CylinderGeometry(0.09, 0.15, h + 1.2, 7).translate(0, (h + 1.2) / 2, 0);
+    solida(peca, tronco, [1.75, 1.7, 1.6], { reg: REG.casca, semente: rnd() * 1e6, oclusao: 0.2 });
+    copa(peca, rnd, new THREE.Vector3(0, h + 0.9, 0), new THREE.Vector3(1.25, 1.7, 1.25), longe ? 7 : 20, 1.5, [1.12, 1.18, 0.86], longe);
+    return { geo: peca.geometria(), colisor: new THREE.CylinderGeometry(0.18, 0.2, h, 6).translate(0, h / 2, 0) };
   },
   arbusto(rnd, longe) {
-    const pecas = [], verde = rnd() < 0.5 ? C(0.27, 0.47, 0.2) : C(0.36, 0.54, 0.22);
-    for (let k = 0; k < (longe ? 1 : 3); k++) {
-      const r = 0.45 + rnd() * 0.4;
-      const b = deformar(new THREE.IcosahedronGeometry(r, longe ? 0 : 1), 0.35, 1.6, rnd() * 100).scale(1, 0.75, 1);
-      b.translate((rnd() - 0.5) * 0.9, r * 0.6, (rnd() - 0.5) * 0.9);
-      pecas.push(preparar(b, verde, { balanco: k => 0.15 + 0.5 * k, liso: true, semente: rnd() * 1e6, sombraBaixo: 0.5 }));
+    const peca = new Peca(), r = 0.7 + rnd() * 0.4;
+    copa(peca, rnd, new THREE.Vector3(0, r * 0.65, 0), new THREE.Vector3(r * 1.2, r * 0.75, r * 1.2), longe ? 4 : 10, 1.0, rnd() < 0.5 ? [0.75, 0.9, 0.7] : [0.9, 1.0, 0.78], longe);
+    return { geo: peca.geometria() };
+  },
+  capim(rnd, longe) {
+    if (longe) return { geo: null };
+    const peca = new Peca(), n = 3 + Math.floor(rnd() * 4);
+    for (let k = 0; k < n; k++) {
+      const x = (rnd() - 0.5) * 2.4, z = (rnd() - 0.5) * 2.4, l = 0.5 + rnd() * 0.35, a0 = rnd() * Math.PI;
+      const tinta = [0.95 + rnd() * 0.2, 1.0 + rnd() * 0.1, 0.8 + rnd() * 0.15];
+      for (let q = 0; q < 2; q++) {
+        const a = a0 + q * Math.PI / 2, ca = Math.cos(a) * l / 2, sa = Math.sin(a) * l / 2, alt = l * 0.75;
+        const ps = [[x - ca, 0, z - sa], [x + ca, 0, z + sa], [x + ca, alt, z + sa], [x - ca, alt, z - sa]];
+        const uvs = [[REG.capim[0], REG.capim[1]], [REG.capim[2], REG.capim[1]], [REG.capim[2], REG.capim[3]], [REG.capim[0], REG.capim[3]]];
+        for (const i of [0, 1, 2, 0, 2, 3]) peca.vert(ps[i][0], ps[i][1], ps[i][2], 0, 1, 0, uvs[i][0], uvs[i][1], ps[i][1] > 0 ? tinta : [tinta[0] * 0.6, tinta[1] * 0.6, tinta[2] * 0.6], ps[i][1] > 0 ? 1 : 0);
+      }
     }
-    return { pecas };
+    return { geo: peca.geometria() };
   },
   flores(rnd, longe) {
-    if (longe) return { pecas: [] };
-    const pecas = [], cores = [C(0.78, 0.62, 0.95), C(0.98, 0.62, 0.76), C(0.98, 0.86, 0.3), C(0.97, 0.97, 0.93), C(0.9, 0.3, 0.28)];
+    if (longe) return { geo: null };
+    const peca = new Peca(), cores = [C(0.78, 0.62, 0.95), C(0.98, 0.62, 0.76), C(0.98, 0.86, 0.3), C(0.97, 0.97, 0.93), C(0.9, 0.3, 0.28)];
     const corTufo = cores[Math.floor(rnd() * cores.length)];
     const n = 5 + Math.floor(rnd() * 5);
     for (let k = 0; k < n; k++) {
       const x = (rnd() - 0.5) * 1.6, z = (rnd() - 0.5) * 1.6, h = 0.22 + rnd() * 0.25;
-      pecas.push(preparar(new THREE.CylinderGeometry(0.012, 0.018, h, 3).translate(x, h / 2, z), C(0.3, 0.5, 0.2), { balanco: k => k, sombraBaixo: 0.2 }));
+      solida(peca, new THREE.CylinderGeometry(0.012, 0.018, h, 3).translate(x, h / 2, z), C(0.3, 0.5, 0.2), { bal: p => p.y / 0.5, oclusao: 0.2 });
       const flor = new THREE.IcosahedronGeometry(0.06 + rnd() * 0.03, 0).scale(1, 0.55, 1).translate(x, h, z);
-      pecas.push(preparar(flor, rnd() < 0.8 ? corTufo : cores[Math.floor(rnd() * cores.length)], { balanco: 1, sombraBaixo: 0 }));
+      solida(peca, flor, rnd() < 0.8 ? corTufo : cores[Math.floor(rnd() * cores.length)], { bal: () => 1, oclusao: 0 });
     }
-    return { pecas };
+    return { geo: peca.geometria() };
   },
   pedra(rnd, longe, grande = false) {
-    const r = grande ? 1.6 + rnd() * 1.6 : 0.35 + rnd() * 0.7;
-    const g = deformar(new THREE.IcosahedronGeometry(r, longe ? 0 : 1), 0.45, 0.8 / r, rnd() * 100);
+    const peca = new Peca(), r = grande ? 1.6 + rnd() * 1.6 : 0.35 + rnd() * 0.7;
+    const g = deformar(new THREE.IcosahedronGeometry(r, longe ? 1 : 2), 0.4, 0.8 / r, rnd() * 100);
     g.scale(1 + rnd() * 0.5, 0.55 + rnd() * 0.35, 1 + rnd() * 0.3).translate(0, r * 0.25, 0);
-    const peca = preparar(g.clone(), C(0.55, 0.53, 0.5), { sombraBaixo: 0.3, variar: 0.12, semente: rnd() * 1e6 });
-    // musgo no que fica virado para cima
-    const nrm = peca.attributes.normal, cor = peca.attributes.color;
-    for (let i = 0; i < nrm.count; i++) if (nrm.getY(i) > 0.75) cor.setXYZ(i, MUSGO[0] * 1.1, MUSGO[1] * 1.1, MUSGO[2]);
-    return { pecas: [peca], colisor: r > 0.5 ? g : null };
+    // cor por vértice: cinza com veios, musgo no que fica para cima, base escura (oclusão)
+    const tmp = g.clone(); tmp.computeVertexNormals();
+    const pos = tmp.attributes.position, nrm = tmp.attributes.normal, base = peca.p.length / 3;
+    solida(peca, g.clone(), C(0.55, 0.53, 0.5), { oclusao: 0.45, variar: 0.14, semente: rnd() * 1e6 });
+    const cor = peca.c, n2 = peca.n;
+    for (let i = base; i < peca.p.length / 3; i++) {
+      const veio = 0.85 + 0.3 * fbm(peca.p[i * 3] * 2.1, peca.p[i * 3 + 1] * 3.3 + peca.p[i * 3 + 2] * 2.1, 2, 9);
+      cor[i * 3] *= veio; cor[i * 3 + 1] *= veio; cor[i * 3 + 2] *= veio;
+      if (n2[i * 3 + 1] > 0.7) { const m = (n2[i * 3 + 1] - 0.7) / 0.3; cor[i * 3] = misturar(cor[i * 3], MUSGO[0], m * 0.8); cor[i * 3 + 1] = misturar(cor[i * 3 + 1], MUSGO[1], m * 0.8); cor[i * 3 + 2] = misturar(cor[i * 3 + 2], MUSGO[2], m * 0.8); }
+    }
+    tmp.dispose();
+    return { geo: peca.geometria(), colisor: r > 0.5 ? g : null };
   },
 };
 
-// ---------------- material da vegetação (vento no shader) ----------------
+// ---------------- material da vegetação (atlas + vento no shader) ----------------
 function materialVegetacao(simples, tempo) {
+  const comum = { vertexColors: true, map: atlasVegetacao(), alphaTest: 0.42, side: THREE.DoubleSide };
   const m = simples
-    ? new THREE.MeshLambertMaterial({ vertexColors: true })
-    : new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.92, metalness: 0 });
+    ? new THREE.MeshLambertMaterial(comum)
+    : new THREE.MeshStandardMaterial({ ...comum, roughness: 0.88, metalness: 0 });
   m.onBeforeCompile = sh => {
     sh.uniforms.uTempo = tempo;
     sh.vertexShader = 'uniform float uTempo;\nattribute float balanco;\n' + sh.vertexShader.replace('#include <begin_vertex>', `#include <begin_vertex>
@@ -389,10 +510,9 @@ function materialVegetacao(simples, tempo) {
       transformed.x += vento * balanco * 0.18;
       transformed.z += vento * balanco * 0.11;`);
   };
-  m.customProgramCacheKey = () => 'vegetacao-' + (simples ? 's' : 'p');
+  m.customProgramCacheKey = () => 'vegetacao2-' + (simples ? 's' : 'p');
   return m;
 }
-
 // ---------------- geração ----------------
 export async function gerarIlha(renderer, aoProgredir = () => {}) {
   const passo = async (k) => { aoProgredir({ loaded: k, total: 1 }); await new Promise(r => setTimeout(r, 0)); };
@@ -443,6 +563,16 @@ export async function gerarIlha(renderer, aoProgredir = () => {}) {
     for (const l of dados.niveis) for (let k = 0; k < l.length; k += 3) { const a = l[k + 1]; l[k + 1] = l[k + 2]; l[k + 2] = a; }
     base.setIndex(dados.niveis[0]); base.computeVertexNormals();
   }
+  // encostas: terra e rocha aparecem onde o chão inclina (a grama não segura em barranco)
+  {
+    const nr = base.attributes.normal, cr = base.attributes.color, rocha = paraLinear([...ROCHA]), terra = paraLinear([...TERRA]);
+    for (let i = 0; i < nr.count; i++) {
+      const ny = nr.getY(i);
+      if (ny < 0.3 || ny > 0.86) continue;
+      const k = suave(ny, 0.86, 0.6), alvo = ny < 0.7 ? rocha : terra;
+      cr.setXYZ(i, misturar(cr.getX(i), alvo[0], k), misturar(cr.getY(i), alvo[1], k), misturar(cr.getZ(i), alvo[2], k));
+    }
+  }
   base.setIndex(null);
   base.computeBoundingBox();
   const niveis = dados.niveis.map(l => new Uint32Array(l));
@@ -452,6 +582,7 @@ export async function gerarIlha(renderer, aoProgredir = () => {}) {
   const TAM_SETOR = 48;
   const setores = new Map(); // chave -> { perto: [], longe: [] }
   const colisores = []; // geometrias (mundo) que entram na malha de colisão
+  const oclusores = []; // [x, z, y, raio, força]: escurecem o chão em volta
   const colocar = (x, z, tipo, extra) => {
     const y = alturaEm(x, z);
     if (y === null) return false;
@@ -461,9 +592,12 @@ export async function gerarIlha(renderer, aoProgredir = () => {}) {
     const semente = rnd() * 1e9;
     const perto = MODELOS[tipo](aleatorio(semente), false, extra);
     const longe = MODELOS[tipo](aleatorio(semente), true, extra);
-    for (const g of perto.pecas) s.perto.push(posicionar(g, x, y - 0.05, z, rot, esc));
-    for (const g of longe.pecas) s.longe.push(posicionar(g, x, y - 0.05, z, rot, esc));
+    if (perto.geo) s.perto.push(posicionar(perto.geo, x, y - 0.05, z, rot, esc));
+    if (longe.geo) s.longe.push(posicionar(longe.geo, x, y - 0.05, z, rot, esc));
     if (perto.colisor) colisores.push(posicionar(perto.colisor, x, y - 0.05, z, rot, esc));
+    // sombra suave no chão em volta (oclusão de ambiente feita uma vez, na geração)
+    const raioSombra = { pinheiro: 3.2, frondosa: 3.6, betula: 2.4, arbusto: 1.4, pedra: extra ? 3 : 1.1 }[tipo];
+    if (raioSombra) oclusores.push([x, z, y, raioSombra * esc, tipo === 'pedra' ? 0.35 : 0.5]);
     return true;
   };
   const livreDe = [];
@@ -496,6 +630,8 @@ export async function gerarIlha(renderer, aoProgredir = () => {}) {
       } else if (r < floresta * 0.62 + 0.025 + 0.06 + floresta * 0.12) colocar(x, z, 'arbusto');
       else if (r < 0.2 + campina * 0.5) colocar(x, z, 'flores');
       else if (r > 0.985 || (l.d > 0.84 && r > 0.94)) colocar(x, z, 'pedra', l.d > 0.86 && rnd() < 0.3);
+      // capim alto: muito nas campinas, pouco dentro da floresta
+      if (rnd() < 0.18 + campina * 0.55 - floresta * 0.12) colocar(x + (rnd() - 0.5) * 1.5, z + (rnd() - 0.5) * 1.5, 'capim');
     }
   }
   // pomar: fileiras de árvores frutíferas na ilhota baixa
@@ -505,6 +641,23 @@ export async function gerarIlha(renderer, aoProgredir = () => {}) {
     colocar(pomar.cx + a * 5.2 + (rnd() - 0.5), pomar.cz + b * 5.2 + (rnd() - 0.5), 'frondosa', true);
   }
   await passo(0.6);
+
+  // ---------- oclusão no chão: o terreno escurece em volta de árvores e pedras ----------
+  {
+    const pos = base.attributes.position, cor = base.attributes.color, CEL = 2, grade = new Map();
+    for (let i = 0; i < pos.count; i++) { const k = Math.floor(pos.getX(i) / CEL) + ',' + Math.floor(pos.getZ(i) / CEL); let l = grade.get(k); if (!l) grade.set(k, (l = [])); l.push(i); }
+    const fator = new Float32Array(pos.count).fill(1);
+    for (const [x, z, y, r, f] of oclusores) {
+      for (let a = Math.floor((x - r) / CEL); a <= Math.floor((x + r) / CEL); a++) for (let b = Math.floor((z - r) / CEL); b <= Math.floor((z + r) / CEL); b++) {
+        for (const i of grade.get(a + ',' + b) ?? []) {
+          if (Math.abs(pos.getY(i) - y) > 2.5) continue;
+          const d = Math.hypot(pos.getX(i) - x, pos.getZ(i) - z) / r;
+          if (d < 1) fator[i] *= 1 - f * (1 - d) * (1 - d);
+        }
+      }
+    }
+    for (let i = 0; i < pos.count; i++) if (fator[i] < 1) cor.setXYZ(i, cor.getX(i) * fator[i], cor.getY(i) * fator[i], cor.getZ(i) * fator[i]);
+  }
 
   // ---------- construções (casas.js): vila, farol, ruínas ----------
   const construcoes = new THREE.Group(); construcoes.name = 'construcoes';
