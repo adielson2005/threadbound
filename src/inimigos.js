@@ -1,13 +1,13 @@
 import * as THREE from 'three';
 
 // Retalhos Sombrios: scraps of fabric sewn with Void thread. Small, wobbly, with glowing eyes and
-// loose dark threads. They patrol near their post, chase Numi, telegraph a lunge (wind-up) so
+// loose dark threads. They patrol near their post, chase Brisa, telegraph a lunge (wind-up) so
 // the player can react, get stunned and knocked back when hit, and dissolve into light when
 // purified. They never walk off ledges.
 
 const VIDA = 3;
 const VISAO = 9, ALCANCE_ATAQUE = 1.25, VEL = 2.6;
-// far from Numi a Retalho is not drawn (it is tiny at that distance) and, while just patrolling,
+// far from Brisa a Retalho is not drawn (it is tiny at that distance) and, while just patrolling,
 // does not think either: no raycasts nor animation until she comes closer
 const DESENHAR = 55, DORMIR = 32;
 

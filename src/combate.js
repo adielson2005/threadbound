@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { aplicarPose } from './cambalhota.js';
 
-// Combate de Numi: socos (combo de 5), chute, pegar um objeto do chão (galho ou a Agulha de
+// Combate de Brisa: socos (combo de 5), chute, pegar um objeto do chão (galho ou a Agulha de
 // Prata) e bater com ele, e defender. Os Retalhos atacam com uma investida; defender de frente
 // bloqueia (sem dano, ele recua atordoado).
 //
@@ -241,11 +241,11 @@ export function criarCombate({ cena, mapa, mundo, terreno, inimigos, campanha, j
   }
 
   // ---------- ser atacada ----------
-  // o Retalho que acerta a investida: defendendo de frente, bloqueia; senão perde Linha Viva
+  // o Retalho que acerta a investida: defendendo de frente, bloqueia; senão perde fôlego
   function aoSerAtacada(e) {
     const j = jogador;
     if (est.invulneravel > 0 || j.morta || campanha.estado.terminou) return;
-    const para = e.pos.clone().sub(j.pos).setY(0).normalize(); // da Numi para o inimigo
+    const para = e.pos.clone().sub(j.pos).setY(0).normalize(); // da Brisa para o inimigo
     const frente = new THREE.Vector3(Math.sin(j.angulo), 0, Math.cos(j.angulo));
     if (j.defendendo && frente.dot(para) > 0.1) {
       j.vel.addScaledVector(para, -3);

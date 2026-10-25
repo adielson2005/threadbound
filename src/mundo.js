@@ -5,7 +5,7 @@ import { fundirEstaticos } from './lotes.js';
 // analysis (terreno.js). Everything is placed procedurally on reachable ground, so it adapts if
 // the map changes.
 //
-//  - oficina (workshop) where Numi wakes up, at the spawn point
+//  - oficina (workshop) where Brisa wakes up, at the spawn point
 //  - 3 Âncoras de Fio: pillars whose thread was cut, held by Void crystals and guarded
 //  - Coração do Fio: the island's main Sky Thread, restored once the anchors are lit
 //  - ruins, floating rocks (bobbing platforms holding fragments), wind currents (launchers),
@@ -66,7 +66,7 @@ function materiais() {
 
 function sombra(o, projeta = true) { o.traverse(m => { if (m.isMesh) { m.castShadow = projeta; m.receiveShadow = true; } }); return o; }
 // static props that block for real: their actual triangles are merged into the map's collision
-// mesh (colisao.js), so Numi collides with the exact shape (table legs, spools, pillars…)
+// mesh (colisao.js), so Brisa collides with the exact shape (table legs, spools, pillars…)
 function solido(o, sim = true) { o.traverse(m => { if (m.isMesh) m.userData.solido = sim; }); return o; }
 
 // ---------------- props ----------------
@@ -140,7 +140,7 @@ function ilhaDistante() {
 }
 
 function oficina() {
-  // Numi's workshop: worktable, spools of thread, a giant needle, the open box she wakes up in,
+  // Brisa's workshop: worktable, spools of thread, a giant needle, the open box she wakes up in,
   // a broken wooden frame and a lantern
   const g = new THREE.Group(), M = materiais();
   const mesa = new THREE.Group();

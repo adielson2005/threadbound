@@ -1,118 +1,126 @@
 // All player-facing story text (Portuguese, Brazil). Code identifiers stay in Portuguese/English
 // as in the rest of the project; this file only holds content.
-// Source: narrative bible "Threadbound" (map 1 — A Oficina Esquecida). Maps 2–4 are planning only.
+// Source: docs/ROTEIRO.md (versão 2: Brisa e a Vila de Maré Alta). Chapters 2–4 are planning only.
 
 export const TITULO = 'Threadbound';
-export const CAPITULO = 'Capítulo 1 — A Oficina Esquecida';
+export const CAPITULO = 'Capítulo 1 — A Vila de Maré Alta';
 
 // Story card on the start screen (short, read in a few seconds)
 export const INTRO = [
-  'O Arquipélago do Céu já foi unido pela Trama Celeste: Fios do Céu que levavam vento, água, sementes e pequenas luzes de ilha em ilha.',
-  'Então veio o Vazio de Linha e começou a cortá-los. Sem seus fios, as ilhas se soltam… e afundam nas nuvens.',
-  'Numa oficina esquecida, uma pequena boneca lilás, costurada com a última Linha Viva, abre os olhos pela primeira vez.',
+  'Há quarenta anos, a Maré Negra subiu do fundo do mar para engolir a Vila de Maré Alta.',
+  'Para salvá-la, a costureira e o faroleiro costuraram a ilha nas nuvens com Fios de Maré. A vila subiu… e os moradores, um a um, viraram névoa.',
+  'Hoje os fios estão se rompendo. Na praça vazia, uma boneca feita com os retalhos de todos eles abre os olhos.',
 ];
 
-// Numi's lines and short scenes. Each entry: [speaker, text]
+// Brisa's lines and short scenes. Each entry: [speaker, text]
 export const FALAS = {
-  // Cena 1 — O despertar
+  // acordar na praça
   despertar: [
-    ['Numi', 'Onde… onde eu estou? Carretéis, uma agulha enorme, uma lanterna… é uma oficina.'],
-    ['Numi', 'Alguém costurou tudo isso com cuidado. Será que foi a mesma pessoa que me costurou?'],
-    ['Numi', 'Tem um fio quente pulsando no meu peito… e o chão está tremendo. A ilha está perdendo altitude!'],
+    ['Brisa', 'Essa praça tem cheiro de linha nova… e de mar velho.'],
+    ['Brisa', 'Uma mesa de costura, carretéis, uma agulha enorme. Alguém trabalhou aqui até o último ponto.'],
+    ['Brisa', 'O chão está tremendo! A ilha… está descendo?'],
   ],
-  // Cena 2 — A primeira luz
-  primeiroFragmento: [['Numi', 'Um Fragmento de Luz! Ele respondeu ao fio dentro de mim… como uma nota de música.']],
-  // Cena 3 — A primeira criatura
+  primeiroFragmento: [['Brisa', 'Um Fragmento de Luz! É um pedacinho dos Fios de Maré… ele esquentou meu retalho do peito.']],
   primeiroInimigo: [
-    ['Numi', 'Um retalho… ele anda como se tentasse lembrar como se caminha.'],
-    ['Numi', 'Não é maldade, é medo. Vou purificá-lo com cuidado.'],
+    ['Brisa', 'Um retalho andando sozinho… é um pedaço de roupa de alguém daqui.'],
+    ['Brisa', 'Você não quer brigar, não é? Está procurando o seu dono. Vou te acalmar com cuidado.'],
   ],
-  // Cena 4 — As três Âncoras de Fio
-  primeiraAncora: [['Numi', 'Uma Âncora de Fio. O fio dela foi cortado… e tem cristais do Vazio prendendo tudo.']],
-  ancoraSemFragmentos: [['Numi', 'Ainda não tenho luz suficiente. Preciso de mais Fragmentos de Luz.']],
-  ancoraComGuardas: [['Numi', 'Os retalhos corrompidos ainda guardam a âncora. Primeiro preciso purificá-los.']],
+  primeiraAncora: [['Brisa', 'Uma Âncora de Maré. Os fios dela se soltaram… e a névoa endureceu em cristais.']],
+  ancoraSemFragmentos: [['Brisa', 'Ainda não tenho luz suficiente. Preciso de mais Fragmentos de Luz.']],
+  ancoraComGuardas: [['Brisa', 'Os retalhos assustados ainda guardam a âncora. Primeiro preciso acalmá-los.']],
   ancoraRestaurada: [
-    [['Numi', 'Ela voltou a brilhar! O tremor diminuiu… a ilha parece respirar.']],
-    [['Numi', 'Mais uma acesa! Aguenta firme, ilha… falta pouco.']],
-    [['Numi', 'As três âncoras estão acesas! O Coração do Fio está me chamando.']],
+    [['Brisa', 'Ela acendeu! O tremor parou… a ilha respira de novo.']],
+    [['Brisa', 'Mais uma! Aguenta firme, Maré Alta… falta pouco.']],
+    [['Brisa', 'As três âncoras estão acesas. Agora o Coração da Ilha, lá no alto do morro.']],
   ],
-  // Cena 6 — O Coração do Fio
-  coracaoFechado: [['Numi', 'O Coração do Fio está apagado. As três âncoras precisam estar acesas primeiro.']],
-  restaurarCoracao: [['Numi', 'Coração do Fio… volte a bater!']],
+  coracaoFechado: [['Brisa', 'O Coração da Ilha está frio. As três âncoras precisam estar acesas primeiro.']],
+  restaurarCoracao: [['Brisa', 'Eu vou te costurar de novo. Do jeito que ela fazia: ponto por ponto.']],
   depoisCoracao: [
-    ['Numi', 'Os fios se esticaram pelo céu… a ilha parou de cair! E olha: uma ponte de luz!'],
-    ['Numi', 'Tem um bilhete junto ao coração.'],
+    ['Brisa', 'Os fios se esticaram até as nuvens… a ilha parou de cair! E o farol… acendeu sozinho?'],
+    ['Brisa', 'Tem uma carta presa no Coração. É a mesma letra das outras.'],
   ],
-  // Cena 7 — O bilhete · Cena 8 — Encerramento
+  // depois da carta: o evento final do capítulo
   depoisBilhete: [
-    ['Numi', 'T… você está na Ilha das Agulhas. Mas por que partiu? E por que não me contou nada?'],
-    ['Numi', 'Eu estou com medo… mas não vou ficar esperando. Vou seguir a ponte.'],
-    ['Numi', 'Ali, entre as agulhas de pedra… um fio escuro se mexeu? …Sumiu.'],
+    ['Brisa', 'Aurélia… foi você que me fez. Com as roupas de todo mundo.'],
+    ['Voz na névoa', 'Vó? Vó, é você?'],
+    ['Brisa', 'Essa voz… o meu retalho do peito está quente. O farol está apontando para aquela tempestade. Eu vou até o recife.'],
   ],
+  // ao ler uma carta pela primeira vez
+  primeiraCarta: [['Brisa', 'Cartas… cada casa guarda um pedaço de quem morava aqui.']],
 };
 
-// Cena 7: confirma onde T. está, sem explicar por que partiu nem se ainda está bem
-export const BILHETE = '“Numi, se você está lendo isto, o Coração da oficina voltou a bater. Eu te costurei com a última Linha Viva do arquipélago — o único fio que o Vazio não consegue cortar. Não fiz você para lutar: fiz você para escutar os fios. Estou na Ilha das Agulhas. Há coisas que eu ainda não tive coragem de te contar. — T.”';
+// carta de Aurélia junto ao Coração (fim do capítulo)
+export const BILHETE = '“Se você está lendo isto, minha boneca, o Coração voltou a bater. Fui eu que costurei Maré Alta nas nuvens, com o Tomé. Salvamos a ilha da Maré Negra… e o preço foram as pessoas: a névoa levou todo mundo, um por um. Costurei você com um retalho de cada um, para alguém se lembrar deles. Procure o Tomé no Recife das Vozes. Ele sabe o resto. Me perdoe por ter deixado você sozinha. — Aurélia”';
+
+// cartas das casas da vila (opcionais): contam como era a vida em Maré Alta
+export const CARTAS = {
+  'Casa dos Barcos': '“Hoje o mar estava liso como vidro. Os peixes sumiram faz três dias. O velho Tomé diz que é a Maré Negra voltando. Eu digo que é superstição de faroleiro.” — Bento, pescador',
+  'Casa da Parteira': '“Trouxe mais um bebê ao mundo esta noite, uma menina forte. Choveu lá dentro da casa e no céu ao mesmo tempo. A Aurélia costurou uma manta para ela com as cores do pôr do sol.” — Dona Celeste',
+  'Casa do Relojoeiro': '“Os relógios da vila pararam todos na mesma hora: 4h40. Desmontei três e não achei defeito. É como se o tempo estivesse esperando alguma coisa.” — Seu Inácio',
+  'Casa das Redes': '“A Aurélia veio buscar as linhas mais fortes que eu tinha, as das redes de arrasto. Disse que era para uma costura grande. Não quis contar qual.” — Marisa, rendeira',
+  'Casa da Costureira': '“Ilma, minha neta, hoje você riu tanto que o vestido rasgou no peito. Remendei com um retalho azul. Prometo que, aconteça o que acontecer, esse pedaço de você não vai se perder.” — Aurélia',
+};
 
 // Contextual tutorials (each shows once)
 export const DICAS = {
   andar: 'W A S D (ou setas) para andar · mova o mouse para olhar em volta',
   correr: 'Segure Shift para correr mais rápido',
   pular: 'Espaço para pular · no ar, Espaço de novo dá um impulso · segure Espaço para planar',
-  borda: 'Pule contra uma borda e continue empurrando: Numi se puxa para cima',
+  borda: 'Pule contra uma borda e continue empurrando: Brisa se puxa para cima',
   planar: 'Caindo? Segure Espaço para planar devagar até o chão',
-  vento: 'Correntes de vento levam aos lugares altos: entre no redemoinho',
-  combate: 'Aproxime-se de um Retalho e aperte E para purificá-lo',
-  chute: 'Cristais do Vazio podem ser dissolvidos com E',
-  especial: 'A luz da Numi purifica sem violência',
-  cristal: 'Cristais do Vazio prendem as âncoras: aproxime-se e aperte E para dissolvê-los',
-  ancora: 'Aproxime-se da âncora e aperte E para restaurá-la',
-  coracao: 'Vá até o Coração do Fio e aperte E',
+  vento: 'Correntes de vento levam até as ilhotas: entre no redemoinho',
+  combate: 'Aproxime-se de um Retalho e aperte E para acalmá-lo',
+  chute: 'Cristais de névoa podem ser dissolvidos com E',
+  especial: 'A luz da Brisa acalma sem machucar',
+  cristal: 'Cristais de névoa prendem as âncoras: aproxime-se e aperte E para dissolvê-los',
+  ancora: 'Aproxime-se da âncora e aperte E para reacendê-la',
+  coracao: 'Suba o morro até o Coração da Ilha e aperte E',
   rocha: 'Rochas flutuantes balançam: pule nelas para alcançar fragmentos',
-  memoria: 'Fragmentos lilases guardam memórias: são opcionais, mas contam quem é T.',
+  memoria: 'Fragmentos lilases guardam lembranças da vila: são opcionais',
+  carta: 'As casas guardam cartas dos moradores: entre e aperte E para ler',
 };
 
 export const OBJETIVOS = {
-  inicio: 'Saia da oficina e encontre Fragmentos de Luz',
-  ancoras: (n, total) => `Restaure as Âncoras de Fio (${n}/${total})`,
-  coracao: 'Restaure o Coração do Fio',
-  bilhete: 'Leia o bilhete deixado junto ao Coração do Fio',
-  fim: 'Siga a ponte de luz rumo à Ilha das Agulhas',
+  inicio: 'Explore a vila e encontre Fragmentos de Luz',
+  ancoras: (n, total) => `Reacenda as Âncoras de Maré nas ilhotas (${n}/${total})`,
+  coracao: 'Restaure o Coração da Ilha, no alto do morro',
+  bilhete: 'Leia a carta deixada no Coração da Ilha',
+  fim: 'O farol aponta para o Recife das Vozes',
 };
 
-// Cena 5 — memórias de T. (fragmentos lilases): curtas, sensoriais e incompletas
+// lembranças guardadas nos fragmentos lilases: curtas e incompletas
 export const MEMORIAS = [
-  'Mãos cuidadosas costuram um laço lilás. Uma voz cantarola baixinho, e a agulha para no meio do ponto.',
-  '“As ilhas não vivem da energia dos fios. Vivem do que lembramos de quem passou por elas.”',
-  'Um mapa antigo, aberto sobre a mesa. Uma das ilhas está marcada com pequenas agulhas.',
-  '“É a última Linha Viva. Se eu usar nela… não vai sobrar outra.” As mãos hesitam. Depois, costuram.',
-  '“Desculpe deixar você sozinha, pequena. Você não foi feita para lutar. Foi feita para escutar.”',
+  'Crianças correndo na praça, uma pipa de retalhos presa no telhado da Casa das Redes.',
+  'Um homem de capa amarela sobe as escadas do farol, resmungando com a lanterna apagada.',
+  '“Se a ilha subir, vocês vão comigo. Ninguém fica para a Maré Negra.” Uma voz firme, uma agulha brilhando.',
+  'O céu escurece de baixo para cima. O mar inteiro levanta como um lençol, e a ilha sobe junto com ele.',
+  'Uma menina de vestido remendado chama na névoa. Ninguém responde. Só o vento.',
 ];
 
 export const NOMES = {
   fragmento: 'Fragmento de Luz',
-  memoria: 'Fragmento de Memória',
-  ancora: 'Âncora de Fio',
-  coracao: 'Coração do Fio',
-  inimigo: 'Retalho Sombrio',
-  cristal: 'Cristal do Vazio',
+  memoria: 'Fragmento de Lembrança',
+  ancora: 'Âncora de Maré',
+  coracao: 'Coração da Ilha',
+  inimigo: 'Retalho',
+  cristal: 'Cristal de Névoa',
 };
 
 export const AVISOS = {
   tremor: 'A ilha está perdendo altitude!',
-  ancoraRestaurada: 'Âncora de Fio restaurada! A ilha respira de novo.',
-  inimigoPurificado: 'Retalho purificado',
-  cristalQuebrado: 'Cristal do Vazio dissolvido',
-  especialPronto: 'Brilho do Fio carregado!',
+  ancoraRestaurada: 'Âncora de Maré reacesa! A ilha respira de novo.',
+  inimigoPurificado: 'Retalho acalmado',
+  cristalQuebrado: 'Cristal de névoa dissolvido',
+  especialPronto: 'Brilho carregado!',
   capituloCompleto: 'Capítulo 1 concluído!',
-  quedaForte: (altura, dano) => `Ai! Queda de ${Math.round(altura)} m · −${dano} ${dano > 1 ? 'Linhas Vivas' : 'Linha Viva'}`,
-  caiuNoVazio: 'Numi caiu da ilha… a Linha Viva a puxou de volta!',
+  quedaForte: (altura, dano) => `Ai! Queda de ${Math.round(altura)} m · −${dano} de fôlego`,
+  caiuNoVazio: 'Brisa caiu da ilha… o vento a trouxe de volta!',
 };
 
-// tela de game over: o motivo muda conforme como Numi perdeu a última Linha Viva
+// tela de game over: o motivo muda conforme como Brisa perdeu o último fôlego
 export const GAMEOVER = {
-  queda: 'A queda foi alta demais e a Linha Viva de Numi se apagou… por enquanto.',
-  vazio: 'Numi despencou das ilhas até o mar lá embaixo, e o Vazio quase a alcançou.',
-  praia: 'Numi despencou das ilhas e caiu na praia lá embaixo. Cuidado com as bordas!',
-  golpe: 'Os Retalhos Sombrios foram demais desta vez. Defenda-se (Q) e purifique-os com calma.',
+  queda: 'A queda foi alta demais e o fôlego de Brisa acabou… por enquanto.',
+  vazio: 'Brisa despencou das ilhas até o mar lá embaixo.',
+  praia: 'Brisa despencou das ilhas e caiu na praia lá embaixo. Cuidado com as bordas!',
+  golpe: 'Os Retalhos assustados foram demais desta vez. Defenda-se (Q) e acalme-os com calma.',
 };

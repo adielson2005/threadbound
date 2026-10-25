@@ -39,10 +39,10 @@ const FISICA = {
   bufferPulo: 0.12,         // tempo que um pulo apertado cedo "fica guardado"
   quedaMax: -40,
   // dano de queda pela altura (m) do ponto mais alto do salto até o pouso: cada degrau passado
-  // tira uma Linha Viva. Abaixo de "quedaFatal" a queda nunca apaga a última; acima dela, pode.
+  // tira uma fôlego. Abaixo de "quedaFatal" a queda nunca apaga a última; acima dela, pode.
   quedaDegraus: [5, 8, 11, 15, 20],
   quedaFatal: 20,
-  // planar: no ar, segurando o pulo, Numi abre os braços e o pano segura o ar
+  // planar: no ar, segurando o pulo, Brisa abre os braços e o pano segura o ar
   quedaPlanando: 3.2,       // m/s de descida máxima planando
   velocidadePlanando: 6.8,
   // subir na borda: pulando contra uma parede cuja borda está até esta altura acima dos pés
@@ -468,7 +468,7 @@ async function comEscuro(acao) {
 }
 
 // ---------- Morte e game over ----------
-// A última Linha Viva acabou: os controles param, Numi cai no chão (animação "morte"; se caiu no
+// A última fôlego acabou: os controles param, Brisa cai no chão (animação "morte"; se caiu no
 // vazio ela só despenca), a câmera se afasta girando devagar e então entra a tela de game over.
 let tempoMorte = 0, motivoMorte = 'queda';
 function morrer(motivo) {
@@ -495,7 +495,7 @@ function tentarDeNovo() {
   g.classList.remove('visivel');
   setTimeout(() => { g.style.display = 'none'; }, 400);
   comEscuro(() => {
-    campanha.reviver(); // Linha Viva cheia, de volta ao último ponto salvo (respawn limpa "morta")
+    campanha.reviver(); // fôlego cheia, de volta ao último ponto salvo (respawn limpa "morta")
     camera3p.dist = CAMERA.distancia;
     estado = 'jogando';
     teclas.clear();
@@ -533,13 +533,13 @@ function terminarCapitulo(r) {
   const [numero, nome] = r.capitulo.split(' — ');
   tela.querySelector('.selo').textContent = `${numero} concluído`;
   tela.querySelector('h1').textContent = nome ?? r.capitulo;
-  tela.querySelector('.sub').textContent = 'O Coração do Fio voltou a bater, e a ilha parou de cair. Mas quem é T.?';
+  tela.querySelector('.sub').textContent = 'O Coração da Ilha voltou a bater e o farol acendeu sozinho. Quem chamou na névoa?';
   $('historia').style.display = 'none';
   // resumo da partida em números
   msg.innerHTML = `<span class="resumo">
       <span><b>${r.fragmentos}/${r.total}</b>Fragmentos</span><span><b>${r.memorias}</b>Memórias</span>
       <span><b>${r.purificados}</b>Purificados</span>
-    </span><em>Continua na Ilha das Agulhas…</em>`;
+    </span><em>Continua no Recife das Vozes…</em>`;
   botao.textContent = 'Jogar de novo';
   $('continuar').style.display = 'inline-block';
 }
@@ -615,7 +615,7 @@ function impactoParede(v, n) {
   jogador.impacto = Math.max(jogador.impacto || 0, 0.1 + k * 0.2);
   if (n.y > -0.5) soltarPoeira(jogador.pos.clone().addScaledVector(n, -RAIO).add(new THREE.Vector3(0, 0.9, 0)), Math.round(3 + k * 6), 0.6 + k);
 }
-// Numi e os Retalhos não se atravessam: cada um empurra o outro (ela é mais pesada que eles)
+// Brisa e os Retalhos não se atravessam: cada um empurra o outro (ela é mais pesada que eles)
 function empurrarInimigos() {
   if (!inimigos) return;
   const j = jogador;
@@ -633,8 +633,8 @@ function empurrarInimigos() {
   }
 }
 
-// Caiu da ilha (mar ou praia lá embaixo): a Linha Viva a puxa de volta ao último chão seguro.
-// Custa uma Linha Viva, mas nunca a última: cair não dá game over.
+// Caiu da ilha (mar ou praia lá embaixo): a fôlego a puxa de volta ao último chão seguro.
+// Custa uma fôlego, mas nunca a última: cair não dá game over.
 function cairDaIlha() {
   if (jogador.morta || !campanha) return;
   campanha.perderVida(campanha.estado.vida > 1 ? 1 : 0, AVISOS.caiuNoVazio);
@@ -684,7 +684,7 @@ function passoFisica(dt) {
   const semControle = (j.golpe && j.noChao) || j.pegando || j.machucado > 0;
   if (semControle) desejado.set(0, 0, 0);
   dirEntrada.copy(desejado);
-  // no começo de um golpe Numi dá um passinho para a frente (o combo acompanha o alvo)
+  // no começo de um golpe Brisa dá um passinho para a frente (o combo acompanha o alvo)
   let passoGolpe = 0;
   if (j.golpe && j.noChao) {
     const g = GOLPES[j.golpe.nome], f = j.golpe.t / j.golpe.duracao;
@@ -790,9 +790,9 @@ function passoFisica(dt) {
   j.tempoSeguro += dt;
   if (j.noChao && col.normal.y > 0.85 && j.tempoSeguro > 0.5) { j.seguro.copy(j.pos); j.tempoSeguro = 0; }
   // caiu da ilha: despenca até o mar lá embaixo; no impacto a água sobe e as ondas se espalham.
-  // Custa uma Linha Viva e, depois de afundar um pouco, volta ao último chão seguro (se era a
+  // Custa uma fôlego e, depois de afundar um pouco, volta ao último chão seguro (se era a
   // última, game over)
-  // caiu na areia da praia lá embaixo: sobe uma nuvem de areia, custa uma Linha Viva e volta
+  // caiu na areia da praia lá embaixo: sobe uma nuvem de areia, custa uma fôlego e volta
   if (!j.noVazio && j.noChao && j.pos.y < terreno.limiteQueda) {
     j.noVazio = true;
     j.tempoAfundar = 1.2;
@@ -889,7 +889,7 @@ function animarPersonagem(dt) {
   corpo.rotation.x = p >= 0 ? p * p * (3 - 2 * p) * Math.PI * 2 : 0;
 
   if (j.morta) {
-    // sem Linha Viva: no chão ela cai (uma vez só, e fica deitada); no ar continua despencando
+    // sem fôlego: no chão ela cai (uma vez só, e fica deitada); no ar continua despencando
     if (j.noChao) tocar('morte', { fade: 0.15 }); else tocar('queda', { fade: 0.3 });
     j.aterrissou = false;
   } else if (j.cambalhota >= 0) {
@@ -1127,6 +1127,7 @@ Promise.all([
       respawn: p => { respawn(p); jogador.seguro.copy(p); },
       comEscuro, aoTerminar: terminarCapitulo,
       aoAtaque: e => combate?.aoSerAtacada(e), // investida de um Retalho que chegou nela
+      casas: m.pontos?.casas, // cartas dos moradores nas casas da vila
     });
     altos = criarEfeitosAltos({ renderer, cena, camera, mapa: m, terreno });
     // colisão real de todos os objetos estáticos (somados à malha de colisão do terreno)
@@ -1171,7 +1172,7 @@ Promise.all([
     estado = 'menu';
     barra.parentElement.style.display = 'none';
     $('historia').innerHTML = INTRO.map(l => `<p>${l}</p>`).join('');
-    msg.textContent = 'Ajude Numi a reacender as três Âncoras e o Coração do Fio antes que a ilha caia nas nuvens.';
+    msg.textContent = 'Ajude Brisa a reacender as Âncoras de Maré e o Coração da Ilha antes que a vila caia no mar.';
     botao.textContent = 'Começar';
     botao.style.display = 'block';
     botao.focus();
