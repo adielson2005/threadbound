@@ -2,7 +2,9 @@ import * as THREE from 'three';
 import { mergeGeometries, mergeVertices } from 'three/addons/utils/BufferGeometryUtils.js';
 import { MeshBVH, acceleratedRaycast } from 'three-mesh-bvh';
 import { montarBlocos, CAMADA_SOMBRA } from './mapa.js';
-import { construirVila, construirFarol, construirRuinas } from './casas.js';
+import { construirVila, construirFarol, construirRuinas, construirNaufragios, construirMarcoIlhota, construirJardim, construirCostura } from './casas.js';
+import { CONFIG } from './capitulo.js';
+import { CASAS } from './historia.js';
 
 // Arquipélago gerado por código (substitui o mapa.fbx do Meshy, que segue disponível em ?mapa=antigo).
 // Devolve o mesmo formato de carregarMapa() (mapa.js): malha de colisão com BVH, blocos com LOD,
@@ -18,6 +20,8 @@ import { construirVila, construirFarol, construirRuinas } from './casas.js';
 //    setores de 48 m: um desenho por setor e um nível leve para longe; balança com o vento no shader.
 //
 // Tudo é determinístico (semente fixa): o mesmo mapa toda vez.
+// Cada capítulo tem o seu arquipélago (capitulo.js): o mesmo gerador com outro desenho, outras
+// cores, outra vegetação e outras construções.
 
 // ---------------- ruído ----------------
 function hash(i, j, s) {
@@ -44,16 +48,13 @@ function paraLinear(arr) { for (let i = 0; i < arr.length; i++) arr[i] = Math.po
 function aleatorio(semente) { let s = semente >>> 0 || 1; return () => ((s = Math.imul(s, 1664525) + 1013904223 >>> 0) / 4294967296); }
 
 // ---------------- desenho do arquipélago ----------------
-const VILA = { x: 34, z: 30, r: 15 };      // praça da Vila de Maré Alta (onde a protagonista acorda)
-const MORRO = { x: -28, z: -22 };          // morro dos terraços (mirante)
-const PRINCIPAL = { nome: 'principal', cx: 0, cz: 0, R: 105, prof: 62, semente: 11 };
+const MAPA = CONFIG.mapa;
+const VILA = MAPA.praca;                   // praça (no Cap. 1, a da Vila de Maré Alta): onde a protagonista acorda
+const MORRO = MAPA.morro;                  // o ponto alto da ilha principal (mirante)
+const PRINCIPAL = { nome: 'principal', cx: 0, cz: 0, ...MAPA.principal };
 // ilhotas: direção a partir do centro, raio, altura do topo e vão até a ilha principal
 let TODAS = []; // principal + ilhotas (preenchido em gerarIlha)
-const ILHOTAS = [
-  { nome: 'farol', ang: -0.5, R: 24, topo: 15, vao: 12, prof: 30, semente: 23 },
-  { nome: 'ruinas', ang: 2.68, R: 30, topo: 5, vao: 13, prof: 36, semente: 37 },
-  { nome: 'pomar', ang: 1.29, R: 23, topo: -5, vao: 11, prof: 28, semente: 41 },
-];
+const ILHOTAS = MAPA.ilhotas.map(i => ({ ...i, fora: i.obra, obra: null }));
 
 // borda irregular da ilha (função periódica no ângulo)
 function raioBorda(ilha, th) {
@@ -76,7 +77,7 @@ function distCaminho(x, z) {
 
 function alturaBasePrincipal(x, z, d) {
   let h = (fbm(x * 0.016 + 3, z * 0.016 - 7, 4, 11) - 0.5) * 14;
-  h += 24 * gauss(x, z, MORRO.x, MORRO.z, 30) + 10 * gauss(x, z, 52, -42, 20) + 7 * gauss(x, z, -58, 52, 22);
+  h += MORRO.altura * gauss(x, z, MORRO.x, MORRO.z, 30) + 10 * gauss(x, z, 52, -42, 20) + 7 * gauss(x, z, -58, 52, 22);
   // terraços no morro: degraus de 3,4 m (a borda de cada degrau dá para escalar)
   const kt = suave(h, 5, 13), q = 3.4;
   h += (Math.round(h / q) * q - h) * 0.5 * kt;
@@ -95,9 +96,11 @@ function alturaTopo(ilha, x, z, d) {
   }
   const lx = x - ilha.cx, lz = z - ilha.cz;
   let h = ilha.topo + (fbm(lx * 0.05 + ilha.semente, lz * 0.05, 3, ilha.semente) - 0.5) * 5;
-  h += (ilha.nome === 'farol' ? 4 : 2) * gauss(lx, lz, 0, 0, ilha.R * 0.35);
+  // a primeira ilhota é a mais alta (no Cap. 1, a do farol)
+  const alta = ilha === ILHOTAS[0];
+  h += (alta ? 4 : 2) * gauss(lx, lz, 0, 0, ilha.R * 0.35);
   // dois lugares planos: o centro (onde fica a Âncora de Fio) e o da construção, mais para fora
-  const plano = ilha.topo + (ilha.nome === 'farol' ? 4 : 2);
+  const plano = ilha.topo + (alta ? 4 : 2);
   h = misturar(h, plano, 1 - suave(Math.hypot(lx, lz), 5, 9));
   if (ilha.obra) h = misturar(h, plano, 1 - suave(Math.hypot(lx - ilha.obra.x, lz - ilha.obra.z), ilha.obra.r, ilha.obra.r + 5));
   return h - suave(d, 0.8, 1.0) * 2.5;
@@ -126,15 +129,20 @@ function inclinacao(x, z) {
 // ---------------- cores do chão ----------------
 const C = (r, g, b) => [r, g, b];
 // tons naturais (menos saturados): verde de campo, verde-claro, verde-escuro úmido e capim seco
-const GRAMA = [C(0.40, 0.53, 0.25), C(0.50, 0.60, 0.30), C(0.31, 0.45, 0.22), C(0.62, 0.60, 0.38)];
-const TERRA = C(0.62, 0.52, 0.37), TRILHA = C(0.74, 0.64, 0.45), ROCHA = C(0.53, 0.5, 0.46), MUSGO = C(0.33, 0.45, 0.22);
+// (no Cap. 1; os outros capítulos trazem as suas em capitulo.js)
+const PALETA = MAPA.paleta;
+const GRAMA = PALETA.grama;
+const TERRA = PALETA.terra, TRILHA = PALETA.trilha, ROCHA = PALETA.rocha, MUSGO = PALETA.musgo, ESTRATOS = PALETA.estratos;
 function lerpCor(a, b, t, out) { out[0] = misturar(a[0], b[0], t); out[1] = misturar(a[1], b[1], t); out[2] = misturar(a[2], b[2], t); return out; }
 const _c1 = [0, 0, 0], _c2 = [0, 0, 0];
 function corTopo(x, z, d, out) {
   const n1 = fbm(x * 0.035, z * 0.035, 3, 5), n2 = fbm(x * 0.11 + 9, z * 0.11, 2, 6);
-  lerpCor(GRAMA[0], GRAMA[1], suave(n1, 0.35, 0.7), _c1);
-  lerpCor(_c1, GRAMA[2], suave(n2, 0.55, 0.85) * 0.8, _c1);
-  lerpCor(_c1, GRAMA[3], suave(fbm(x * 0.012 + 40, z * 0.012, 2, 7), 0.62, 0.8) * 0.7, _c1); // campos secos
+  if (PALETA.retalhos) retalho(x, z, n1, _c1);
+  else {
+    lerpCor(GRAMA[0], GRAMA[1], suave(n1, 0.35, 0.7), _c1);
+    lerpCor(_c1, GRAMA[2], suave(n2, 0.55, 0.85) * 0.8, _c1);
+    lerpCor(_c1, GRAMA[3], suave(fbm(x * 0.012 + 40, z * 0.012, 2, 7), 0.62, 0.8) * 0.7, _c1); // campos secos
+  }
   // praça e ruas da vila: terra batida com grama nas frestas
   const dv = Math.hypot(x - VILA.x, z - VILA.z);
   if (dv < VILA.r + 6) lerpCor(_c1, TERRA, (1 - suave(dv, VILA.r - 4, VILA.r + 6)) * (0.55 + 0.35 * n2), _c1);
@@ -146,14 +154,34 @@ function corTopo(x, z, d, out) {
   out[0] = _c1[0]; out[1] = _c1[1]; out[2] = _c1[2];
   return out;
 }
+// Cap. 4: o chão é uma colcha de retalhos gigantes (quadrados tortos de 7 m), cada um de uma cor,
+// com a trama do tecido e uma linha de pontos de costura nas emendas
+const RETALHO = 7;
+function retalho(x, z, n1, out) {
+  // a grade é entortada pelo ruído, para as emendas não ficarem retas demais
+  const wx = x + (fbm(x * 0.05, z * 0.05, 2, 21) - 0.5) * 4, wz = z + (fbm(x * 0.05 + 7, z * 0.05, 2, 22) - 0.5) * 4;
+  const i = Math.floor(wx / RETALHO), j = Math.floor(wz / RETALHO);
+  const base = GRAMA[Math.floor(hash(i, j, 31) * GRAMA.length) % GRAMA.length];
+  const trama = 0.92 + 0.08 * Math.sin(wx * 9) * Math.sin(wz * 9) + (n1 - 0.5) * 0.12;
+  out[0] = base[0] * trama; out[1] = base[1] * trama; out[2] = base[2] * trama;
+  const fx = wx / RETALHO - i, fz = wz / RETALHO - j;
+  const emenda = Math.min(fx, 1 - fx, fz, 1 - fz) * RETALHO; // metros até a emenda mais perto
+  if (emenda < 0.5) {
+    // pontos de costura: tracinhos claros ao longo da emenda, com um vinco escuro embaixo
+    const ao = fx < 0.5 / RETALHO || fx > 1 - 0.5 / RETALHO ? wz : wx;
+    const ponto = emenda < 0.22 && Math.sin(ao * 3.2) > 0.2;
+    lerpCor(out, ponto ? C(0.98, 0.95, 0.86) : C(0.25, 0.2, 0.3), ponto ? 0.85 : (1 - emenda / 0.5) * 0.45, out);
+  }
+  return out;
+}
 // falésia e base: camadas de rocha (estratos), musgo perto do topo, mais escuro na ponta
 function corRocha(x, y, z, topoY, fundoY, out) {
   const n = fbm(x * 0.08, z * 0.08 + y * 0.05, 3, 9);
   const estrato = 0.5 + 0.5 * Math.sin(y * 0.85 + n * 4);
-  lerpCor(C(0.6, 0.51, 0.4), C(0.47, 0.42, 0.37), estrato, _c2);
-  lerpCor(_c2, C(0.66, 0.58, 0.47), suave(n, 0.6, 0.8) * 0.6, _c2);
+  lerpCor(ESTRATOS[0], ESTRATOS[1], estrato, _c2);
+  lerpCor(_c2, ESTRATOS[2], suave(n, 0.6, 0.8) * 0.6, _c2);
   const desce = suave(y, topoY, fundoY); // 0 no topo, 1 na ponta
-  lerpCor(_c2, C(0.29, 0.27, 0.26), desce * 0.75, _c2);
+  lerpCor(_c2, ESTRATOS[3], desce * 0.75, _c2);
   lerpCor(_c2, MUSGO, (1 - suave(topoY - y, 0, 5)) * 0.6, _c2);
   out[0] = _c2[0]; out[1] = _c2[1]; out[2] = _c2[2];
   return out;
@@ -494,6 +522,80 @@ const MODELOS = {
     tmp.dispose();
     return { geo: peca.geometria(), colisor: r > 0.5 ? g : null };
   },
+  // ---- Cap. 2 (recife) e Cap. 3 (fundo do mar seco) ----
+  // coral ramificado: galhos afinando, que se dividem em dois; petrificado = cor de pedra, parado
+  coral(rnd, longe, petrificado = false) {
+    const peca = new Peca();
+    const cores = petrificado ? [C(0.78, 0.74, 0.66), C(0.7, 0.67, 0.6)] : [C(0.95, 0.52, 0.5), C(0.98, 0.7, 0.42), C(0.72, 0.5, 0.86), C(0.96, 0.84, 0.72)];
+    const cor = cores[Math.floor(rnd() * cores.length)];
+    const grande = rnd() < 0.35, nivelMax = longe ? 2 : 3;
+    const galho = (base, dir, comp, raio, nivel) => {
+      const fim = base.clone().addScaledVector(dir, comp);
+      const g = new THREE.CylinderGeometry(raio * 0.62, raio, comp, longe ? 4 : 6).translate(0, comp / 2, 0);
+      g.applyQuaternion(_q.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir)).translate(base.x, base.y, base.z);
+      solida(peca, g, cor, { oclusao: 0.4, variar: 0.12, semente: rnd() * 1e6, bal: p => petrificado ? 0 : Math.min(0.5, p.y * 0.12) });
+      if (nivel >= nivelMax) { solida(peca, new THREE.IcosahedronGeometry(raio * 0.9, 0).translate(fim.x, fim.y, fim.z), cor, { oclusao: 0 }); return; }
+      for (let k = 0; k < 2; k++) {
+        const d = dir.clone().add(new THREE.Vector3((rnd() - 0.5) * 1.3, 0.25, (rnd() - 0.5) * 1.3)).normalize();
+        galho(fim, d, comp * (0.62 + rnd() * 0.2), raio * 0.66, nivel + 1);
+      }
+    };
+    const escala = grande ? 1.9 : 1;
+    for (let k = 0, n = 1 + Math.floor(rnd() * 3); k < n; k++)
+      galho(new THREE.Vector3((rnd() - 0.5) * 0.6, 0, (rnd() - 0.5) * 0.6), new THREE.Vector3((rnd() - 0.5) * 0.5, 1, (rnd() - 0.5) * 0.5).normalize(), 0.7 * escala, 0.13 * escala, 1);
+    return { geo: peca.geometria(), colisor: grande ? new THREE.CylinderGeometry(0.3, 0.4, 1.6, 6).translate(0, 0.8, 0) : null };
+  },
+  // alga: fitas altas e onduladas que balançam; petrificada = coluna de calcário, parada
+  alga(rnd, longe, petrificada = false) {
+    const peca = new Peca(), n = longe ? 2 : 3 + Math.floor(rnd() * 3);
+    const cor = petrificada ? C(0.74, 0.69, 0.58) : rnd() < 0.5 ? C(0.36, 0.55, 0.36) : C(0.48, 0.5, 0.26);
+    for (let k = 0; k < n; k++) {
+      const h = (petrificada ? 2.2 : 1.6) + rnd() * 2.2, x0 = (rnd() - 0.5) * 0.9, z0 = (rnd() - 0.5) * 0.9, fase = rnd() * 6;
+      const pts = [];
+      for (let i = 0; i <= 6; i++) { const t = i / 6; pts.push(new THREE.Vector3(x0 + Math.sin(t * 4 + fase) * 0.22 * t, t * h, z0 + Math.cos(t * 3 + fase) * 0.18 * t)); }
+      const g = new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), longe ? 4 : 8, petrificada ? 0.11 : 0.06, longe ? 3 : 5);
+      // afina para cima
+      const pp = g.attributes.position;
+      for (let i = 0; i < pp.count; i++) { const t = pp.getY(i) / h, cx = x0 + Math.sin(t * 4 + fase) * 0.22 * t, cz = z0 + Math.cos(t * 3 + fase) * 0.18 * t, f = 1 - t * 0.6; pp.setXYZ(i, cx + (pp.getX(i) - cx) * f, pp.getY(i), cz + (pp.getZ(i) - cz) * f); }
+      solida(peca, g, cor, { oclusao: 0.45, variar: 0.1, semente: rnd() * 1e6, bal: p => petrificada ? 0 : Math.min(1, p.y / h) });
+    }
+    return { geo: peca.geometria(), colisor: petrificada ? new THREE.CylinderGeometry(0.35, 0.45, 2.2, 6).translate(0, 1.1, 0) : null };
+  },
+  concha(rnd, longe) {
+    if (longe) return { geo: null };
+    const peca = new Peca();
+    for (let k = 0, n = 2 + Math.floor(rnd() * 3); k < n; k++) {
+      const r = 0.12 + rnd() * 0.14, x = (rnd() - 0.5) * 1.4, z = (rnd() - 0.5) * 1.4;
+      const g = new THREE.ConeGeometry(r, r * 2.2, 7).rotateZ(Math.PI / 2 - 0.3).rotateY(rnd() * 6).translate(x, r * 0.6, z);
+      solida(peca, g, rnd() < 0.5 ? C(0.96, 0.86, 0.78) : C(0.93, 0.7, 0.62), { oclusao: 0.5 });
+    }
+    return { geo: peca.geometria() };
+  },
+  // ---- Cap. 4 (a costura no céu): carretéis, novelos e agulhas gigantes ----
+  carretel(rnd, longe) {
+    const peca = new Peca(), r = 0.7 + rnd() * 0.7, h = r * 1.6;
+    const linha = [C(0.86, 0.36, 0.42), C(0.36, 0.52, 0.86), C(0.95, 0.78, 0.32), C(0.5, 0.78, 0.5), C(0.78, 0.6, 0.92)][Math.floor(rnd() * 5)];
+    solida(peca, new THREE.CylinderGeometry(r * 0.78, r * 0.78, h, longe ? 8 : 16).translate(0, h / 2 + 0.1, 0), linha, { oclusao: 0.2, semente: rnd() * 1e6 });
+    for (const y of [0.05, h + 0.15]) solida(peca, new THREE.CylinderGeometry(r, r, 0.12, longe ? 8 : 16).translate(0, y, 0), C(0.66, 0.5, 0.34), { reg: REG.casca, oclusao: 0.1 });
+    return { geo: peca.geometria(), colisor: new THREE.CylinderGeometry(r, r, h + 0.2, 8).translate(0, (h + 0.2) / 2, 0) };
+  },
+  novelo(rnd, longe) {
+    const peca = new Peca(), r = 0.5 + rnd() * 0.6;
+    const cor = [C(0.9, 0.5, 0.62), C(0.56, 0.72, 0.92), C(0.96, 0.86, 0.5), C(0.7, 0.58, 0.9)][Math.floor(rnd() * 4)];
+    const g = new THREE.IcosahedronGeometry(r, longe ? 1 : 3).translate(0, r * 0.9, 0);
+    solida(peca, g, cor, { oclusao: 0.35, variar: 0.04, semente: rnd() * 1e6 });
+    // voltas de linha por cima (anéis inclinados)
+    if (!longe) for (let k = 0; k < 4; k++) solida(peca, new THREE.TorusGeometry(r * 1.01, 0.035, 4, 24).rotateX(rnd() * 3).rotateY(rnd() * 3).translate(0, r * 0.9, 0), cor.map(c => c * 0.8), { oclusao: 0 });
+    return { geo: peca.geometria(), colisor: new THREE.IcosahedronGeometry(r, 1).translate(0, r * 0.9, 0) };
+  },
+  agulha(rnd, longe) {
+    const peca = new Peca(), h = 4 + rnd() * 4, inc = 0.25 + rnd() * 0.3;
+    const g = new THREE.CylinderGeometry(0.09, 0.02, h, longe ? 5 : 8).translate(0, h / 2 - 0.4, 0).rotateZ(inc);
+    solida(peca, g, C(0.86, 0.88, 0.94), { oclusao: 0.2 });
+    const olho = new THREE.TorusGeometry(0.16, 0.05, 5, 12).translate(0, h - 0.5, 0).rotateZ(inc);
+    solida(peca, olho, C(0.86, 0.88, 0.94), { oclusao: 0 });
+    return { geo: peca.geometria(), colisor: new THREE.CylinderGeometry(0.12, 0.12, h, 5).translate(0, h / 2 - 0.4, 0).rotateZ(inc) };
+  },
 };
 
 // ---------------- material da vegetação (atlas + vento no shader) ----------------
@@ -522,8 +624,7 @@ export async function gerarIlha(renderer, aoProgredir = () => {}) {
     const dist = rp + il.R * 1.12 + il.vao;
     il.cx = Math.cos(il.ang) * dist; il.cz = Math.sin(il.ang) * dist;
     // construção da ilhota (farol, ruínas) do lado de fora: o centro fica livre para a Âncora de Fio
-    const fora = { farol: 10, ruinas: 11 }[il.nome];
-    if (fora) il.obra = { x: Math.cos(il.ang) * fora, z: Math.sin(il.ang) * fora, r: il.nome === 'ruinas' ? 9 : 7 };
+    if (il.fora) il.obra = { x: Math.cos(il.ang) * il.fora, z: Math.sin(il.ang) * il.fora, r: il.obraR ?? 7 };
   }
   TODAS = [PRINCIPAL, ...ILHOTAS];
   // trilhas: da praça para o morro e para a borda voltada a cada ilhota
@@ -578,7 +679,7 @@ export async function gerarIlha(renderer, aoProgredir = () => {}) {
   const niveis = dados.niveis.map(l => new Uint32Array(l));
 
   // ---------- vegetação e pedras, por setor ----------
-  const rnd = aleatorio(20241024);
+  const rnd = aleatorio(MAPA.semente);
   const TAM_SETOR = 48;
   const setores = new Map(); // chave -> { perto: [], longe: [] }
   const colisores = []; // geometrias (mundo) que entram na malha de colisão
@@ -596,7 +697,7 @@ export async function gerarIlha(renderer, aoProgredir = () => {}) {
     if (longe.geo) s.longe.push(posicionar(longe.geo, x, y - 0.05, z, rot, esc));
     if (perto.colisor) colisores.push(posicionar(perto.colisor, x, y - 0.05, z, rot, esc));
     // sombra suave no chão em volta (oclusão de ambiente feita uma vez, na geração)
-    const raioSombra = { pinheiro: 3.2, frondosa: 3.6, betula: 2.4, arbusto: 1.4, pedra: extra ? 3 : 1.1 }[tipo];
+    const raioSombra = { pinheiro: 3.2, frondosa: 3.6, betula: 2.4, arbusto: 1.4, pedra: extra ? 3 : 1.1, coral: 1.6, alga: 1.2, carretel: 1.8, novelo: 1.4 }[tipo];
     if (raioSombra) oclusores.push([x, z, y, raioSombra * esc, tipo === 'pedra' ? 0.35 : 0.5]);
     return true;
   };
@@ -607,6 +708,35 @@ export async function gerarIlha(renderer, aoProgredir = () => {}) {
   for (const il of ILHOTAS) {
     livreDe.push([il.cx, il.cz, 7]);
     if (il.obra) livreDe.push([il.cx + il.obra.x, il.cz + il.obra.z, il.obra.r + 4]);
+  }
+
+  // o que cresce em cada capítulo (no Cap. 1, 'campo': o laço abaixo)
+  const VEG = MAPA.vegetacao;
+  function vegetarCapitulo(x, z, l, r, floresta, campina) {
+    const borda = l.d > 0.84;
+    if (VEG === 'recife') {
+      // bancos de coral onde no Cap. 1 seria floresta, algas entre eles, capim-marinho e conchas
+      if (r < floresta * 0.5 + 0.035) colocar(x, z, 'coral');
+      else if (r < floresta * 0.5 + 0.035 + 0.05 + floresta * 0.1) colocar(x, z, 'alga');
+      else if (r > 0.975 || (borda && r > 0.93)) colocar(x, z, 'pedra', borda && rnd() < 0.35);
+      if (rnd() < 0.12 + campina * 0.35) colocar(x + (rnd() - 0.5) * 1.5, z + (rnd() - 0.5) * 1.5, 'capim');
+      if (rnd() < 0.05) colocar(x + (rnd() - 0.5) * 2, z + (rnd() - 0.5) * 2, 'concha');
+    } else if (VEG === 'fundo') {
+      // o fundo do mar que secou: florestas de algas petrificadas, corais de pedra, conchas na areia
+      if (r < floresta * 0.42 + 0.025) colocar(x, z, 'alga', true);
+      else if (r < floresta * 0.42 + 0.025 + 0.04 + floresta * 0.06) colocar(x, z, 'coral', true);
+      else if (r < 0.1 + campina * 0.2) colocar(x, z, 'flores'); // sementes do jardim de Aurélia, espalhadas
+      else if (r > 0.975 || (borda && r > 0.93)) colocar(x, z, 'pedra', borda && rnd() < 0.3);
+      if (rnd() < 0.08) colocar(x + (rnd() - 0.5) * 2, z + (rnd() - 0.5) * 2, 'concha');
+      if (rnd() < 0.08 + campina * 0.25) colocar(x + (rnd() - 0.5) * 1.5, z + (rnd() - 0.5) * 1.5, 'capim');
+    } else if (VEG === 'costura') {
+      // a colcha: carretéis e novelos gigantes, agulhas espetadas, poucas flores de pano
+      if (r < floresta * 0.12 + 0.012) colocar(x, z, 'carretel');
+      else if (r < floresta * 0.12 + 0.012 + 0.014) colocar(x, z, 'novelo');
+      else if (r < floresta * 0.12 + 0.026 + 0.006) colocar(x, z, 'agulha');
+      else if (r < 0.06 + campina * 0.12) colocar(x, z, 'flores');
+      else if (r > 0.988) colocar(x, z, 'pedra');
+    }
   }
 
   const G = 3.1;
@@ -623,6 +753,7 @@ export async function gerarIlha(renderer, aoProgredir = () => {}) {
       const r = rnd();
       if (incl > 0.55) { if (r < 0.1) colocar(x, z, 'pedra'); continue; }
       if (dc < 2.6 || !longeDeConstrucoes(x, z, 2)) continue;
+      if (VEG !== 'campo') { vegetarCapitulo(x, z, l, r, floresta, campina); continue; }
       if (il.nome === 'pomar') { continue; }
       if (r < floresta * 0.62 + 0.025) {
         const tipo = h > 11 || fbm(x * 0.05, z * 0.05, 2, 4) > 0.62 ? 'pinheiro' : rnd() < 0.22 ? 'betula' : 'frondosa';
@@ -636,7 +767,7 @@ export async function gerarIlha(renderer, aoProgredir = () => {}) {
   }
   // pomar: fileiras de árvores frutíferas na ilhota baixa
   const pomar = ILHOTAS.find(i => i.nome === 'pomar');
-  for (let a = -2; a <= 2; a++) for (let b = -2; b <= 2; b++) {
+  if (pomar) for (let a = -2; a <= 2; a++) for (let b = -2; b <= 2; b++) {
     if (Math.abs(a) <= 1 && Math.abs(b) <= 1) continue; // o meio do pomar fica livre
     colocar(pomar.cx + a * 5.2 + (rnd() - 0.5), pomar.cz + b * 5.2 + (rnd() - 0.5), 'frondosa', true);
   }
@@ -659,14 +790,33 @@ export async function gerarIlha(renderer, aoProgredir = () => {}) {
     for (let i = 0; i < pos.count; i++) if (fator[i] < 1) cor.setXYZ(i, cor.getX(i) * fator[i], cor.getY(i) * fator[i], cor.getZ(i) * fator[i]);
   }
 
-  // ---------- construções (casas.js): vila, farol, ruínas ----------
+  // ---------- construções (casas.js): as de cada capítulo ----------
+  // Cap. 1: vila, farol e ruínas. Cap. 2: cascos de barco e mastros. Cap. 3: a vila velha, o
+  // jardim de Aurélia e marcos nas ilhotas. Cap. 4: pontos de costura gigantes e carretéis.
   const construcoes = new THREE.Group(); construcoes.name = 'construcoes';
-  const vila = construirVila({ centro: new THREE.Vector3(VILA.x, alturaVila, VILA.z), raio: VILA.r, alturaEm, rnd });
-  const farolI = ILHOTAS.find(i => i.nome === 'farol'), ruinasI = ILHOTAS.find(i => i.nome === 'ruinas');
   const naObra = il => { const x = il.cx + il.obra.x, z = il.cz + il.obra.z; return new THREE.Vector3(x, alturaEm(x, z), z); };
-  const farol = construirFarol({ centro: naObra(farolI), alturaEm, rnd, evitar: new THREE.Vector3(farolI.cx, 0, farolI.cz) });
-  const ruinas = construirRuinas({ centro: naObra(ruinasI), alturaEm, rnd, evitar: new THREE.Vector3(ruinasI.cx, 0, ruinasI.cz) });
-  construcoes.add(vila.grupo, farol.grupo, ruinas.grupo);
+  const centroIlhota = il => new THREE.Vector3(il.cx, 0, il.cz);
+  const centroPraca = new THREE.Vector3(VILA.x, alturaVila, VILA.z);
+  const pontoMorro = new THREE.Vector3(MORRO.x, alturaEm(MORRO.x, MORRO.z), MORRO.z);
+  const obras = []; // { grupo, casas?, topo?, atualizar?, aplicarNivel? }
+  if (MAPA.construcoes === 'vila') {
+    const farolI = ILHOTAS.find(i => i.nome === 'farol'), ruinasI = ILHOTAS.find(i => i.nome === 'ruinas');
+    obras.push(construirVila({ centro: centroPraca, raio: VILA.r, alturaEm, rnd, nomes: CASAS }));
+    obras.push(construirFarol({ centro: naObra(farolI), alturaEm, rnd, evitar: centroIlhota(farolI) }));
+    obras.push(construirRuinas({ centro: naObra(ruinasI), alturaEm, rnd, evitar: centroIlhota(ruinasI) }));
+  } else if (MAPA.construcoes === 'naufragios') {
+    obras.push(construirNaufragios({ centro: centroPraca, raio: VILA.r, alturaEm, rnd, nomes: CASAS }));
+    for (const il of ILHOTAS) obras.push(construirMarcoIlhota({ tipo: 'mastro', centro: naObra(il), alturaEm, rnd, evitar: centroIlhota(il) }));
+  } else if (MAPA.construcoes === 'vilaAntiga') {
+    obras.push(construirVila({ centro: centroPraca, raio: VILA.r, alturaEm, rnd, nomes: CASAS, antiga: true }));
+    obras.push(construirJardim({ centro: pontoMorro, alturaEm, rnd }));
+    for (const il of ILHOTAS) obras.push(construirMarcoIlhota({ tipo: 'arco', centro: naObra(il), alturaEm, rnd, evitar: centroIlhota(il) }));
+  } else if (MAPA.construcoes === 'costura') {
+    obras.push(construirCostura({ centro: centroPraca, raio: VILA.r, alturaEm, rnd }));
+    for (const il of ILHOTAS) obras.push(construirMarcoIlhota({ tipo: 'carreteis', centro: naObra(il), alturaEm, rnd, evitar: centroIlhota(il) }));
+  }
+  for (const o of obras) construcoes.add(o.grupo);
+  const casas = obras.flatMap(o => o.casas ?? []);
   construcoes.updateMatrixWorld(true);
   construcoes.traverse(o => { if (o.isMesh && o.userData.solido) colisores.push(o.geometry.clone().applyMatrix4(o.matrixWorld)); });
 
@@ -746,11 +896,11 @@ export async function gerarIlha(renderer, aoProgredir = () => {}) {
     malha, geo, grupo, lods, renderer, texturas: new Map(), amostrar, qualidade: null, procedural: true,
     enfeites: [vegetacao, construcoes],
     nascimentoPreferido: new THREE.Vector3(VILA.x, alturaVila, VILA.z),
-    pontos: { vila: VILA, morro: MORRO, ilhotas: ILHOTAS.map(i => ({ nome: i.nome, x: i.cx, z: i.cz, topo: alturaEm(i.cx, i.cz) })), casas: vila.casas, farol: farol.topo },
+    pontos: { vila: VILA, morro: MORRO, ilhotas: ILHOTAS.map(i => ({ nome: i.nome, x: i.cx, z: i.cz, topo: alturaEm(i.cx, i.cz) })), casas },
     alturaEm,
     atualizarEnfeites(t, camera, noite = 0) {
       tempo.value = t;
-      farol.atualizar?.(t, noite);
+      for (const o of obras) o.atualizar?.(t, noite);
     },
     aoMudarQualidade(nivel) {
       const novo = materialVegetacao(nivel.materialSimples, tempo);
@@ -758,7 +908,7 @@ export async function gerarIlha(renderer, aoProgredir = () => {}) {
       matVeg.dispose(); matVeg = novo;
       const longe = nivel.materialSimples ? 38 : nivel.efeitos ? 85 : 60;
       for (const l of setoresLod) if (l.levels[1]) l.levels[1].distance = longe;
-      vila.aplicarNivel?.(nivel); farol.aplicarNivel?.(nivel); ruinas.aplicarNivel?.(nivel);
+      for (const o of obras) o.aplicarNivel?.(nivel);
     },
   };
   await passo(1);

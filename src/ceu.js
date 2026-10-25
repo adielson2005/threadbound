@@ -214,6 +214,7 @@ const ELEV_MAX = Math.asin(DIR_SOL.y); // altura do sol ao meio-dia (a mesma da 
 const AZIMUTE = new THREE.Vector2(DIR_SOL.x, DIR_SOL.z).normalize();
 
 export function criarCeu({ cena, camera, corHorizonte }) {
+  let tom = null, tomForca = 0; // tom do lugar (capitulo.js: ambiente.ceu)
   const uniCupula = {
     uTopo: { value: PAL.dia.topo.clone() }, uHorizonte: { value: corHorizonte.clone() }, uBaixo: { value: PAL.dia.baixo.clone() },
     uSol: { value: DIR_SOL.clone() }, uLua: { value: DIR_SOL.clone() }, uCorBrilho: { value: PAL.dia.brilho.clone() },
@@ -312,6 +313,11 @@ export function criarCeu({ cena, camera, corHorizonte }) {
       estado.forcaLuz *= 1 - chuva * 0.6;
       estado.forcaCeuLuz *= 1 - chuva * 0.25;
     }
+    // tom próprio do lugar (o céu cinza-esverdeado do recife, o dourado do fundo do mar…)
+    if (tom) {
+      tmp.copy(tom).multiplyScalar(THREE.MathUtils.lerp(0.15, 1, dia)); // à noite o tom escurece junto
+      estado.topo.lerp(tmp, tomForca); estado.neblina.lerp(tmp, tomForca * 1.2); estado.baixo.lerp(tmp, tomForca);
+    }
     estado.chuva = chuva;
   }
 
@@ -376,5 +382,6 @@ export function criarCeu({ cena, camera, corHorizonte }) {
     definirMapa: m => { mapaColisao = m.malha; },
     definirHora: h => { hora = ((h % 24) + 24) % 24; alvoAvanco = null; calcularLuz(); },
     definirChuva: k => { chuva = k; },
+    definirTom: (cor, forca = 0.35) => { tom = cor ? new THREE.Color(cor) : null; tomForca = forca; },
   };
 }
