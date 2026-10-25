@@ -70,6 +70,7 @@ export function criarChuva({ cena, camera }) {
 
   // ---------- tempo (clima) ----------
   let intensidade = 0, alvo = 0, espera = 120 + Math.random() * 120, manual = false;
+  let minimo = 0; // chuva que nunca para (o Recife das Vozes vive na garoa)
   let relampago = 0, proximoTrovao = 15;
 
   // ---------- som ----------
@@ -116,8 +117,9 @@ export function criarChuva({ cena, camera }) {
         espera = alvo > 0 ? 70 + Math.random() * 60 : 140 + Math.random() * 120;
       }
     }
-    intensidade += (alvo - intensidade) * Math.min(1, dt * 0.25); // entra e sai devagar (uns 8 s)
-    if (intensidade < 0.002 && alvo === 0) intensidade = 0;
+    const meta = Math.max(alvo, minimo);
+    intensidade += (meta - intensidade) * Math.min(1, dt * 0.25); // entra e sai devagar (uns 8 s)
+    if (intensidade < 0.002 && meta === 0) intensidade = 0;
     gotas.visible = intensidade > 0.01;
     uniforms.uTempo.value = t;
     uniforms.uIntensidade.value = intensidade;
@@ -134,7 +136,8 @@ export function criarChuva({ cena, camera }) {
     get intensidade() { return intensidade; },
     // clarão do relâmpago (0..1, pisca e some): o jogo soma na luz do céu
     get relampago() { return relampago > 0.6 ? 1 : relampago * 0.4; },
-    alternar() { manual = true; alvo = alvo > 0 ? 0 : 0.9; },
+    alternar() { manual = true; alvo = alvo > minimo ? 0 : 0.9; },
+    definirMinimo(k) { minimo = k; },
     aplicarNivel(nivel) { uniforms.uQuantidade.value = nivel.materialSimples ? 0.4 : nivel.efeitos ? 1 : 0.6; },
     definirVolume(v) { volume = v; },
     definirVento(x, z) { uniforms.uVento.value.set(x, z); },

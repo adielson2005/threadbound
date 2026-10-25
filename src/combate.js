@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { aplicarPose } from './cambalhota.js';
+import { linhaLivre } from './colisao.js';
 
 // Combate de Brisa: socos (combo de 5), chute, pegar um objeto do chão (galho ou a Agulha de
 // Prata) e bater com ele, e defender. Os Retalhos atacam com uma investida; defender de frente
@@ -33,6 +34,11 @@ const ARMAS = {
 const DURACAO_PEGAR = 0.8;
 const DIRECAO_NA_MAO = new THREE.Vector3(0.318, 0.816, 0.483).normalize();
 const INVULNERAVEL = 1.1;
+// volume do golpe nos Retalhos: uma cápsula na altura da cintura, do corpo da Brisa até o alcance,
+// testada contra o corpo do Retalho (inimigos.js). O alcance segue medido até o centro do alvo:
+// a cápsula termina antes dele o quanto somam o raio dela e o do corpo.
+const GOLPE_RAIO = 0.45, GOLPE_ALTURA = 0.75, GOLPE_INICIO = 0.2;
+const PEITO = 1.1; // de onde sai a linha de visão do golpe (nada pode estar entre ela e o alvo)
 
 const rnd = (() => { let s = 98765; return () => ((s = (s * 16807) % 2147483647) / 2147483647); })();
 
@@ -217,13 +223,21 @@ export function criarCombate({ cena, mapa, mundo, terreno, inimigos, campanha, j
     const alcance = arma ? arma.alcance : def.alcance, dano = arma ? arma.dano : def.dano;
     const frente = new THREE.Vector3(Math.sin(jogador.angulo), 0, Math.cos(jogador.angulo));
     const centro = jogador.pos.clone().addScaledVector(frente, 0.45);
+    const ini = jogador.pos.clone().addScaledVector(frente, GOLPE_INICIO).setY(jogador.pos.y + GOLPE_ALTURA);
+    const fim = jogador.pos.clone().addScaledVector(frente, Math.max(GOLPE_INICIO, alcance + 0.45 - GOLPE_RAIO - 0.44)).setY(ini.y);
+    const peito = jogador.pos.clone().setY(jogador.pos.y + PEITO);
     for (const a of alvos()) {
       if (est.acertados.has(a.obj)) continue;
-      const d = a.pos.clone().sub(centro); const dy = Math.abs(d.y); d.setY(0);
-      if (d.length() > alcance || dy > 1.6) continue;
-      if (d.lengthSq() > 0.04 && d.normalize().dot(frente) < 0.25) continue; // cone de ~75° à frente
-      est.acertados.add(a.obj);
       const ponto = a.pos.clone().add(new THREE.Vector3(0, a.tipo === 'inimigo' ? 0.5 : 0.3, 0));
+      if (a.tipo === 'inimigo') {
+        if (inimigos.distanciaSegmento(a.obj, ini, fim) > GOLPE_RAIO) continue;
+      } else {
+        const d = a.pos.clone().sub(centro); const dy = Math.abs(d.y); d.setY(0);
+        if (d.length() > alcance || dy > 1.6) continue;
+        if (d.lengthSq() > 0.04 && d.normalize().dot(frente) < 0.25) continue; // cone de ~75° à frente
+      }
+      if (!linhaLivre(mapa, peito, ponto)) continue; // não acerta através de paredes
+      est.acertados.add(a.obj);
       if (a.tipo === 'inimigo') {
         inimigos.atingir(a.obj, dano, jogador.pos, def.empurrao);
         faiscas(ponto, '#ffe6a0', 8 + dano * 3);

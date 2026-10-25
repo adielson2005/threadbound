@@ -3,6 +3,7 @@ import { costurarBoneca } from './costura.js';
 import { FBXLoader } from 'three/addons/loaders/FBXLoader.js';
 import { mergeVertices } from 'three/addons/utils/BufferGeometryUtils.js';
 import { corrigirPernas, corrigirTrilhasPernas, removerPicos, fecharCiclo, alinharGolpe, velocidadeNatural } from './reparos.js';
+import { carregarTextura } from './texturas.js';
 
 // animações em ciclo (precisam terminar exatamente onde começam)
 const CICLOS = ['andar', 'correr', 'parada', 'queda', 'guarda'];
@@ -350,14 +351,12 @@ function contorno(material, forca) {
   material.customProgramCacheKey = () => 'boneca-contorno';
   return material;
 }
-const tl = new THREE.TextureLoader();
 const cacheTexturas = new Map();
 function textura(renderer, nome, cor) {
   if (!nome) return Promise.resolve(null);
   if (!cacheTexturas.has(nome)) {
-    cacheTexturas.set(nome, tl.loadAsync(PASTA + nome).then(t => {
+    cacheTexturas.set(nome, carregarTextura(renderer, PASTA + nome).then(t => {
       t.colorSpace = cor ? THREE.SRGBColorSpace : THREE.NoColorSpace;
-      t.flipY = true;
       t.anisotropy = Math.min(4, renderer.capabilities.getMaxAnisotropy());
       return t;
     }).catch(() => null));

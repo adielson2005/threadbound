@@ -11,6 +11,9 @@ import { fundirEstaticos } from './lotes.js';
 //  - ruins, floating rocks (bobbing platforms holding fragments), wind currents (launchers),
 //    magical lights, falling debris, and the distant island + light bridge revealed at the end
 
+import { CONFIG } from './capitulo.js';
+
+const MARCOS = CONFIG.marcos; // como são os objetivos deste capítulo (capitulo.js)
 const rnd = (() => { let s = 1234567; return () => ((s = (s * 16807) % 2147483647) / 2147483647); })(); // deterministic layout
 
 // ---------------- textures / materials ----------------
@@ -194,6 +197,66 @@ function oficina() {
   return { grupo: g };
 }
 
+// Chegada dos Caps. 2–4 (no lugar da oficina): o barco a remo em que Brisa chegou ao recife, ou o
+// fio dourado do carretel de Aurélia descendo do céu até o chão, com o carretel ao lado.
+function chegada(tipo) {
+  const g = new THREE.Group(), M = materiais();
+  if (tipo === 'barco') {
+    const casco = new THREE.Group();
+    for (const lado of [-1, 1]) { const t = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.5, 3.0), M.madeira); t.position.set(lado * 0.55, 0.3, 0); t.rotation.z = -lado * 0.25; casco.add(t); }
+    const fundo = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.08, 2.8), M.madeira); fundo.position.y = 0.06; casco.add(fundo);
+    const banco = new THREE.Mesh(new THREE.BoxGeometry(1.1, 0.06, 0.3), M.madeira); banco.position.y = 0.42; casco.add(banco);
+    const remo = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.04, 2.4), M.madeira); remo.position.set(0.9, 0.1, 0.3); remo.rotation.y = 0.3; casco.add(remo);
+    casco.position.set(-2.2, 0, 1.2); casco.rotation.set(0, 0.5, 0.12);
+    g.add(casco);
+  } else {
+    const fio = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 90, 6, 1, true), M.fio.clone());
+    fio.material.map = M.fio.map.clone(); fio.material.map.repeat.set(1, 20); fio.material.map.needsUpdate = true;
+    fio.position.set(-2.2, 45, 1.2); g.add(fio);
+    g.userData.fio = fio;
+  }
+  // o carretel de Aurélia (Caps. 3 e 4) ou o de Brisa (Cap. 2), deitado
+  const nucleo = new THREE.Mesh(new THREE.CylinderGeometry(0.32, 0.32, 0.6, 16), M.tecido[0]);
+  const a1 = new THREE.Mesh(new THREE.CylinderGeometry(0.42, 0.42, 0.06, 16), M.madeira); a1.position.y = 0.32;
+  const a2 = a1.clone(); a2.position.y = -0.32;
+  const carretel = new THREE.Group(); carretel.add(nucleo, a1, a2); carretel.rotation.z = Math.PI / 2; carretel.position.set(1.8, 0.42, -1.2);
+  g.add(carretel);
+  const lanterna = new THREE.Sprite(M.brilhoOuro.clone()); lanterna.scale.setScalar(0.9); lanterna.position.set(-2.2, 1.2, 1.2); g.add(lanterna);
+  const fio = g.userData.fio;
+  solido(sombra(g)); if (fio) solido(fio, false);
+  fundirEstaticos(g, fio ? [fio] : []);
+  return { grupo: g, fio };
+}
+
+// Figura simples de quem aparece na história (Tomé, Aurélia): corpo, cabeça, chapéu ou coque.
+// Aurélia (Cap. 4) é de névoa: translúcida, brilhando, com a agulha na mão.
+function figura(tipo) {
+  const g = new THREE.Group();
+  const nevoa = tipo === 'aurelia';
+  const mat = c => nevoa
+    ? new THREE.MeshStandardMaterial({ color: '#e9e0ff', emissive: '#8f7ac0', emissiveIntensity: 0.6, transparent: true, opacity: 0.6, roughness: 1, depthWrite: false })
+    : new THREE.MeshStandardMaterial({ color: c, roughness: 0.9 });
+  const escala = nevoa ? 2.2 : 1;
+  const corpo = new THREE.Mesh(new THREE.LatheGeometry([[0, 0], [0.42, 0.02], [0.36, 0.7], [0.26, 1.15], [0.12, 1.32], [0, 1.34]].map(([x, y]) => new THREE.Vector2(x, y)), 14), mat(tipo === 'tome' ? '#e0b43a' : '#7a6aa0'));
+  const cabeca = new THREE.Mesh(new THREE.SphereGeometry(0.2, 14, 10), mat('#e8c4a0')); cabeca.position.y = 1.5;
+  g.add(corpo, cabeca);
+  if (tipo === 'tome') {
+    const chapeu = new THREE.Mesh(new THREE.ConeGeometry(0.34, 0.26, 14), mat('#d8a82e')); chapeu.position.y = 1.72;
+    const barba = new THREE.Mesh(new THREE.SphereGeometry(0.15, 10, 8), mat('#eeeeee')); barba.position.set(0, 1.4, 0.11); barba.scale.set(1, 0.8, 0.6);
+    const lanterna = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.22, 0.16), new THREE.MeshStandardMaterial({ color: '#ffe9a8', emissive: '#ffb52e', emissiveIntensity: 1.5 }));
+    lanterna.position.set(0.42, 0.85, 0.1);
+    g.add(chapeu, barba, lanterna);
+  } else {
+    const coque = new THREE.Mesh(new THREE.SphereGeometry(0.12, 10, 8), mat('#cfc8e0')); coque.position.set(0, 1.66, -0.08);
+    const agulha = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.005, 1.4, 6), new THREE.MeshStandardMaterial({ color: '#f4f6ff', emissive: '#c8d0ff', emissiveIntensity: 0.8 }));
+    agulha.position.set(0.45, 1.0, 0.1); agulha.rotation.z = 0.5;
+    g.add(coque, agulha);
+  }
+  g.scale.setScalar(escala);
+  g.traverse(m => { if (m.isMesh) { m.castShadow = !nevoa; m.receiveShadow = true; } });
+  return g;
+}
+
 // ---------------- the world ----------------
 export function criarMundo({ cena, mapa, terreno }) {
   const M = materiais();
@@ -222,12 +285,23 @@ export function criarMundo({ cena, mapa, terreno }) {
     const p = inicial.livres.reduce((b, q) => (!b || Math.min(q.distanceTo(nasc), ...escolhidas.map(e => q.distanceTo(e.centro))) > Math.min(b.distanceTo(nasc), ...escolhidas.map(e => b.distanceTo(e.centro))) ? q : b), null);
     escolhidas.push({ id: inicial.id, centro: p, livres: inicial.livres });
   }
+  // each islet holds one of the three objectives: the terrain analysis can rank a terrace of the hill
+  // above a small islet, and then the islet would be left empty (changes nothing when it already does)
+  const ilhotas = mapa.pontos?.ilhotas ?? [];
+  const naIlhota = a => ilhotas.find(i => Math.hypot(a.centro.x - i.x, a.centro.z - i.z) < 32);
+  for (const il of ilhotas) {
+    if (escolhidas.some(a => naIlhota(a) === il)) continue;
+    const candidata = outras.find(a => naIlhota(a) === il && !escolhidas.includes(a));
+    const troca = escolhidas.findIndex(a => !naIlhota(a));
+    if (candidata && troca >= 0) escolhidas[troca] = candidata;
+  }
   const restantes = outras.filter(a => !escolhidas.includes(a));
   const areaCoracao = restantes.sort((a, b) => b.centro.y - a.centro.y)[0]
     ?? { centro: inicial.livres.reduce((b, q) => (q.distanceTo(nasc) > b.distanceTo(nasc) ? q : b), nasc), livres: inicial.livres };
 
-  // ----- workshop -----
-  const of = oficina();
+  // ----- workshop (Cap. 1) or the chapter's arrival point -----
+  const of = MARCOS.chegada === 'oficina' ? oficina() : chegada(MARCOS.chegada);
+  if (of.fio) animados.push(dt => { of.fio.material.map.offset.y -= dt * 0.5; });
   of.grupo.position.copy(nasc);
   const yOf = chaoEm(nasc.x, nasc.z, nasc.y) ?? nasc.y;
   of.grupo.position.y = yOf;
@@ -259,9 +333,11 @@ export function criarMundo({ cena, mapa, terreno }) {
       const pl = pilar(1.6 + rnd() * 1.4, 0.32, i % 2 === 1);
       pl.position.set(x, y - coracao.pos.y, z); g.add(pl);
     }
+    // o objetivo final de cada capítulo veste o pedestal (capitulo.js: marcos.coracao)
+    if (MARCOS.coracao !== 'coracao') coracaoDoCapitulo(g, { pedestal, fuso });
     sombra(g);
     solido(g); solido(fioCeu, false); // the 140 m Sky Thread is light, not a wall
-    fundirEstaticos(g, [aro, aro2, fioCeu]); // pedestal + ring of pillars: one mesh per material
+    fundirEstaticos(g, [aro, aro2, fioCeu, ...(coracao.moveis ?? [])]); // pedestal + ring of pillars: one mesh per material
     raiz.add(g);
     Object.assign(coracao, { fioCeu, brilho, aro, aro2 });
     animados.push((dt, t) => {
@@ -270,6 +346,88 @@ export function criarMundo({ cena, mapa, terreno }) {
       if (coracao.restaurado) { fioCeu.material.map.offset.y -= dt * 0.6; brilho.material.opacity = 0.75 + Math.sin(t * 3) * 0.2; }
       else fioCeu.material.opacity = 0.35 + (Math.sin(t * 7) > 0.6 ? 0.25 : 0) * Math.random(); // flickering, damaged
     });
+  }
+
+  // Caps. 2–4: o casco de Tomé (com Tomé, que aparece quando os sinos tocam), o jardim de Aurélia
+  // (árvore de pedra com a fita de Ilma) e a silhueta de névoa de Aurélia com a agulha
+  function coracaoDoCapitulo(g, { pedestal, fuso }) {
+    if (MARCOS.coracao === 'casaBarco') {
+      fuso.visible = false;
+      const casa = new THREE.Group();
+      const casco = new THREE.Mesh(new THREE.CylinderGeometry(2.6, 1.6, 5.5, 10, 1, true, 0, Math.PI * 1.4), M.madeira);
+      casco.material = M.madeira.clone(); casco.material.side = THREE.DoubleSide;
+      casco.rotation.z = Math.PI / 2; casco.rotation.y = 0.4; casco.position.set(0, 2.4, -3.6);
+      const cabine = new THREE.Mesh(new THREE.BoxGeometry(2.2, 1.6, 1.8), M.madeira); cabine.position.set(0.4, 4.6, -3.6);
+      const luz = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.5, 0.05), new THREE.MeshStandardMaterial({ color: '#3a3020', emissive: '#000000' }));
+      luz.position.set(0.4, 4.7, -2.68);
+      casa.add(casco, cabine, luz);
+      g.add(casa);
+      const tome = figura('tome'); tome.position.set(1.6, 0.6, 1.2); tome.rotation.y = -0.5; tome.visible = false; g.add(tome);
+      coracao.moveis = [tome];
+      coracao.aoRestaurar = () => { tome.visible = true; luz.material.color.set('#ffe9a8'); luz.material.emissive.set('#ffb52e'); luz.material.emissiveIntensity = 1.5; };
+    } else if (MARCOS.coracao === 'jardim') {
+      pedestal.scale.set(0.8, 0.6, 0.8);
+      fuso.visible = false;
+      // árvore de pedra (coral petrificado) com a fita azul de Ilma amarrada num galho
+      const tronco = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.55, 4.2, 9), M.pedraClara); tronco.position.set(0, 2.2, -2.6);
+      g.add(tronco);
+      for (let k = 0; k < 5; k++) {
+        const galho = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.2, 2.2, 6), M.pedraClara);
+        const a = (k / 5) * Math.PI * 2; galho.position.set(Math.cos(a) * 0.7, 4.4, -2.6 + Math.sin(a) * 0.7); galho.rotation.set(Math.sin(a) * 0.8, 0, -Math.cos(a) * 0.8);
+        g.add(galho);
+      }
+      const fita = new THREE.Mesh(new THREE.PlaneGeometry(0.16, 1.2), new THREE.MeshStandardMaterial({ color: '#7fb0e8', side: THREE.DoubleSide, roughness: 1 }));
+      fita.position.set(0.9, 4.0, -2.4); g.add(fita);
+      coracao.moveis = [fita];
+      animados.push((dt, t) => { fita.rotation.y = Math.sin(t * 1.7) * 0.5; });
+      // banco de pedra onde fica o bilhete
+      const banco = new THREE.Mesh(new THREE.BoxGeometry(1.8, 0.12, 0.55), M.pedra); banco.position.set(0, 0.5, 0.9);
+      for (const sx of [-0.7, 0.7]) { const pe = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.45, 0.45), M.pedra); pe.position.set(sx, 0.22, 0.9); g.add(pe); }
+      g.add(banco);
+    } else if (MARCOS.coracao === 'aurelia') {
+      fuso.visible = false;
+      const aurelia = figura('aurelia'); aurelia.position.set(0, 0.6, -1.4); g.add(aurelia);
+      solido(aurelia, false); // é névoa: não bloqueia
+      coracao.aurelia = aurelia; coracao.moveis = [aurelia];
+      animados.push((dt, t) => {
+        aurelia.position.y = 0.6 + Math.sin(t * 1.1) * 0.15;
+        if (coracao.restaurado) aurelia.traverse(m => { if (m.isMesh) m.material.opacity = Math.max(0, m.material.opacity - dt * 0.08); });
+      });
+    }
+  }
+
+  // Caps. 2–4: o Sino de Boia (balança e toca quando reacende), a Flor de Pedra (as pétalas abrem)
+  // e o Nó da Costura (o nó afrouxa e some). A gema continua sendo a luz que acende.
+  function ancoraDoCapitulo(g, coluna, gema, anel) {
+    if (MARCOS.ancora === 'sino') {
+      coluna.scale.set(0.6, 1, 0.6);
+      const trave = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.16, 0.16), M.madeira); trave.position.y = 2.55; g.add(trave);
+      const sino = new THREE.Group(); sino.position.set(0.55, 2.47, 0);
+      const corpo = new THREE.Mesh(new THREE.LatheGeometry([[0.05, 0], [0.18, -0.05], [0.24, -0.35], [0.36, -0.62], [0.38, -0.66]].map(([x, y]) => new THREE.Vector2(x, y)), 14), M.ouro);
+      corpo.material = M.ouro.clone(); corpo.material.side = THREE.DoubleSide;
+      const badalo = new THREE.Mesh(new THREE.SphereGeometry(0.07, 8, 6), M.pedra); badalo.position.y = -0.56;
+      sino.add(corpo, badalo); g.add(sino);
+      return { restaurada: (desde, t) => { sino.rotation.z = Math.sin(t * 4) * 0.5 * Math.exp(-desde * 0.25) + Math.sin(t * 1.3) * 0.06; } };
+    }
+    if (MARCOS.ancora === 'flor') {
+      coluna.material = M.pedra;
+      const petalas = [];
+      for (let k = 0; k < 6; k++) {
+        const pivo = new THREE.Group(); pivo.position.y = 2.6; pivo.rotation.y = (k / 6) * Math.PI * 2;
+        const p = new THREE.Mesh(new THREE.SphereGeometry(0.45, 10, 6, 0, Math.PI * 2, 0, Math.PI / 2), M.pedraClara);
+        p.scale.set(0.5, 1.4, 0.18); p.position.set(0, 0.45, 0.22);
+        pivo.add(p); pivo.rotation.x = -0.15; g.add(pivo); petalas.push(pivo);
+      }
+      return { restaurada: desde => { const k = Math.min(1, desde / 2.5); for (const p of petalas) p.rotation.x = -0.15 + k * 1.05; } };
+    }
+    if (MARCOS.ancora === 'no') {
+      coluna.scale.set(0.8, 1, 0.8);
+      const no = new THREE.Mesh(new THREE.TorusKnotGeometry(0.75, 0.2, 80, 10, 2, 3), new THREE.MeshStandardMaterial({ color: '#c9a7f2', roughness: 0.9, emissive: '#2a1440' }));
+      no.position.y = 2.95; g.add(no);
+      anel.visible = false;
+      return { restaurada: (desde, t) => { const k = Math.max(0, 1 - desde / 3); no.scale.setScalar(0.05 + k * 0.95); no.rotation.y = t * (1 + (1 - k) * 4); no.visible = k > 0.01; } };
+    }
+    return null;
   }
 
   // ----- anchors -----
@@ -284,6 +442,7 @@ export function criarMundo({ cena, mapa, terreno }) {
     // cut thread: a short frayed piece hanging from the top
     const pedaco = new THREE.Mesh(new THREE.TubeGeometry(curvaFio(new THREE.Vector3(0, 3.1, 0), new THREE.Vector3(0.9, 2.2, 0.4), 0.6), 12, 0.035, 6), M.fioApagado);
     g.add(base, coluna, gema, anel, pedaco);
+    const enfeite = MARCOS.ancora !== 'ancora' ? ancoraDoCapitulo(g, coluna, gema, anel) : null;
     sombra(g); solido(g); solido(pedaco, false); raiz.add(g);
     // ruins around
     for (let k = 0; k < 2; k++) {
@@ -308,8 +467,9 @@ export function criarMundo({ cena, mapa, terreno }) {
       // breakable, so not part of the static mesh: a cylinder that stops blocking once it breaks
       extras.push({ x, z, raio: 0.45, base: y - 0.2, topo: y + 1.3, get solido() { return !cristal.quebrado; } });
     }
-    const ancora = { indice: i, pos, grupo: g, gema, anel, pedaco, cristais: listaCristais, guardas: [], restaurada: false, area: a, fio: null, requer: [4, 8, 12][i] };
+    const ancora = { indice: i, pos, grupo: g, gema, anel, pedaco, cristais: listaCristais, guardas: [], restaurada: false, area: a, fio: null, requer: [4, 8, 12][i], enfeite, desde: 0 };
     animados.push((dt, t) => {
+      if (enfeite && ancora.restaurada) { ancora.desde += dt; enfeite.restaurada?.(ancora.desde, t); }
       anel.rotation.z += dt * (ancora.restaurada ? 1.5 : 0.2);
       gema.rotation.y += dt * (ancora.restaurada ? 2 : 0.3);
       if (ancora.fio) ancora.fio.material.map.offset.y -= dt * 0.8;
@@ -324,6 +484,7 @@ export function criarMundo({ cena, mapa, terreno }) {
   });
 
   ancoras.restaurar = ancora => {
+    ancora.enfeite?.aoRestaurar?.();
     ancora.restaurada = true;
     ancora.pedaco.visible = false;
     ancora.gema.material.color.set('#ffe9a8'); ancora.gema.material.emissive.set('#ffb52e'); ancora.gema.material.emissiveIntensity = 1.4;
@@ -341,7 +502,8 @@ export function criarMundo({ cena, mapa, terreno }) {
     coracao.fioCeu.material = M.fio.clone();
     coracao.fioCeu.material.map = M.fio.map.clone(); coracao.fioCeu.material.map.repeat.set(1, 30); coracao.fioCeu.material.map.needsUpdate = true;
     coracao.fioCeu.scale.set(2.2, 1, 2.2);
-    ponte.visible = true; ilha.visible = true; bilhete.visible = true;
+    ponte.visible = MARCOS.coracao !== 'aurelia'; ilha.visible = MARCOS.coracao === 'coracao'; bilhete.visible = true;
+    coracao.aoRestaurar?.();
   };
 
   // ----- distant island + light bridge (revealed at the end) -----
@@ -352,7 +514,11 @@ export function criarMundo({ cena, mapa, terreno }) {
   ilha.position.copy(coracao.pos).addScaledVector(dirFora, 210); ilha.position.y = coracao.pos.y + 6;
   ilha.visible = false; raiz.add(ilha);
   const inicioPonte = coracao.pos.clone().addScaledVector(dirFora, 6).add(new THREE.Vector3(0, 0.3, 0));
-  const fimPonte = ilha.position.clone().addScaledVector(dirFora, -28).add(new THREE.Vector3(0, 1, 0));
+  // no fim: Cap. 1, a ponte de luz até a ilha distante; Cap. 2, o fio do carretel descendo até o
+  // fundo; Cap. 3, o fio subindo em direção ao olho da tempestade; Cap. 4, nada (a costura se desfaz)
+  const fimPonte = MARCOS.coracao === 'casaBarco' ? inicioPonte.clone().addScaledVector(dirFora, 70).setY(inicioPonte.y - 140)
+    : MARCOS.coracao === 'jardim' ? inicioPonte.clone().addScaledVector(dirFora, 50).setY(inicioPonte.y + 150)
+      : ilha.position.clone().addScaledVector(dirFora, -28).add(new THREE.Vector3(0, 1, 0));
   const meioPonte = inicioPonte.clone().lerp(fimPonte, 0.5); meioPonte.y += 14;
   const ponte = new THREE.Mesh(new THREE.TubeGeometry(new THREE.QuadraticBezierCurve3(inicioPonte, meioPonte, fimPonte), 120, 0.7, 4), M.fio.clone());
   ponte.material.map = M.fio.map.clone(); ponte.material.map.repeat.set(1, 60); ponte.material.map.needsUpdate = true;

@@ -4,7 +4,9 @@ import { aplicarCambalhota, aplicarPose } from './cambalhota.js';
 import { carregarMapa, aplicarQualidadeMapa, atualizarLodPorVisao, aquecerMapa, CAMADA_SOMBRA } from './mapa.js';
 import { gerarIlha } from './ilha.js';
 import { criarChuva } from './chuva.js';
-import { lerProgresso, salvarProgresso, apagarProgresso, lerConfig, salvarConfig } from './salvar.js';
+import { criarOclusao } from './oclusao.js';
+import { lerProgresso, salvarProgresso, apagarProgresso, lerConfig, salvarConfig, lerConcluidos, ultimoCapitulo } from './salvar.js';
+import { CAPITULO_ATUAL, TOTAL_CAPITULOS, CONFIG, urlCapitulo } from './capitulo.js';
 import { analisarTerreno, calcularLancamento } from './terreno.js';
 import { moverComColisao, RAIO, ALTURA } from './fisica.js';
 import { incorporarSolidos } from './colisao.js';
@@ -20,7 +22,7 @@ import { carregarCachoeira, posicionarCachoeiras } from './cachoeira.js';
 import { criarInimigos } from './inimigos.js';
 import { criarCampanha } from './campanha.js';
 import { criarCombate, GOLPES } from './combate.js';
-import { INTRO, AVISOS, GAMEOVER } from './historia.js';
+import { INTRO, AVISOS, GAMEOVER, CAPITULO, CHAMADA, FIM, NOMES_CAPITULOS, DESCRICOES_CAPITULOS } from './historia.js';
 import { NIVEIS, nivelInicial, salvarNivel, detectarHardware, ajustarAoHardware } from './graficos.js';
 import { criarDistancia } from './distancia.js';
 import { fundirEstaticos } from './lotes.js';
@@ -31,6 +33,7 @@ const FISICA = {
   // velocidades escolhidas junto com a cadência das animações de correr (ver velocidadeNatural)
   velocidade: 5.8,
   velocidadeDisparada: 8, // segurando Shift
+  velocidadeDevagar: 1.5,   // segurando X: um passeio, na cadência natural da animação de andar
   aceleracao: 45,
   aceleracaoAr: 14,
   pulo: 12.5,
@@ -106,6 +109,15 @@ camera.position.set(0, 10, 10);
 const ceuJogo = criarCeu({ cena, camera, corHorizonte: COR_CEU });
 // clima: pancadas de chuva que vêm e vão (Y liga/desliga)
 const chuva = criarChuva({ cena, camera });
+// o clima e o céu de cada capítulo (capitulo.js): a garoa sem fim do recife, o céu dourado do fundo
+chuva.definirMinimo(CONFIG.ambiente.chuva);
+ceuJogo.definirTom(CONFIG.ambiente.ceu);
+{ // título da tela inicial: "Capítulo 2" no selo, o nome embaixo
+  const [numero, nome] = CAPITULO.split(' — ');
+  document.querySelector('#tela .selo').textContent = numero;
+  document.querySelector('#tela .sub').textContent = nome;
+  document.title = `Threadbound — ${nome}`;
+}
 
 // luz do céu: azul clarinho de cima e, de baixo, o tom quente da areia e da grama refletindo
 const luzCeu = new THREE.HemisphereLight('#dcecff', '#b9a77e', 1.4);
@@ -300,9 +312,10 @@ const T = {
   frente: ['KeyW', 'ArrowUp'], tras: ['KeyS', 'ArrowDown'],
   esq: ['KeyA', 'ArrowLeft'], dir: ['KeyD', 'ArrowRight'],
   pulo: ['Space', 'GamepadPulo', 'ToquePulo'],
-  disparar: ['ShiftLeft', 'ShiftRight', 'GamepadDisparar'],
+  disparar: ['ShiftLeft', 'ShiftRight', 'GamepadDisparar', 'ToqueCorrer'],
   camEsq: ['KeyZ'], camDir: ['KeyC'], // E é interagir
   defender: ['KeyQ', 'GamepadDefender', 'ToqueDefesa'], // segurar
+  devagar: ['KeyX'], // segurar: anda devagar
 };
 // golpes: J/clique esquerdo = combo (ou bater com o objeto na mão), K/clique direito = chute, F = pegar/soltar
 const TECLAS_COMBATE = { KeyJ: 'combo', KeyK: 'chute', KeyF: 'pegar' };
@@ -377,12 +390,14 @@ canvas.addEventListener('pointermove', e => {
   if (t.esquerda) {
     analogico.x = THREE.MathUtils.clamp((e.clientX - t.x0) / 50, -1, 1);
     analogico.y = THREE.MathUtils.clamp(-(e.clientY - t.y0) / 50, -1, 1);
+    // arrastar o bastão bem além da borda (75 px) é correr, como o Shift no teclado
+    if (Math.hypot(e.clientX - t.x0, e.clientY - t.y0) > 75) teclas.add('ToqueCorrer'); else teclas.delete('ToqueCorrer');
   } else girarCamera((e.clientX - t.x) * 1.6, (e.clientY - t.y) * 1.6);
   t.x = e.clientX; t.y = e.clientY;
 });
 for (const ev of ['pointerup', 'pointercancel']) canvas.addEventListener(ev, e => {
   const t = toques.get(e.pointerId);
-  if (t?.esquerda) { analogico.x = analogico.y = 0; if (bastao) bastao.style.display = 'none'; }
+  if (t?.esquerda) { analogico.x = analogico.y = 0; teclas.delete('ToqueCorrer'); if (bastao) bastao.style.display = 'none'; }
   toques.delete(e.pointerId);
 });
 const botaoPulo = $('tPulo');
@@ -433,7 +448,7 @@ function entradaMovimento() {
 
 // ---------- Mundo (preenchido ao carregar) ----------
 let mapa = null, terreno = null, personagem = null;
-let mundo = null, inimigos = null, campanha = null, combate = null;
+let mundo = null, inimigos = null, campanha = null, combate = null, oclusao = null;
 const distancia = criarDistancia(); // objetos pequenos só são desenhados perto da câmera
 let estado = 'carregando'; // carregando | menu | jogando | fim
 let pausado = false;
@@ -515,6 +530,7 @@ function reiniciar() {
   }
   if (estado === 'menu') apagarProgresso();
   if (estado === 'fim') {
+    if (campanhaTerminada && proximoCapitulo) { location.href = urlCapitulo(proximoCapitulo); return; }
     if (campanhaTerminada) { apagarProgresso(); location.reload(); return; }
   }
   const primeiraVez = estado === 'menu';
@@ -526,10 +542,12 @@ function reiniciar() {
   teclas.clear();
   if (primeiraVez) campanha.iniciar();
 }
-let campanhaTerminada = false, confirmandoNovo = false;
+let campanhaTerminada = false, confirmandoNovo = false, proximoCapitulo = null;
 botao.addEventListener('click', reiniciar);
 // Continuar: refaz o progresso salvo (fragmentos, âncoras, cartas…) e volta ao último ponto seguro
 function continuarJogo() {
+  // o último jogo salvo é de outro capítulo: abre a página dele, que continua sozinha
+  if (!lerProgresso() && capituloSalvo()) { location.href = urlCapitulo(capituloSalvo()) + (urlCapitulo(capituloSalvo()).includes('?') ? '&' : '?') + 'continuar=1'; return; }
   const s = lerProgresso();
   if (!s || estado !== 'menu') return;
   campanha.importar(s);
@@ -541,7 +559,38 @@ function continuarJogo() {
   campanha.iniciar({ continuando: true });
 }
 $('continuarJogo').addEventListener('click', continuarJogo);
-$('jogarCap1').addEventListener('click', () => { fecharPaineis(); lerProgresso() ? continuarJogo() : reiniciar(); });
+// outro capítulo com jogo salvo (só quando a página foi aberta sem escolher capítulo)
+function capituloSalvo() {
+  if (new URLSearchParams(location.search).has('capitulo')) return null;
+  const n = ultimoCapitulo();
+  return n !== CAPITULO_ATUAL && lerProgresso(n) ? n : null;
+}
+
+// lista de capítulos: cada um abre quando o anterior termina
+function montarCapitulos() {
+  const feitos = lerConcluidos();
+  const lista = $('listaCapitulos');
+  lista.innerHTML = '';
+  for (let n = 1; n <= TOTAL_CAPITULOS; n++) {
+    const livre = n === 1 || feitos.includes(n - 1) || n === CAPITULO_ATUAL;
+    const [, nome] = NOMES_CAPITULOS[n].split(' — ');
+    const li = document.createElement('li');
+    li.className = livre ? 'livre' : 'trancado';
+    li.innerHTML = `<b>${n} · ${nome}</b><span>${DESCRICOES_CAPITULOS[n]}${feitos.includes(n) ? ' ✓' : ''}</span>`;
+    if (livre) {
+      const b = document.createElement('button');
+      b.className = 'botao principal'; b.textContent = n === CAPITULO_ATUAL ? 'Jogar' : 'Ir';
+      b.addEventListener('click', () => {
+        fecharPaineis();
+        if (n !== CAPITULO_ATUAL) { location.href = urlCapitulo(n); return; }
+        lerProgresso() ? continuarJogo() : reiniciar();
+      });
+      li.appendChild(b);
+    } else li.insertAdjacentHTML('beforeend', '<em title="Termine o capítulo anterior">🔒</em>');
+    lista.appendChild(li);
+  }
+}
+montarCapitulos();
 
 // ---------- Painéis do menu: capítulos, configurações, créditos ----------
 const paineis = $('paineis');
@@ -583,14 +632,17 @@ function terminarCapitulo(r) {
   const [numero, nome] = r.capitulo.split(' — ');
   tela.querySelector('.selo').textContent = `${numero} concluído`;
   tela.querySelector('h1').textContent = nome ?? r.capitulo;
-  tela.querySelector('.sub').textContent = 'O Coração da Ilha voltou a bater e o farol acendeu sozinho. Quem chamou na névoa?';
+  tela.querySelector('.sub').textContent = FIM.sub;
   $('historia').style.display = 'none';
   // resumo da partida em números
   msg.innerHTML = `<span class="resumo">
       <span><b>${r.fragmentos}/${r.total}</b>Fragmentos</span><span><b>${r.memorias}</b>Memórias</span>
       <span><b>${r.purificados}</b>Purificados</span>
-    </span><em>Continua no Recife das Vozes…</em>`;
-  botao.textContent = 'Jogar de novo';
+    </span><em>${FIM.continua}</em>`;
+  // o próximo capítulo acabou de ser desbloqueado; no último, recomeça a história
+  proximoCapitulo = r.numero < TOTAL_CAPITULOS ? r.numero + 1 : 1;
+  botao.textContent = r.numero < TOTAL_CAPITULOS ? 'Próximo capítulo ▶' : 'Jogar desde o começo';
+  botao.className = 'botao principal';
   $('continuar').style.display = 'inline-block';
 }
 
@@ -665,16 +717,17 @@ function impactoParede(v, n) {
   jogador.impacto = Math.max(jogador.impacto || 0, 0.1 + k * 0.2);
   if (n.y > -0.5) soltarPoeira(jogador.pos.clone().addScaledVector(n, -RAIO).add(new THREE.Vector3(0, 0.9, 0)), Math.round(3 + k * 6), 0.6 + k);
 }
-// Brisa e os Retalhos não se atravessam: cada um empurra o outro (ela é mais pesada que eles)
+// Brisa e os Retalhos não se atravessam: cada um empurra o outro (ela é mais pesada que eles).
+// O contato é entre a cápsula dela e o corpo dele (inimigos.js); o empurrão é na horizontal.
 function empurrarInimigos() {
   if (!inimigos) return;
   const j = jogador;
   for (const e of inimigos.lista) {
     if (!e.ativo) continue;
-    const dx = j.pos.x - e.pos.x, dz = j.pos.z - e.pos.z, dy = j.pos.y - e.pos.y;
-    const d = Math.hypot(dx, dz), min = RAIO + 0.42;
-    if (d >= min || dy > 0.9 || dy < -1.5) continue;
-    const nx = d > 1e-4 ? dx / d : 1, nz = d > 1e-4 ? dz / d : 0, sobra = min - d;
+    const sobra = -inimigos.distanciaJogadora(e, j.pos);
+    if (sobra <= 0) continue;
+    const dx = j.pos.x - e.pos.x, dz = j.pos.z - e.pos.z, d = Math.hypot(dx, dz);
+    const nx = d > 1e-4 ? dx / d : 1, nz = d > 1e-4 ? dz / d : 0;
     j.pos.x += nx * sobra * 0.4; j.pos.z += nz * sobra * 0.4;
     // o resto vira velocidade do inimigo (ele mesmo checa se tem chão antes de andar)
     e.vel.x -= nx * sobra * 4; e.vel.z -= nz * sobra * 4;
@@ -742,7 +795,8 @@ function passoFisica(dt) {
   }
   j.disparando = algumaTecla(T.disparar) && !j.defendendo;
   // defendendo ela anda devagar, de guarda
-  const vmax = j.defendendo ? FISICA.velocidade * 0.35 : j.planando ? FISICA.velocidadePlanando : j.disparando ? FISICA.velocidadeDisparada : FISICA.velocidade;
+  const devagar = algumaTecla(T.devagar) && j.noChao;
+  const vmax = j.defendendo ? FISICA.velocidade * 0.35 : j.planando ? FISICA.velocidadePlanando : j.disparando ? FISICA.velocidadeDisparada : devagar ? FISICA.velocidadeDevagar : FISICA.velocidade;
 
   horiz.set(j.vel.x, 0, j.vel.z);
   const temEntrada = desejado.lengthSq() > 0.0001;
@@ -922,7 +976,11 @@ function animarPersonagem(dt) {
   if (v > 0.3 && !(j.lancado && v < 1) && !j.golpe && !j.pegando && !j.defendendo && !(j.machucado > 0)) j.angulo = Math.atan2(j.vel.x, j.vel.z);
   let d = j.angulo - raiz.rotation.y;
   d = Math.atan2(Math.sin(d), Math.cos(d)); // caminho mais curto
-  raiz.rotation.y += d * Math.min(1, dt * 12);
+  // virada com velocidade limitada: correndo é rápida; parada ou andando é mais calma (meia-volta
+  // parada leva uns 0,4 s), e ela dá passinhos no lugar enquanto gira
+  const giroMax = (v < 0.5 ? 8 : v < 2.5 ? 11 : 16) * dt;
+  raiz.rotation.y += THREE.MathUtils.clamp(d * Math.min(1, dt * 12), -giroMax, giroMax);
+  const viradaNoLugar = v < 0.4 && Math.abs(d) > 0.45;
 
   if (j.pulou) {
     j.pulou = false;
@@ -966,12 +1024,16 @@ function animarPersonagem(dt) {
     // a animação de aterrissar só segura a personagem parada; se ela já está andando, corta logo
     const aterrissando = tempoAterrissar > 0 && !(v > 0.5 && tempoAterrissar < 0.25);
     if (aterrissando) { /* mantém */ }
+    else if (viradaNoLugar) tocar('andar', { vel: 0.9, fade: 0.15 });
     else if (v < 0.4) tocar('parada', { fade: 0.35 });
     // velocidade de reprodução = velocidade real / velocidade natural do clipe (pés não escorregam)
     else if (v < 2) tocar('andar', { vel: THREE.MathUtils.clamp(v / velAndar, 0.6, 2.2), fade: 0.25 });
     // (até 2,6×: na corrida com Shift, 8 m/s, os pés acompanham o chão em vez de deslizar)
     else tocar('correr', { vel: THREE.MathUtils.clamp(v / velCorrer, 0.8, 2.6), fade: 0.25 });
   }
+  // os ossos que a postura e os gestos giram por cima voltam ao repouso antes da animação: os que o
+  // clipe atual não anima (a animação parada não mexe na coluna) acumulariam o giro de cada quadro
+  for (const osso of ossosPorCima()) osso.quaternion.copy(personagem.rig.ligacao.get(osso.name).q);
   personagem.mixer.update(dt);
   // impulso com as pernas, grupado no ar ("bola") e abertura para cair (por cima da animação)
   aplicarCambalhota(personagem.rig, j.cambalhota);
@@ -1002,6 +1064,13 @@ function animarPersonagem(dt) {
   personagem.malha.visible = !(j.noVazio && agua && j.pos.y < agua.nivel - 0.6) && !piscando;
 }
 let pesoPes = 0, pesoPlanar = 0;
+let _ossosPorCima = null;
+function ossosPorCima() {
+  if (_ossosPorCima) return _ossosPorCima;
+  const { ossos, papeis: P } = personagem.rig;
+  _ossosPorCima = [...P.coluna, P.pescoco, P.cabeca, P.bracoL, P.bracoR].map(n => ossos[n]).filter(Boolean);
+  return _ossosPorCima;
+}
 
 // ---------- Postura viva (por cima de qualquer animação) ----------
 // - tronco: inclina para a frente ao acelerar, para trás ao frear e para dentro das curvas (a coluna
@@ -1025,6 +1094,65 @@ function alvoDoOlhar() {
   for (const a of mundo?.ancoras ?? []) if (!a.restaurada) considerar(a.pos.clone().setY(a.pos.y + 2.5), 10);
   return melhor;
 }
+// Gestos de quem espera parada (por cima da animação parada): depois de uns segundos sem se mexer,
+// de tempos em tempos Brisa olha em volta, troca o peso de perna ou se espreguiça. Qualquer
+// movimento corta o gesto na hora (o peso cai rápido).
+const GESTOS = { olhar: 3.2, peso: 2.8, espreguicar: 2.6 };
+const ocioso = { parada: 0, espera: 6, gesto: null, t: 0, peso: 0, anterior: null, sinal: null };
+const _mao = new THREE.Vector3();
+function gestoOcioso(dt, v, livre, frente, lateral) {
+  const rig = personagem.rig, P = rig.papeis;
+  const parada = livre && v < 0.15 && !jogador.planando;
+  ocioso.parada = parada ? ocioso.parada + dt : 0;
+  if (!parada) ocioso.gesto = null;
+  if (parada && !ocioso.gesto && ocioso.parada > 5) {
+    ocioso.espera -= dt;
+    if (ocioso.espera <= 0) {
+      const opcoes = Object.keys(GESTOS).filter(g => g !== ocioso.anterior);
+      ocioso.gesto = ocioso.anterior = opcoes[Math.floor(Math.random() * opcoes.length)];
+      ocioso.t = 0; ocioso.espera = 6 + Math.random() * 5;
+    }
+  }
+  if (ocioso.gesto) { ocioso.t += dt; if (ocioso.t > GESTOS[ocioso.gesto]) ocioso.gesto = null; }
+  const T = ocioso.gesto ? GESTOS[ocioso.gesto] : 1;
+  const env = ocioso.gesto ? THREE.MathUtils.smoothstep(ocioso.t, 0, 0.6) * (1 - THREE.MathUtils.smoothstep(ocioso.t, T - 0.6, T)) : 0;
+  ocioso.peso += (env - ocioso.peso) * Math.min(1, dt * (ocioso.gesto ? 8 : 6));
+  const w = ocioso.peso;
+  if (w < 0.01) return;
+  const fase = ocioso.t / T, cima = new THREE.Vector3(0, 1, 0);
+  const coluna = P.coluna.map(n => rig.ossos[n]);
+  if (ocioso.anterior === 'olhar') {
+    // olha para um lado, depois para o outro
+    const a = Math.sin(fase * Math.PI * 2) * 0.75 * w;
+    girarOssoMundo(rig.ossos[P.pescoco], cima, a * 0.4);
+    girarOssoMundo(rig.ossos[P.cabeca], cima, a * 0.6);
+    for (const o of coluna) girarOssoMundo(o, cima, a * 0.15 / coluna.length);
+  } else if (ocioso.anterior === 'peso') {
+    // joga o peso numa perna: o tronco tomba um pouco e a cabeça compensa
+    const a = Math.sin(fase * Math.PI) * 0.12 * w;
+    for (const o of coluna) girarOssoMundo(o, frente, a / coluna.length);
+    girarOssoMundo(rig.ossos[P.cabeca], frente, -a * 0.6);
+  } else {
+    // espreguiça: braços sobem pelos lados, o peito abre para trás e a cabeça olha para cima
+    if (!ocioso.sinal) {
+      // para que lado cada braço sobe (depende do esqueleto): o que deixa a mão mais alta
+      ocioso.sinal = {};
+      for (const L of ['L', 'R']) {
+        const braco = rig.ossos[P[`braco${L}`]], mao = rig.ossos[P[`mao${L}`]], q0 = braco.quaternion.clone();
+        girarOssoMundo(braco, frente, 0.5); const yMais = mao.getWorldPosition(_mao).y;
+        braco.quaternion.copy(q0); braco.updateMatrixWorld(true);
+        girarOssoMundo(braco, frente, -0.5); const yMenos = mao.getWorldPosition(_mao).y;
+        braco.quaternion.copy(q0); braco.updateMatrixWorld(true);
+        ocioso.sinal[L] = yMais > yMenos ? 1 : -1;
+      }
+    }
+    const a = Math.sin(Math.min(1, fase * 1.6) * Math.PI * 0.5) * (1 - THREE.MathUtils.smoothstep(fase, 0.7, 1)) * w;
+    for (const o of coluna) girarOssoMundo(o, lateral, -0.18 * a / coluna.length);
+    for (const L of ['L', 'R']) girarOssoMundo(rig.ossos[P[`braco${L}`]], frente, ocioso.sinal[L] * 2.5 * a);
+    girarOssoMundo(rig.ossos[P.cabeca], lateral, 0.25 * a);
+  }
+}
+
 function posturaViva(dt, v) {
   const j = jogador, rig = personagem.rig, { raiz } = personagem;
   if (!rig || dt <= 0) return;
@@ -1042,6 +1170,7 @@ function posturaViva(dt, v) {
   const frente = new THREE.Vector3(Math.sin(yaw), 0, Math.cos(yaw)), lateral = new THREE.Vector3(Math.cos(yaw), 0, -Math.sin(yaw));
   const coluna = rig.papeis.coluna.map(n => rig.ossos[n]);
   for (const o of coluna) { girarOssoMundo(o, lateral, postura.frente / coluna.length); girarOssoMundo(o, frente, postura.lado / coluna.length); }
+  gestoOcioso(dt, v, livre, frente, lateral);
   // cabeça: devolve metade da inclinação e olha o alvo
   const cabeca = rig.ossos[rig.papeis.cabeca];
   if (!cabeca) return;
@@ -1142,7 +1271,7 @@ function aplicarOrcamento() {
   const p = PASSOS_ORCAMENTO[orcamento.passo];
   altos?.definirCusto({ pos: nivel.posProcesso !== false, gtao: p.gtao, bloom: p.bloom, smaa: p.smaa, distGrama: p.grama });
   distancia.definirAlcance(nivel.alcanceObjetos * p.alcance);
-  cena.fog.near = nivel.neblina[0] * p.longe; cena.fog.far = nivel.neblina[1] * p.longe;
+  cena.fog.near = nivel.neblina[0] * p.longe * CONFIG.ambiente.nevoa; cena.fog.far = nivel.neblina[1] * p.longe * CONFIG.ambiente.nevoa;
   cena.userData.neblinaBase = [cena.fog.near, cena.fog.far];
   camera.far = nivel.distancia * p.longe; camera.updateProjectionMatrix();
   if (RESOLUCAO.atual < pisoResolucao()) { RESOLUCAO.atual = pisoResolucao(); renderer.setPixelRatio(RESOLUCAO.atual); redimensionarPos(); }
@@ -1186,6 +1315,9 @@ renderer.setAnimationLoop(() => {
   // detalhe do mapa pela visão: costas no nível mais leve, o lado para onde a câmera vira já pronto
   if (mapa) atualizarLodPorVisao(mapa, camera, dtReal);
   distancia.atualizar(dtReal, camera);
+  // o que o relevo esconde não é desenhado (setores de vegetação e blocos de terreno)
+  camera.updateMatrixWorld();
+  oclusao?.atualizar(camera);
   chuva.atualizar(dt, t, estado === 'jogando');
   ceuJogo.definirChuva(chuva.intensidade);
   ceuJogo.atualizar(estado === 'jogando' ? dt : 0, t);
@@ -1195,7 +1327,9 @@ renderer.setAnimationLoop(() => {
     assarSombra = false;
     renderer.shadowMap.needsUpdate = true;
     camera.layers.enable(CAMADA_SOMBRA);
+    oclusao?.mostrarTudo(); // a sombra fixa é de tudo, não só do que está à vista agora
     desenhar();
+    oclusao?.reaplicar();
     camera.layers.disable(CAMADA_SOMBRA);
   } else desenhar();
 });
@@ -1236,7 +1370,7 @@ Promise.all([
     }
     inimigos = criarInimigos({ cena, mapa: m, posicoes: mundo.posicoesInimigos });
     campanha = criarCampanha({
-      cena, mundo, inimigos, jogador,
+      cena, mapa: m, mundo, inimigos, jogador,
       respawn: p => { respawn(p); jogador.seguro.copy(p); },
       comEscuro, aoTerminar: terminarCapitulo,
       aoSalvar: salvarProgresso, // progresso guardado no navegador (menu: Continuar)
@@ -1265,6 +1399,8 @@ Promise.all([
     });
     aplicarEfeitos();
     configurarSombra();
+    oclusao = criarOclusao({ malha: m.malha });
+    for (const o of [...(m.lods ?? []), ...(m.setores ?? [])]) oclusao.adicionar(o);
 
     // cópia separada do início do pulo, para a pose da cambalhota não brigar com o pulo normal
     p.acoes.cambalhota = p.mixer.clipAction(p.acoes.puloInicio.getClip().clone());
@@ -1286,16 +1422,18 @@ Promise.all([
     estado = 'menu';
     barra.parentElement.style.display = 'none';
     $('historia').innerHTML = INTRO.map(l => `<p>${l}</p>`).join('');
-    msg.textContent = 'Ajude Brisa a reacender as Âncoras de Maré e o Coração da Ilha antes que a vila caia no mar.';
-    const salvo = lerProgresso();
+    msg.textContent = CHAMADA;
+    const salvo = lerProgresso() || capituloSalvo();
     botao.textContent = salvo ? 'Novo jogo' : 'Começar';
     botao.className = salvo ? 'botao secundario' : 'botao principal';
     botao.style.display = 'block';
     if (salvo) { $('continuarJogo').style.display = 'block'; $('continuarJogo').focus(); } else botao.focus();
     window.__jogo = {
       jogador, personagem, camera, camera3p, mapa, terreno, correntes, renderer, cena, sol, medidor, altos, mundo, inimigos, campanha, agua, nevoa, cachoeiras, praia, ceu: ceuJogo, get combate() { return combate; },
-      animacao: () => animAtual, estado: () => estado, nivel: () => nomeNivel, aplicarNivel,
+      animacao: () => animAtual, estado: () => estado, nivel: () => nomeNivel, aplicarNivel, ocioso, get oclusao() { return oclusao; },
     };
+    // veio do "Continuar" de outro capítulo: continua sem esperar outro clique
+    if (new URLSearchParams(location.search).has('continuar') && lerProgresso()) continuarJogo();
   })
   .catch(err => {
     console.error(err);

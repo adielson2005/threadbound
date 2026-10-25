@@ -1,15 +1,19 @@
 import * as THREE from 'three';
-import { FALAS, DICAS, OBJETIVOS, MEMORIAS, AVISOS, BILHETE, CAPITULO, CARTAS } from './historia.js';
+import { linhaLivre } from './colisao.js';
+import { DICAS_TOQUE, paraToque } from './historia.js';
+import { FALAS, DICAS, OBJETIVOS, MEMORIAS, AVISOS, BILHETE, CAPITULO, CARTAS, INTERACOES } from './historia.js';
+import { CAPITULO_ATUAL } from './capitulo.js';
 
-// Chapter 1 progression: fragments, purification by interaction, restoring the anchors and the
+// Chapter progression (the same structure in the four chapters, with each chapter's texts): fragments, purification by interaction, restoring the anchors and the
 // Heart of the Thread, short dialogues, tremors while the island sinks, and the ending.
 // Everything here is lightweight and driven by the game loop (atualizar) and the E key (interagir).
 
 const VIDA_MAX = 5;
+const TOQUE = matchMedia('(pointer: coarse)').matches; // celular/tablet: dicas dos botões de toque
 
 const $ = id => document.getElementById(id);
 
-export function criarCampanha({ cena, mundo, inimigos, jogador, respawn, comEscuro, aoTerminar, aoAtaque, casas = [], aoSalvar = null }) {
+export function criarCampanha({ cena, mapa, mundo, inimigos, jogador, respawn, comEscuro, aoTerminar, aoAtaque, casas = [], aoSalvar = null }) {
   const ui = {
     vida: $('vida'), objetivo: $('objetivo'),
     fala: $('fala'), falaQuem: document.querySelector('#fala b'), falaTexto: document.querySelector('#fala span'),
@@ -84,7 +88,7 @@ export function criarCampanha({ cena, mundo, inimigos, jogador, respawn, comEscu
   function dica(chave, forcar = false) {
     if (est.dicas.has(chave) && !forcar) return;
     est.dicas.add(chave);
-    ui.dica.textContent = DICAS[chave]; ui.dica.style.opacity = 1;
+    ui.dica.textContent = TOQUE ? (DICAS_TOQUE[chave] ?? paraToque(DICAS[chave])) : DICAS[chave]; ui.dica.style.opacity = 1;
     clearTimeout(tempoDica); tempoDica = setTimeout(() => { ui.dica.style.opacity = 0; }, 7000);
   }
   function falar(linhas) { est.falas.push(...linhas); if (!est.falaAtual) proximaFala(); }
@@ -128,10 +132,16 @@ export function criarCampanha({ cena, mundo, inimigos, jogador, respawn, comEscu
     return melhor;
   }
 
+  // (só o que ela alcança: nada de acalmar um Retalho do outro lado de uma parede)
+  const peito = new THREE.Vector3(), alvoVisto = new THREE.Vector3();
   function alvoPurificavel() {
     let melhor = null, distancia = 2.5;
-    for (const e of inimigos.lista) if (e.ativo) { const d = e.pos.distanceTo(jogador.pos); if (d < distancia) { melhor = { tipo: 'retalho', obj: e }; distancia = d; } }
-    for (const a of mundo.ancoras) for (const c of a.cristais) if (!c.quebrado) { const d = c.pos.distanceTo(jogador.pos); if (d < distancia) { melhor = { tipo: 'cristal', obj: c }; distancia = d; } }
+    peito.copy(jogador.pos).y += 1.1;
+    for (const e of inimigos.lista) if (e.ativo) { const d = e.pos.distanceTo(jogador.pos); if (d < distancia && inimigos.alcanca(e, peito)) { melhor = { tipo: 'retalho', obj: e }; distancia = d; } }
+    for (const a of mundo.ancoras) for (const c of a.cristais) if (!c.quebrado) {
+      const d = c.pos.distanceTo(jogador.pos);
+      if (d < distancia && linhaLivre(mapa, peito, alvoVisto.set(c.pos.x, c.pos.y + 0.3, c.pos.z))) { melhor = { tipo: 'cristal', obj: c }; distancia = d; }
+    }
     return melhor;
   }
   function purificar(alvo) {
@@ -156,13 +166,13 @@ export function criarCampanha({ cena, mundo, inimigos, jogador, respawn, comEscu
     if (interacao) { html(ui.interagir, comTecla(interacao.texto)); ui.interagir.style.opacity = 1; return; }
     if (est.etapa === 'ancoras' || est.etapa === 'inicio') {
       const a = ancoraProxima(2.8);
-      if (a && !a.restaurada) interacao = { texto: 'E — Reacender a Âncora de Maré', acao: () => tentarAncora(a) };
+      if (a && !a.restaurada) interacao = { texto: `E — ${INTERACOES.ancora}`, acao: () => tentarAncora(a) };
     }
     const dCor = mundo.coracao.pos.distanceTo(jogador.pos);
     if (dCor < 3.4) {
-      if (est.etapa === 'coracao') interacao = { texto: 'E — Restaurar o Coração da Ilha', acao: restaurarCoracao };
-      else if (est.etapa === 'bilhete') interacao = { texto: 'E — Ler a carta de Aurélia', acao: lerBilhete };
-      else if (est.etapa === 'ancoras' || est.etapa === 'inicio') interacao = { texto: 'E — Examinar o Coração da Ilha', acao: () => falar(FALAS.coracaoFechado) };
+      if (est.etapa === 'coracao') interacao = { texto: `E — ${INTERACOES.coracao}`, acao: restaurarCoracao };
+      else if (est.etapa === 'bilhete') interacao = { texto: `E — ${INTERACOES.bilhete}`, acao: lerBilhete };
+      else if (est.etapa === 'ancoras' || est.etapa === 'inicio') interacao = { texto: `E — ${INTERACOES.examinar}`, acao: () => falar(FALAS.coracaoFechado) };
     }
     html(ui.interagir, interacao ? comTecla(interacao.texto) : '');
     ui.interagir.style.opacity = interacao ? 1 : 0;
@@ -208,7 +218,7 @@ export function criarCampanha({ cena, mundo, inimigos, jogador, respawn, comEscu
     mundo.coracao.bilhete.visible = false;
     falar(FALAS.depoisBilhete);
     est.concluido = true; salvar();
-    setTimeout(() => { est.terminou = true; aoTerminar({ capitulo: CAPITULO, fragmentos: est.pegos, total: fragmentos.length, purificados: est.purificados, memorias: memoriasLidas + cartasLidas }); }, 6500);
+    setTimeout(() => { est.terminou = true; aoTerminar({ capitulo: CAPITULO, numero: CAPITULO_ATUAL, fragmentos: est.pegos, total: fragmentos.length, purificados: est.purificados, memorias: memoriasLidas + cartasLidas }); }, 6500);
     return true;
   }
 
@@ -290,14 +300,14 @@ export function criarCampanha({ cena, mundo, inimigos, jogador, respawn, comEscu
   // ---------- salvar / continuar ----------
   function exportar() {
     return {
-      capitulo: 1, etapa: est.etapa, vida: est.vida, memorias: memoriasLidas, coracao: !!mundo.coracao.restaurado,
+      capitulo: CAPITULO_ATUAL, etapa: est.etapa, vida: est.vida, memorias: memoriasLidas, coracao: !!mundo.coracao.restaurado,
       checkpoint: est.checkpoint.toArray().map(v => Math.round(v * 100) / 100),
       fragmentos: fragmentos.flatMap((f, i) => (f.pega ? [i] : [])),
       ancoras: mundo.ancoras.flatMap((a, i) => (a.restaurada ? [i] : [])),
       cristais: mundo.ancoras.flatMap((a, i) => a.cristais.flatMap((c, k) => (c.quebrado ? [[i, k]] : []))),
       purificados: inimigos.lista.flatMap((e, i) => (e.ativo ? [] : [i])),
       cartas: cartas.filter(c => c.lida).map(c => c.nome),
-      concluidos: est.concluido ? [1] : [],
+      concluido: !!est.concluido,
     };
   }
   function salvar() { aoSalvar?.(exportar()); }
@@ -312,7 +322,7 @@ export function criarCampanha({ cena, mundo, inimigos, jogador, respawn, comEscu
     est.etapa = s.etapa ?? est.etapa;
     if (est.etapa === 'final') est.etapa = 'bilhete';
     if (est.etapa === 'fim') mundo.coracao.bilhete.visible = false;
-    est.concluido = (s.concluidos ?? []).includes(1);
+    est.concluido = !!s.concluido || (s.concluidos ?? []).includes(CAPITULO_ATUAL);
     est.vida = Math.max(1, s.vida ?? VIDA_MAX);
     if (s.checkpoint) est.checkpoint.fromArray(s.checkpoint);
     est.tempoTremor = s.coracao ? Infinity : 30 + (s.ancoras?.length ?? 0) * 25;

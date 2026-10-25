@@ -253,6 +253,20 @@
     #aviso { font-size: 22px; }
     .pilula, .engrenagem { height: 30px; } #hud .engrenagem { width: 30px; }
   }
+  @media (pointer: coarse) { #hud .engrenagem { width: 44px; height: 44px; } }
+  /* (no fim: vale por cima das regras de tela pequena acima)
+     celular: a fala, a dica e o aviso de interação nunca ficam por baixo dos botões de toque
+     (que ocupam o canto de baixo à direita: ~190 × 250 px) */
+  @media (pointer: coarse) and (orientation: landscape) {
+    #fala { left: 12px; right: 196px; width: auto; transform: none; bottom: 14px; }
+    #dicaTutorial { left: 12px; right: 196px; transform: rotate(-0.6deg); max-width: none; top: auto; bottom: 120px; }
+    #interagir { bottom: 205px; left: calc(50% - 92px); }
+  }
+  @media (pointer: coarse) and (orientation: portrait) {
+    #fala { bottom: 262px; }
+    #dicaTutorial { top: auto; bottom: 372px; }
+    #interagir { bottom: 470px; }
+  }
 </style>
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.165.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.165.0/examples/jsm/","three-mesh-bvh":"https://cdn.jsdelivr.net/npm/three-mesh-bvh@0.7.6/build/index.module.js","meshoptimizer/simplifier":"https://cdn.jsdelivr.net/npm/meshoptimizer@0.21.0/meshopt_simplifier.module.js"}}</script>
 </head>
@@ -300,13 +314,8 @@
 <div id="paineis">
   <section class="caixa pano" data-painel="capitulos">
     <h2>Capítulos</h2>
-    <p>A história de Brisa tem quatro capítulos. O primeiro já pode ser jogado; os outros estão sendo costurados.</p>
-    <ol class="capitulos">
-      <li class="livre"><b>1 · A Vila de Maré Alta</b><span>A ilha que foi costurada no céu. Reacenda as Âncoras de Maré e o Coração da Ilha.</span><button class="botao principal" id="jogarCap1">Jogar</button></li>
-      <li class="trancado"><b>2 · O Recife das Vozes</b><span>Um recife de destroços sob uma tempestade parada. Em produção.</span><em>🔒</em></li>
-      <li class="trancado"><b>3 · O Jardim Submerso</b><span>O fundo do mar antigo, debaixo das ilhas. Em produção.</span><em>🔒</em></li>
-      <li class="trancado"><b>4 · A Costura Final</b><span>O olho da tempestade, acima das nuvens. Em produção.</span><em>🔒</em></li>
-    </ol>
+    <p>A história de Brisa tem quatro capítulos. Cada um abre quando o anterior termina.</p>
+    <ol class="capitulos" id="listaCapitulos"></ol>
     <button class="botao secundario fechar-painel">Voltar</button>
   </section>
   <section class="caixa pano" data-painel="config">
@@ -322,6 +331,7 @@
         <div><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd><span>andar</span></div>
         <div><kbd>Mouse</kbd><span>girar a câmera (Z / C)</span></div>
         <div><kbd>Shift</kbd><span>correr</span></div>
+        <div><kbd>X</kbd><span>andar devagar (segurar)</span></div>
         <div><kbd>Espaço</kbd><span>pular · no ar: cambalhota · segurar: planar</span></div>
         <div><kbd>Borda</kbd><span>pule contra ela para subir</span></div>
         <div><kbd>J</kbd><span>combo de socos (clique)</span></div>
@@ -342,7 +352,7 @@
   <section class="caixa pano" data-painel="creditos">
     <h2>Créditos</h2>
     <p class="creditos">
-      <b>Threadbound</b> — Capítulo 1: A Vila de Maré Alta<br>
+      <b>Threadbound</b> — a história de Brisa em quatro capítulos<br>
       Criação e direção: adielson2005<br>
       Programação, mapa gerado, céu, chuva, história e interface: feitos com o Claude (Anthropic)<br>
       Boneca: modelo "Little Lavender Doll" (Meshy) · animações extras: Human Basic Motions<br>

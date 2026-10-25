@@ -1,7 +1,8 @@
 # Threadbound — Roteiro (versão 2)
 
-> Substitui o roteiro anterior (Numi / T. / Vazio de Linha). O Capítulo 1 já está jogável;
-> os Capítulos 2–4 são o planejamento dos próximos mapas.
+> Substitui o roteiro anterior (Numi / T. / Vazio de Linha). Os quatro capítulos estão jogáveis:
+> cada um tem o seu mapa (src/capitulo.js), e todos os diálogos, cartas, diários e finais estão em
+> src/historia.js.
 
 ## Sinopse
 
@@ -43,6 +44,10 @@ ligadas por correntes de vento: a do Farol, a das Ruínas e a do Pomar.
 5. Subir o morro e restaurar o **Coração da Ilha**.
 6. Ler a carta de Aurélia junto ao Coração.
 
+**Áreas secretas (opcionais):** a Gruta dos Recados, escondida no morro da floresta, com uma
+carta das crianças da vila; e o mirante no alto do farol, por uma escada em espiral, com uma carta de
+Tomé que já fala da tempestade parada no horizonte.
+
 **Evento final:** quando o Coração volta a bater, o feixe do farol se acende sozinho e aponta para
 o horizonte. Lá, dentro de uma tempestade parada, aparece uma ilha de rochas e destroços: o Recife
 das Vozes. Da névoa, uma voz de menina chama: *"Vó?"*. Brisa sente o retalho do peito esquentar.
@@ -55,7 +60,7 @@ das Vozes. Da névoa, uma voz de menina chama: *"Vó?"*. Brisa sente o retalho d
 - Carta final: Aurélia confessa que costurou a ilha no céu e que o preço foram as pessoas. Pede
   que Brisa encontre Tomé "no recife onde as vozes ficaram presas".
 
-## Capítulo 2 — O Recife das Vozes (planejado)
+## Capítulo 2 — O Recife das Vozes (jogável)
 
 **Mapa:** um recife de corais pendurado no ar, com cascos de barcos naufragados presos em rochas,
 garoa constante e sinos de boia que tocam sozinhos.
@@ -67,8 +72,11 @@ garoa constante e sinos de boia que tocam sozinhos.
   engolido. O que Brisa fez para salvar a ilha teve um custo.
 - **Fim:** Tomé entrega o carretel de Aurélia, a linha que costurou a ilha, e aponta para baixo:
   "O jardim dela ainda está lá, no fundo".
+- **No jogo:** os três objetivos são os Sinos de Boia nas ilhotas; o objetivo final é o casco grande
+  no alto do recife, onde Tomé aparece; os cascos de barco da praça guardam diários de bordo;
+  garoa o tempo todo.
 
-## Capítulo 3 — O Jardim Submerso (planejado)
+## Capítulo 3 — O Jardim Submerso (jogável)
 
 **Mapa:** o antigo fundo do mar, sob as ilhas, que ficou seco quando o mar subiu ao céu: algas
 petrificadas, a vila antiga e o jardim de Aurélia.
@@ -79,8 +87,11 @@ petrificadas, a vila antiga e o jardim de Aurélia.
   ali para que ninguém mais se perca, e é isso que impede todos de descansar.
 - **Conflito:** Brisa descobre que, se desfizer a costura, deixa de ter as lembranças que a fazem ser
   ela mesma.
+- **No jogo:** três Flores de Pedra (as pétalas abrem e soltam lembranças de Ilma), a vila velha com
+  cartas de antes da subida, e o jardim de Aurélia no ponto mais alto, com a árvore de pedra e a fita
+  de Ilma; Ilma fala pela primeira vez.
 
-## Capítulo 4 — A Costura Final (planejado)
+## Capítulo 4 — A Costura Final (jogável)
 
 **Mapa:** o olho da tempestade, acima das nuvens: retalhos gigantes, pontos de costura do tamanho
 de pontes e o vento carregando vozes.
@@ -92,6 +103,9 @@ de pontes e o vento carregando vozes.
 - **Encerramento:** Brisa perde as lembranças, mas fica com um fio de cada morador costurado na
   barra do vestido. Tomé acende o farol pela última vez, e Brisa decide continuar como ela mesma.
 - **Expansões futuras:** outras vilas costuradas no céu, que o vento trouxe de longe.
+- **No jogo:** o chão é uma colcha de retalhos gigantes com pontos de costura; os três Nós da Costura
+  guardam as vozes de Bento, Dona Celeste e da vila (cada nó afrouxa e some); no alto, a silhueta de
+  névoa de Aurélia, que se apaga quando ela solta.
 
 ## Transições entre mapas
 
