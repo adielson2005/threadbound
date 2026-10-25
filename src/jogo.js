@@ -4,6 +4,7 @@ import { aplicarCambalhota, aplicarPose } from './cambalhota.js';
 import { carregarMapa, aplicarQualidadeMapa, atualizarLodPorVisao, aquecerMapa, CAMADA_SOMBRA } from './mapa.js';
 import { gerarIlha } from './ilha.js';
 import { criarChuva } from './chuva.js';
+import { lerProgresso, salvarProgresso, apagarProgresso, lerConfig, salvarConfig } from './salvar.js';
 import { analisarTerreno, calcularLancamento } from './terreno.js';
 import { moverComColisao, RAIO, ALTURA } from './fisica.js';
 import { incorporarSolidos } from './colisao.js';
@@ -502,14 +503,19 @@ function tentarDeNovo() {
   });
 }
 $('tentarDeNovo').addEventListener('click', tentarDeNovo);
-$('recomecar').addEventListener('click', () => location.reload());
+$('recomecar').addEventListener('click', () => { apagarProgresso(); location.reload(); });
 
 // Começar (primeira vez), continuar explorando depois do fim, ou jogar de novo (recarrega:
 // a campanha inteira volta ao início)
 function reiniciar() {
   if (estado === 'carregando') return;
+  // já existe progresso salvo: o primeiro toque em Novo jogo só pede confirmação
+  if (estado === 'menu' && lerProgresso() && !confirmandoNovo) {
+    confirmandoNovo = true; $('confirmarNovo').style.display = 'block'; return;
+  }
+  if (estado === 'menu') apagarProgresso();
   if (estado === 'fim') {
-    if (campanhaTerminada) { location.reload(); return; }
+    if (campanhaTerminada) { apagarProgresso(); location.reload(); return; }
   }
   const primeiraVez = estado === 'menu';
   estado = 'jogando';
@@ -520,8 +526,52 @@ function reiniciar() {
   teclas.clear();
   if (primeiraVez) campanha.iniciar();
 }
-let campanhaTerminada = false;
+let campanhaTerminada = false, confirmandoNovo = false;
 botao.addEventListener('click', reiniciar);
+// Continuar: refaz o progresso salvo (fragmentos, âncoras, cartas…) e volta ao último ponto seguro
+function continuarJogo() {
+  const s = lerProgresso();
+  if (!s || estado !== 'menu') return;
+  campanha.importar(s);
+  const p = new THREE.Vector3().fromArray(s.checkpoint ?? terreno.nascimento.toArray());
+  respawn(p); jogador.seguro.copy(p);
+  estado = 'jogando'; pausado = false;
+  tela.style.display = 'none';
+  $('continuarJogo').blur(); teclas.clear();
+  campanha.iniciar({ continuando: true });
+}
+$('continuarJogo').addEventListener('click', continuarJogo);
+$('jogarCap1').addEventListener('click', () => { fecharPaineis(); lerProgresso() ? continuarJogo() : reiniciar(); });
+
+// ---------- Painéis do menu: capítulos, configurações, créditos ----------
+const paineis = $('paineis');
+function abrirPainel(nome) {
+  paineis.classList.add('aberto');
+  for (const s of paineis.querySelectorAll('section')) s.classList.toggle('visivel', s.dataset.painel === nome);
+  paineis.querySelector('section.visivel button, section.visivel input')?.focus();
+}
+function fecharPaineis() { paineis.classList.remove('aberto'); }
+for (const b of document.querySelectorAll('[data-painel]')) if (b.tagName === 'BUTTON') b.addEventListener('click', () => abrirPainel(b.dataset.painel));
+for (const b of document.querySelectorAll('.fechar-painel')) b.addEventListener('click', fecharPaineis);
+paineis.addEventListener('click', e => { if (e.target === paineis) fecharPaineis(); });
+addEventListener('keydown', e => { if (e.code === 'Escape' && paineis.classList.contains('aberto')) fecharPaineis(); });
+
+// configurações: aplicadas na hora e guardadas
+const config = lerConfig();
+function aplicarConfig() {
+  chuva.definirVolume(config.volume);
+  CAMERA.sensibilidade = 0.0025 * config.sensibilidade;
+  document.documentElement.style.setProperty('--escala-texto', config.texto);
+  $('volumeValor').textContent = Math.round(config.volume * 100) + '%';
+  $('sensValor').textContent = config.sensibilidade.toFixed(1) + '×';
+  salvarConfig(config);
+}
+$('cfgVolume').value = config.volume; $('cfgSens').value = config.sensibilidade; $('cfgTexto').value = String(config.texto); $('cfgTremor').checked = config.tremor;
+$('cfgVolume').addEventListener('input', e => { config.volume = +e.target.value; aplicarConfig(); });
+$('cfgSens').addEventListener('input', e => { config.sensibilidade = +e.target.value; aplicarConfig(); });
+$('cfgTexto').addEventListener('change', e => { config.texto = +e.target.value; aplicarConfig(); });
+$('cfgTremor').addEventListener('change', e => { config.tremor = e.target.checked; aplicarConfig(); });
+aplicarConfig();
 $('continuar').addEventListener('click', () => { tela.style.display = 'none'; estado = 'jogando'; $('continuar').style.display = 'none'; $('continuar').blur(); teclas.clear(); });
 
 function terminarCapitulo(r) {
@@ -1049,7 +1099,7 @@ function atualizarCamera(dt) {
   const tremor = campanha?.tremor ?? 0;
   if (tremor > 0) camera.position.add(new THREE.Vector3(Math.random() - 0.5, Math.random() - 0.5, Math.random() - 0.5).multiplyScalar(0.22 * tremor));
   // impactos: tranco curto que some rápido, e a câmera desce junto com o pouso e volta
-  if (impacto.tremor > 0.01) camera.position.add(new THREE.Vector3(Math.random() - 0.5, Math.random() - 0.5, Math.random() - 0.5).multiplyScalar(0.16 * impacto.tremor));
+  if (impacto.tremor > 0.01) camera.position.add(new THREE.Vector3(Math.random() - 0.5, Math.random() - 0.5, Math.random() - 0.5).multiplyScalar(0.16 * impacto.tremor * (config.tremor ? 1 : 0)));
   camera.position.y -= impacto.mergulho;
   impacto.tremor *= Math.exp(-dt * 7);
   impacto.mergulho *= Math.exp(-dt * 6);
@@ -1189,6 +1239,7 @@ Promise.all([
       cena, mundo, inimigos, jogador,
       respawn: p => { respawn(p); jogador.seguro.copy(p); },
       comEscuro, aoTerminar: terminarCapitulo,
+      aoSalvar: salvarProgresso, // progresso guardado no navegador (menu: Continuar)
       aoAtaque: e => combate?.aoSerAtacada(e), // investida de um Retalho que chegou nela
       casas: m.pontos?.casas, // cartas dos moradores nas casas da vila
     });
@@ -1236,9 +1287,11 @@ Promise.all([
     barra.parentElement.style.display = 'none';
     $('historia').innerHTML = INTRO.map(l => `<p>${l}</p>`).join('');
     msg.textContent = 'Ajude Brisa a reacender as Âncoras de Maré e o Coração da Ilha antes que a vila caia no mar.';
-    botao.textContent = 'Começar';
+    const salvo = lerProgresso();
+    botao.textContent = salvo ? 'Novo jogo' : 'Começar';
+    botao.className = salvo ? 'botao secundario' : 'botao principal';
     botao.style.display = 'block';
-    botao.focus();
+    if (salvo) { $('continuarJogo').style.display = 'block'; $('continuarJogo').focus(); } else botao.focus();
     window.__jogo = {
       jogador, personagem, camera, camera3p, mapa, terreno, correntes, renderer, cena, sol, medidor, altos, mundo, inimigos, campanha, agua, nevoa, cachoeiras, praia, ceu: ceuJogo, get combate() { return combate; },
       animacao: () => animAtual, estado: () => estado, nivel: () => nomeNivel, aplicarNivel,

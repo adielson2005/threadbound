@@ -9,7 +9,7 @@ const VIDA_MAX = 5;
 
 const $ = id => document.getElementById(id);
 
-export function criarCampanha({ cena, mundo, inimigos, jogador, respawn, comEscuro, aoTerminar, aoAtaque, casas = [] }) {
+export function criarCampanha({ cena, mundo, inimigos, jogador, respawn, comEscuro, aoTerminar, aoAtaque, casas = [], aoSalvar = null }) {
   const ui = {
     vida: $('vida'), objetivo: $('objetivo'),
     fala: $('fala'), falaQuem: document.querySelector('#fala b'), falaTexto: document.querySelector('#fala span'),
@@ -137,6 +137,7 @@ export function criarCampanha({ cena, mundo, inimigos, jogador, respawn, comEscu
   function purificar(alvo) {
     if (alvo.tipo === 'retalho') { inimigos.purificar(alvo.obj); est.purificados++; aviso(AVISOS.inimigoPurificado, 1400); }
     else { const c = alvo.obj; c.quebrado = true; c.grupo.visible = false; c.aura.visible = false; est.cristais++; aviso(AVISOS.cristalQuebrado, 1400); }
+    salvar();
   }
 
   // ---------- interactions ----------
@@ -144,7 +145,7 @@ export function criarCampanha({ cena, mundo, inimigos, jogador, respawn, comEscu
   function procurarInteracao() {
     interacao = null;
     const alvo = alvoPurificavel();
-    if (alvo) interacao = { texto: `E — ${alvo.tipo === 'retalho' ? 'Purificar o Retalho' : 'Dissolver o Cristal de Névoa'}`, acao: () => purificar(alvo) };
+    if (alvo) interacao = { texto: `E — ${alvo.tipo === 'retalho' ? 'Acalmar o Retalho' : 'Dissolver o Cristal de Névoa'}`, acao: () => purificar(alvo) };
     if (interacao) { html(ui.interagir, comTecla(interacao.texto)); ui.interagir.style.opacity = 1; return; }
     for (const c of cartas) {
       if (Math.hypot(c.pos.x - jogador.pos.x, c.pos.z - jogador.pos.z) < 2.4 && Math.abs(c.pos.y - jogador.pos.y) < 2) {
@@ -168,7 +169,7 @@ export function criarCampanha({ cena, mundo, inimigos, jogador, respawn, comEscu
   }
   function lerCarta(c) {
     memoria(CARTAS[c.nome], `✉ ${c.nome}`);
-    if (!c.lida) { c.lida = true; cartasLidas++; c.brilho.visible = false; if (cartasLidas === 1) falar(FALAS.primeiraCarta); }
+    if (!c.lida) { c.lida = true; cartasLidas++; c.brilho.visible = false; if (cartasLidas === 1) falar(FALAS.primeiraCarta); salvar(); }
   }
   function tentarAncora(a) {
     const cristaisRestantes = a.cristais.filter(c => !c.quebrado).length;
@@ -186,13 +187,14 @@ export function criarCampanha({ cena, mundo, inimigos, jogador, respawn, comEscu
     falar(FALAS.ancoraRestaurada[Math.min(n, 3) - 1]);
     est.tempoTremor = 30 + n * 25;
     if (n === mundo.ancoras.length) { est.etapa = 'coracao'; dica('coracao'); }
+    salvar();
   }
   function restaurarCoracao() {
     est.etapa = 'final';
     falar(FALAS.restaurarCoracao);
     mundo.coracao.restaurar();
     est.tremor = 0; est.tempoTremor = Infinity;
-    setTimeout(() => { falar(FALAS.depoisCoracao); est.etapa = 'bilhete'; }, 1800);
+    setTimeout(() => { falar(FALAS.depoisCoracao); est.etapa = 'bilhete'; salvar(); }, 1800);
   }
   function lerBilhete() {
     est.etapa = 'fim';
@@ -205,6 +207,7 @@ export function criarCampanha({ cena, mundo, inimigos, jogador, respawn, comEscu
     est.lendo = false; ui.bilhete.style.display = 'none';
     mundo.coracao.bilhete.visible = false;
     falar(FALAS.depoisBilhete);
+    est.concluido = true; salvar();
     setTimeout(() => { est.terminou = true; aoTerminar({ capitulo: CAPITULO, fragmentos: est.pegos, total: fragmentos.length, purificados: est.purificados, memorias: memoriasLidas + cartasLidas }); }, 6500);
     return true;
   }
@@ -227,6 +230,7 @@ export function criarCampanha({ cena, mundo, inimigos, jogador, respawn, comEscu
         est.vida = Math.min(VIDA_MAX, est.vida + 1); atualizarVida(); atualizarFragmentos();
         if (est.pegos === 1) { falar(FALAS.primeiroFragmento); est.etapa = 'ancoras'; }
         if (f.memoria) { memoria(MEMORIAS[memoriasLidas % MEMORIAS.length]); memoriasLidas++; if (memoriasLidas === 1) dica('memoria'); }
+        salvar();
       }
       if (f.rocha && !est.dicas.has('rocha') && f.grupo.position.distanceTo(jogador.pos) < 9) dica('rocha');
     }
@@ -262,6 +266,9 @@ export function criarCampanha({ cena, mundo, inimigos, jogador, respawn, comEscu
       if (!est.avisouTremor) { est.avisouTremor = true; aviso(AVISOS.tremor); }
     }
     est.tremor = Math.max(0, est.tremor - dt * 1.1);
+    // salvamento automático de tempos em tempos (o ponto seguro onde ela está agora)
+    est.tempoSalvar = (est.tempoSalvar ?? 15) - dt;
+    if (est.tempoSalvar <= 0 && jogador.noChao && !jogador.morta) { est.tempoSalvar = 15; est.checkpoint.copy(jogador.seguro ?? jogador.pos).add(new THREE.Vector3(0, 0.2, 0)); salvar(); }
 
     procurarInteracao();
     objetivo();
@@ -273,12 +280,46 @@ export function criarCampanha({ cena, mundo, inimigos, jogador, respawn, comEscu
     interacao?.acao();
   }
 
-  function iniciar() {
+  function iniciar({ continuando = false } = {}) {
     // the campaign is built before Brisa is placed at the spawn, so take the checkpoint now
-    est.checkpoint.copy(jogador.pos).add(new THREE.Vector3(0, 0.2, 0));
+    if (!continuando) est.checkpoint.copy(jogador.pos).add(new THREE.Vector3(0, 0.2, 0));
     atualizarVida(); atualizarFragmentos();
-    falar(FALAS.despertar);
-    setTimeout(() => dica('andar'), 500);
+    if (!continuando) { falar(FALAS.despertar); setTimeout(() => dica('andar'), 500); }
+  }
+
+  // ---------- salvar / continuar ----------
+  function exportar() {
+    return {
+      capitulo: 1, etapa: est.etapa, vida: est.vida, memorias: memoriasLidas, coracao: !!mundo.coracao.restaurado,
+      checkpoint: est.checkpoint.toArray().map(v => Math.round(v * 100) / 100),
+      fragmentos: fragmentos.flatMap((f, i) => (f.pega ? [i] : [])),
+      ancoras: mundo.ancoras.flatMap((a, i) => (a.restaurada ? [i] : [])),
+      cristais: mundo.ancoras.flatMap((a, i) => a.cristais.flatMap((c, k) => (c.quebrado ? [[i, k]] : []))),
+      purificados: inimigos.lista.flatMap((e, i) => (e.ativo ? [] : [i])),
+      cartas: cartas.filter(c => c.lida).map(c => c.nome),
+      concluidos: est.concluido ? [1] : [],
+    };
+  }
+  function salvar() { aoSalvar?.(exportar()); }
+  function importar(s) {
+    for (const i of s.fragmentos ?? []) { const f = fragmentos[i]; if (f && !f.pega) { f.pega = true; f.grupo.visible = false; est.pegos++; } }
+    memoriasLidas = s.memorias ?? 0;
+    for (const [a, k] of s.cristais ?? []) { const c = mundo.ancoras[a]?.cristais[k]; if (c && !c.quebrado) { c.quebrado = true; c.grupo.visible = false; c.aura.visible = false; est.cristais++; } }
+    for (const i of s.purificados ?? []) { const e = inimigos.lista[i]; if (e?.ativo) { e.ativo = false; e.estado = 'morrendo'; e.tempo = 10; e.g.visible = false; est.purificados++; } }
+    for (const i of s.ancoras ?? []) { const a = mundo.ancoras[i]; if (a && !a.restaurada) { mundo.ancoras.restaurar(a); est.mostrouAncora.add(a); } }
+    for (const nome of s.cartas ?? []) { const c = cartas.find(x => x.nome === nome); if (c && !c.lida) { c.lida = true; c.brilho.visible = false; cartasLidas++; } }
+    if (s.coracao) { mundo.coracao.restaurar(); est.tempoTremor = Infinity; }
+    est.etapa = s.etapa ?? est.etapa;
+    if (est.etapa === 'final') est.etapa = 'bilhete';
+    if (est.etapa === 'fim') mundo.coracao.bilhete.visible = false;
+    est.concluido = (s.concluidos ?? []).includes(1);
+    est.vida = Math.max(1, s.vida ?? VIDA_MAX);
+    if (s.checkpoint) est.checkpoint.fromArray(s.checkpoint);
+    est.tempoTremor = s.coracao ? Infinity : 30 + (s.ancoras?.length ?? 0) * 25;
+    // quem já jogou não precisa rever os tutoriais do começo
+    for (const d of ['andar', 'correr', 'pular', 'borda', 'vento', 'combate', 'memoria', 'carta']) est.dicas.add(d);
+    est.viuInimigo = true; est.avisouTremor = true;
+    atualizarVida(); atualizarFragmentos();
   }
 
   // dano (quedas fortes, cair no vazio): tira fôlego, pisca a borda vermelha e devolve quanto sobrou
@@ -298,11 +339,11 @@ export function criarCampanha({ cena, mundo, inimigos, jogador, respawn, comEscu
   }
 
   // purificação e cristal quebrados no combate (por golpes, não pelo E)
-  function registrarPurificado() { est.purificados++; aviso(AVISOS.inimigoPurificado, 1400); }
-  function registrarCristal() { est.cristais++; aviso(AVISOS.cristalQuebrado, 1400); }
+  function registrarPurificado() { est.purificados++; aviso(AVISOS.inimigoPurificado, 1400); salvar(); }
+  function registrarCristal() { est.cristais++; aviso(AVISOS.cristalQuebrado, 1400); salvar(); }
 
   return {
-    atualizar, interagir, iniciar, fragmentos, estado: est, perderVida, reviver, registrarPurificado, registrarCristal,
+    atualizar, interagir, iniciar, fragmentos, estado: est, perderVida, reviver, registrarPurificado, registrarCristal, exportar, importar, salvar,
     get tremor() { return est.tremor; },
     get lendo() { return !!est.lendo; },
   };
