@@ -26,6 +26,21 @@ emulação de celular.** O que falta depende de um aparelho de verdade: medir FP
 | 10–11. GitHub | ✅ feito | Um commit por etapa, todos enviados (sem force push). |
 | 12. Testes | 🔄 quase tudo | Testado no navegador do PC: os 4 capítulos **jogados do começo ao fim** pela lógica do jogo (fragmentos, guardiões, cristais, os 3 objetivos, o final, a carta, a tela de fim e o desbloqueio), colisões, escada do farol, cartas secretas, KTX2 contra os originais, occlusion culling sem esconder nada visível, gestos da boneca, menu e painéis, layout de toque em emulação de Pixel 5 (retrato e paisagem), sessão longa de memória e console sem erros. **Falta:** um Android de verdade (FPS e toque real). |
 
+## Android e 60 fps no celular
+
+- **APK:** `android/` (Activity em Java com WebView em tela cheia, imersiva, tela sempre ligada,
+  deitada) e `ferramentas/gerar-apk.sh` (aapt, javac, dx, zipalign, apksigner). Gera
+  `build/Threadbound.apk` (~34 MB, Android 7+, assinatura v2/v3). O conteúdo do APK foi testado no
+  Chromium em emulação de celular com a internet bloqueada: nenhum pedido externo, nenhum erro.
+- **Offline:** three.js, three-mesh-bvh, meshoptimizer, o transcodificador Basis e as fontes ficam em
+  `vendor/` (2,7 MB): o jogo não depende mais de CDN nem do Google Fonts.
+- **Boneca 7,8× menor:** `boneca.fbx` de 49,9 MB para 6,4 MB, sem as imagens embutidas que o jogo não
+  usava (`ferramentas/fbx-sem-imagens.py`); malha, esqueleto e animações idênticos.
+- **Perfil `celular`** (`graficos.js`): meta de 60 fps no ajuste automático (antes 45), física a 60
+  passos/s, resolução até 1× do CSS, FXAA no lugar do MSAA, sombra até 1024, texturas até o Medium,
+  menos distância e vegetação leve mais perto.
+- **Falta:** medir num aparelho de verdade (este ambiente não tem emulador Android nem GPU).
+
 ## Sessão longa de memória
 
 4 minutos andando em círculos pela ilha, com chuva, no Chromium sem GPU (medido com

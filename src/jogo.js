@@ -213,6 +213,7 @@ function atualizarMenu() {
   $('perfil-pc').textContent = {
     semPlaca: 'Seu PC está desenhando sem placa de vídeo: os três modos foram ajustados para rodar leves.',
     fraco: 'Placa de vídeo integrada ou PC mais simples: os modos foram ajustados para não travar.',
+    celular: 'Celular: os modos foram ajustados para mirar 60 fps (resolução, sombra e distância se ajustam sozinhas).',
     normal: 'Os três modos se ajustam sozinhos se o fps cair.',
   }[hardware.perfil];
 }
@@ -597,7 +598,10 @@ const paineis = $('paineis');
 function abrirPainel(nome) {
   paineis.classList.add('aberto');
   for (const s of paineis.querySelectorAll('section')) s.classList.toggle('visivel', s.dataset.painel === nome);
-  paineis.querySelector('section.visivel button, section.visivel input')?.focus();
+  // foco para o teclado/controle, sem rolar o painel até o botão (em tela baixa o título sumia)
+  const aberto = paineis.querySelector('section.visivel');
+  aberto?.querySelector('button, input')?.focus({ preventScroll: true });
+  if (aberto) aberto.scrollTop = 0;
 }
 function fecharPaineis() { paineis.classList.remove('aberto'); }
 for (const b of document.querySelectorAll('[data-painel]')) if (b.tagName === 'BUTTON') b.addEventListener('click', () => abrirPainel(b.dataset.painel));
@@ -1246,13 +1250,16 @@ function medirDesempenho(dt) {
   if (estado !== 'jogando' || document.hidden || pausado) { orcamento.lento = orcamento.folga = 0; return; }
   const min = pisoResolucao(), max = nivel.resolucao[1];
   let r = RESOLUCAO.atual;
-  if (medidor.fps < 45) r -= 0.08; else if (medidor.fps > 58) r += 0.04;
+  // meta: 45 fps no PC; no celular, 60 (a tela atualiza a 60 Hz ou mais e menos que isso se sente
+  // no toque): abaixo da meta a resolução desce, com folga ela sobe
+  const meta = nivel.metaFps ?? 45;
+  if (medidor.fps < meta) r -= 0.08; else if (medidor.fps > Math.max(58, meta + 1)) r += 0.04;
   r = THREE.MathUtils.clamp(r, min, max);
   if (Math.abs(r - RESOLUCAO.atual) > 0.01) { RESOLUCAO.atual = r; renderer.setPixelRatio(r); redimensionarPos(); }
   // mesmo na menor resolução o fps continua baixo por 3 s: um passo a menos no orçamento.
   // Folga longa devolve um passo (cada queda pede mais folga, para não ficar indo e voltando)
   const noPiso = RESOLUCAO.atual <= min + 0.01;
-  orcamento.lento = noPiso && medidor.fps < 40 ? orcamento.lento + 1 : 0;
+  orcamento.lento = noPiso && medidor.fps < meta - 5 ? orcamento.lento + 1 : 0;
   // (com vsync, 55–60 já é folga; uma queda curta só desconta, não zera a conta)
   orcamento.folga = medidor.fps > 54 ? orcamento.folga + 1 : Math.max(0, orcamento.folga - 2);
   if (orcamento.lento >= 3 && orcamento.passo < PASSOS_ORCAMENTO.length - 1) {
@@ -1281,7 +1288,8 @@ function aplicarOrcamento() {
 const relogio = new THREE.Clock();
 let acumulado = 0, tempoCena = 0;
 // sem placa de vídeo a CPU também desenha a tela: a física roda a 60 passos/s em vez de 120
-const PASSO = hardware.perfil === 'semPlaca' ? 1 / 60 : 1 / 120;
+// (no celular também: a CPU do aparelho fica para o desenho, e 60 passos/s já acompanham a tela)
+const PASSO = hardware.perfil === 'semPlaca' || hardware.perfil === 'celular' ? 1 / 60 : 1 / 120;
 renderer.setAnimationLoop(() => {
   const dtBruto = relogio.getDelta();
   medirDesempenho(dtBruto);

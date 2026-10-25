@@ -16,6 +16,24 @@ O jogo carrega modelos por HTTP, então precisa de um servidor local (abrir o `i
 - **Windows:** dê dois cliques em `Jogar.bat` (precisa do [Python](https://www.python.org/downloads/)).
 - **Qualquer sistema:** na pasta do projeto, rode `python -m http.server 8080` e abra <http://localhost:8080>.
 
+## Android (APK)
+
+O jogo também roda como app Android (pasta `android/`): uma tela cheia com uma WebView que carrega o
+jogo de dentro do próprio APK, sem internet (as bibliotecas e as fontes ficam em `vendor/`).
+Precisa de Android 7 ou mais novo, com GPU de OpenGL ES 3 (praticamente todo celular desde 2016).
+
+Para gerar o APK (Ubuntu/Debian, sem Android Studio):
+
+```
+sudo apt install aapt zipalign apksigner dalvik-exchange android-sdk-platform-23 default-jdk
+ferramentas/gerar-apk.sh      # -> build/Threadbound.apk
+```
+
+A primeira execução cria a chave de assinatura em `build/` (fora do git). Guarde `build/assinatura.keystore`
+e `build/assinatura.senha`: para atualizar o app instalado, o APK novo precisa da mesma chave.
+No celular, o jogo entra no perfil `celular`, que mira 60 fps (resolução, sombra, distância e
+vegetação se ajustam sozinhas); para testar esse perfil no PC: `?perfil=celular`.
+
 ## Controles
 
 | Tecla | Ação |

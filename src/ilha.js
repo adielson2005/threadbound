@@ -935,7 +935,7 @@ export async function gerarIlha(renderer, aoProgredir = () => {}) {
       const novo = materialVegetacao(nivel.materialSimples, tempo);
       vegetacao.traverse(o => { if (o.isMesh) o.material = novo; });
       matVeg.dispose(); matVeg = novo;
-      const longe = nivel.materialSimples ? 38 : nivel.efeitos ? 85 : 60;
+      const longe = nivel.vegetacaoLonge ?? (nivel.materialSimples ? 38 : nivel.efeitos ? 85 : 60);
       for (const l of setoresLod) if (l.levels[1]) l.levels[1].distance = longe;
       for (const o of obras) o.aplicarNivel?.(nivel);
     },
