@@ -460,9 +460,9 @@ export async function criarBoneca(renderer, nivel, aoProgredir) {
   // volta a boneca ao repouso (o retarget só lê a pose dela)
   for (const o of ossos) { const l = ligacao.get(o.name); o.quaternion.copy(l.q); o.position.copy(l.p); }
 
-  // corpo novo da Brisa, costurado no mesmo esqueleto (a malha do Meshy fica em ?boneca=antiga)
+  // corpo alternativo costurado por código (costura.js), só em ?boneca=costurada; o padrão é a boneca original
   let costura = null, malhaVisivel = malha;
-  if (new URLSearchParams(location.search).get('boneca') !== 'antiga') {
+  if (new URLSearchParams(location.search).get('boneca') === 'costurada') {
     costura = costurarBoneca(fbx, 1 / metrosPorUnidade);
     malha.visible = false; malha.parent?.remove(malha); malha.geometry.dispose();
     malhaVisivel = costura.grupo;

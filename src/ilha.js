@@ -163,8 +163,8 @@ function corRocha(x, y, z, topoY, fundoY, out) {
 // rocha afunilando até a ponta. Os níveis de detalhe pulam anéis e setores (passo 1, 2, 4).
 const ANEIS_FALESIA = 6, ANEIS_BASE = 16;
 function malhaIlha(ilha, dados) {
-  const NS = Math.max(64, Math.round((2 * Math.PI * ilha.R) / 1.6 / 4) * 4);
-  const NA = Math.max(12, Math.round(ilha.R / 1.25));
+  const NS = Math.max(64, Math.round((2 * Math.PI * ilha.R) / 1.9 / 4) * 4);
+  const NA = Math.max(12, Math.round(ilha.R / 1.5));
   const aneis = []; // cada anel: lista de índices de vértice (NS)
   const { pos, cor, uv, caixa } = dados;
   const base = pos.length / 3;
@@ -222,7 +222,8 @@ function malhaIlha(ilha, dados) {
   const ponta = add(ilha.cx, yPonta, ilha.cz, corRocha(ilha.cx, yPonta, ilha.cz, cy, cy - 1, corTmp));
 
   // índices por nível de detalhe
-  const niveis = [1, 2, 4].map(passo => {
+  // um nível só: blocos vizinhos com detalhes diferentes deixavam fendas na falésia (a malha já é leve)
+  const niveis = [1].map(passo => {
     const ind = [];
     // anéis usados neste nível: o topo pula de "passo" em "passo"; sempre a borda, a falésia e a base
     const usados = [];
@@ -427,7 +428,7 @@ export async function gerarIlha(renderer, aoProgredir = () => {}) {
   let minX = Infinity, maxX = -Infinity, minZ = Infinity, maxZ = -Infinity;
   for (const il of TODAS) { minX = Math.min(minX, il.cx - il.R * 1.2); maxX = Math.max(maxX, il.cx + il.R * 1.2); minZ = Math.min(minZ, il.cz - il.R * 1.2); maxZ = Math.max(maxZ, il.cz + il.R * 1.2); }
   const caixa = { minX, minZ, tam: Math.max(maxX - minX, maxZ - minZ) };
-  const dados = { pos: [], cor: [], uv: [], niveis: [[], [], []], caixa };
+  const dados = { pos: [], cor: [], uv: [], niveis: [[]], caixa };
   for (const il of TODAS) malhaIlha(il, dados);
   await passo(0.3);
 
@@ -594,9 +595,9 @@ export async function gerarIlha(renderer, aoProgredir = () => {}) {
     nascimentoPreferido: new THREE.Vector3(VILA.x, alturaVila, VILA.z),
     pontos: { vila: VILA, morro: MORRO, ilhotas: ILHOTAS.map(i => ({ nome: i.nome, x: i.cx, z: i.cz, topo: alturaEm(i.cx, i.cz) })), casas: vila.casas, farol: farol.topo },
     alturaEm,
-    atualizarEnfeites(t, camera) {
+    atualizarEnfeites(t, camera, noite = 0) {
       tempo.value = t;
-      farol.atualizar?.(t);
+      farol.atualizar?.(t, noite);
     },
     aoMudarQualidade(nivel) {
       const novo = materialVegetacao(nivel.materialSimples, tempo);

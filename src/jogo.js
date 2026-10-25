@@ -919,7 +919,8 @@ function animarPersonagem(dt) {
     else if (v < 0.4) tocar('parada', { fade: 0.35 });
     // velocidade de reprodução = velocidade real / velocidade natural do clipe (pés não escorregam)
     else if (v < 2) tocar('andar', { vel: THREE.MathUtils.clamp(v / velAndar, 0.6, 2.2), fade: 0.25 });
-    else tocar('correr', { vel: THREE.MathUtils.clamp(v / velCorrer, 0.8, 2.2), fade: 0.25 });
+    // (até 2,6×: na corrida com Shift, 8 m/s, os pés acompanham o chão em vez de deslizar)
+    else tocar('correr', { vel: THREE.MathUtils.clamp(v / velCorrer, 0.8, 2.6), fade: 0.25 });
   }
   personagem.mixer.update(dt);
   // impulso com as pernas, grupado no ar ("bola") e abertura para cair (por cima da animação)
@@ -937,6 +938,8 @@ function animarPersonagem(dt) {
   } else corpo.rotation.z = 0;
   // agachar e alcançar o objeto do chão
   combate?.aplicarPoses();
+  // inclinação do tronco ao acelerar e nas curvas, e a cabeça olhando o que está perto
+  posturaViva(dt, v);
   // pés apoiados no chão em rampas (desligado no ar, na cambalhota e agachada pegando algo)
   const apoiada = j.noChao && j.cambalhota < 0 && !j.morta && !j.pegando;
   pesoPes += ((apoiada ? 1 : 0) - pesoPes) * Math.min(1, dt * 10);
@@ -949,6 +952,66 @@ function animarPersonagem(dt) {
   personagem.malha.visible = !(j.noVazio && agua && j.pos.y < agua.nivel - 0.6) && !piscando;
 }
 let pesoPes = 0, pesoPlanar = 0;
+
+// ---------- Postura viva (por cima de qualquer animação) ----------
+// - tronco: inclina para a frente ao acelerar, para trás ao frear e para dentro das curvas (a coluna
+//   gira em três partes; os pés não saem do lugar)
+// - cabeça: compensa parte da inclinação e vira, suave e com limite, para o que está perto e importa
+//   (fragmento, carta, âncora, Retalho), como quem presta atenção no mundo
+ const postura = { vAnt: 0, acel: 0, yawAnt: null, giro: 0, frente: 0, lado: 0, olharYaw: 0, olharPitch: 0 };
+const _eixo = new THREE.Vector3(), _qPai = new THREE.Quaternion(), _qGiro = new THREE.Quaternion(), _dirOlhar = new THREE.Vector3(), _posCabeca = new THREE.Vector3();
+function girarOssoMundo(osso, eixoMundo, ang) {
+  if (!osso || Math.abs(ang) < 1e-5) return;
+  osso.parent.getWorldQuaternion(_qPai).invert();
+  _eixo.copy(eixoMundo).applyQuaternion(_qPai).normalize();
+  osso.quaternion.premultiply(_qGiro.setFromAxisAngle(_eixo, ang));
+  osso.updateMatrixWorld(true);
+}
+function alvoDoOlhar() {
+  const j = jogador.pos; let melhor = null, dMelhor = Infinity;
+  const considerar = (p, alcance, peso = 1) => { const d = p.distanceTo(j) / peso; if (d < alcance && d < dMelhor) { dMelhor = d; melhor = p; } };
+  for (const e of inimigos?.lista ?? []) if (e.ativo) considerar(_posCabeca.copy(e.pos).setY(e.pos.y + 0.5).clone(), 9, 1.4);
+  for (const f of campanha?.fragmentos ?? []) if (!f.pega) considerar(f.grupo.position, 6);
+  for (const a of mundo?.ancoras ?? []) if (!a.restaurada) considerar(a.pos.clone().setY(a.pos.y + 2.5), 10);
+  return melhor;
+}
+function posturaViva(dt, v) {
+  const j = jogador, rig = personagem.rig, { raiz } = personagem;
+  if (!rig || dt <= 0) return;
+  const livre = j.noChao && !j.morta && !j.golpe && !j.pegando && j.cambalhota < 0 && !j.defendendo;
+  // aceleração e giro (suavizados)
+  postura.acel += ((v - postura.vAnt) / dt - postura.acel) * Math.min(1, dt * 6); postura.vAnt = v;
+  const yaw = raiz.rotation.y;
+  if (postura.yawAnt !== null) { let d = yaw - postura.yawAnt; d = Math.atan2(Math.sin(d), Math.cos(d)); postura.giro += (d / dt - postura.giro) * Math.min(1, dt * 8); }
+  postura.yawAnt = yaw;
+  const alvoFrente = livre ? THREE.MathUtils.clamp(postura.acel * 0.018 + v * 0.006, -0.14, 0.2) : 0;
+  const alvoLado = livre ? THREE.MathUtils.clamp(-postura.giro * v * 0.02, -0.2, 0.2) : 0;
+  postura.frente += (alvoFrente - postura.frente) * Math.min(1, dt * 5);
+  postura.lado += (alvoLado - postura.lado) * Math.min(1, dt * 5);
+  raiz.updateMatrixWorld(true);
+  const frente = new THREE.Vector3(Math.sin(yaw), 0, Math.cos(yaw)), lateral = new THREE.Vector3(Math.cos(yaw), 0, -Math.sin(yaw));
+  const coluna = rig.papeis.coluna.map(n => rig.ossos[n]);
+  for (const o of coluna) { girarOssoMundo(o, lateral, postura.frente / coluna.length); girarOssoMundo(o, frente, postura.lado / coluna.length); }
+  // cabeça: devolve metade da inclinação e olha o alvo
+  const cabeca = rig.ossos[rig.papeis.cabeca];
+  if (!cabeca) return;
+  girarOssoMundo(cabeca, lateral, -postura.frente * 0.5);
+  let alvoYaw = 0, alvoPitch = 0;
+  const alvo = livre || j.noChao ? alvoDoOlhar() : null;
+  if (alvo) {
+    cabeca.getWorldPosition(_posCabeca);
+    _dirOlhar.subVectors(alvo, _posCabeca);
+    const local = Math.atan2(_dirOlhar.x, _dirOlhar.z) - yaw;
+    alvoYaw = THREE.MathUtils.clamp(Math.atan2(Math.sin(local), Math.cos(local)), -0.9, 0.9);
+    alvoPitch = THREE.MathUtils.clamp(Math.atan2(_dirOlhar.y, Math.hypot(_dirOlhar.x, _dirOlhar.z)), -0.35, 0.35);
+    if (Math.abs(Math.atan2(Math.sin(local), Math.cos(local))) > 1.9) alvoYaw = alvoPitch = 0; // atrás dela: não torce o pescoço
+  }
+  postura.olharYaw += (alvoYaw - postura.olharYaw) * Math.min(1, dt * 3);
+  postura.olharPitch += (alvoPitch - postura.olharPitch) * Math.min(1, dt * 3);
+  girarOssoMundo(rig.ossos[rig.papeis.pescoco], new THREE.Vector3(0, 1, 0), postura.olharYaw * 0.4);
+  girarOssoMundo(cabeca, new THREE.Vector3(0, 1, 0), postura.olharYaw * 0.6);
+  girarOssoMundo(cabeca, lateral, -postura.olharPitch * 0.7);
+}
 
 // ---------- Câmera em terceira pessoa ----------
 const rcCamera = new THREE.Raycaster(); rcCamera.firstHitOnly = true; rcCamera.layers.enableAll();
@@ -1058,7 +1121,7 @@ renderer.setAnimationLoop(() => {
       if (jogador.morta) { tempoMorte -= dt; if (tempoMorte <= 0) mostrarGameOver(); }
   }
   mundo?.atualizar(dt, t);
-  mapa?.atualizarEnfeites?.(t, camera);
+  mapa?.atualizarEnfeites?.(t, camera, Math.min(1, ceuJogo.estado.noite + ceuJogo.estado.por * 0.5));
   agua?.atualizar(dt, t, camera);
   nevoa?.atualizar(dt, t);
   modeloCachoeira?.atualizar(t);

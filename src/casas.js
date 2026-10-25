@@ -205,7 +205,12 @@ export function construirFarol({ centro, alturaEm, rnd, evitar }) {
   const cache = new Map();
   return {
     grupo, topo: new THREE.Vector3(centro.x, centro.y + topo + 1, centro.z),
-    atualizar(t) { feixe.rotation.y = t * 0.6; },
+    // o feixe gira sempre, mas só aparece com pouca luz (entardecer e noite)
+    atualizar(t, noite = 0) {
+      feixe.rotation.y = t * 0.6;
+      A.feixe.opacity = 0.18 * noite; feixe.visible = noite > 0.02;
+      A.vidro.emissiveIntensity = 0.4 + 1.4 * noite;
+    },
     aplicarNivel: nivel => trocarMateriais(grupo, nivel.materialSimples, cache),
   };
 }
