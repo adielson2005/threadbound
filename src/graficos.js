@@ -108,7 +108,10 @@ export function ajustarAoHardware(base, hw = detectarHardware()) {
     n.resolucao = [Math.min(n.resolucao[0], 0.75), 1];
     n.antialias = false;
     n.suavizacao = 'fxaa';
-    n.sombra = Math.min(n.sombra, 1024);
+    // a sombra do mapa é calculada uma vez só (fixa): no celular ela custa só a leitura da textura
+    // de sombra por pixel, então fica ligada até no Low (2048 com filtro simples: em 1024 ou sem
+    // filtro, a ilha inteira cabe em poucos pixels e a sombra fica quadriculada)
+    n.sombra = 2048;
     n.sombraSuave = false;
     if (base !== NIVEIS.low) { n.texturaMapa = NIVEIS.medium.texturaMapa; n.texturaBoneca = NIVEIS.medium.texturaBoneca; }
     n.lod = n.lod.map(d => Math.round(d * 0.75));

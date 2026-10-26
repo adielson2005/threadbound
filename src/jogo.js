@@ -1,4 +1,6 @@
 import * as THREE from 'three';
+import { aplicarEstilo } from './estilo.js';
+aplicarEstilo(); // estilo de jogo mobile em todos os materiais (antes de qualquer um compilar)
 import { criarBoneca, aplicarQualidadeBoneca } from './boneca.js';
 import { aplicarCambalhota, aplicarPose } from './cambalhota.js';
 import { carregarMapa, aplicarQualidadeMapa, atualizarLodPorVisao, aquecerMapa, CAMADA_SOMBRA } from './mapa.js';
@@ -243,7 +245,7 @@ async function aplicarNivel(nome) {
 // (um pouco mais forte que no Low: o tone mapping do High escurece)
 const luzCeuBase = () => (!nivel.efeitos ? 1.55 : nivel.materialSimples ? 1.9 : 0.65);
 function aplicarEfeitos() {
-  renderer.shadowMap.type = nivel.sombraSuave ? THREE.PCFSoftShadowMap : THREE.PCFShadowMap;
+  renderer.shadowMap.type = nivel.sombraBasica ? THREE.BasicShadowMap : nivel.sombraSuave ? THREE.PCFSoftShadowMap : THREE.PCFShadowMap;
   // com o céu físico iluminando, a luz de céu simples fica mais fraca (senão tudo lava)
   // dia bem ensolarado: sol forte e céu claro preenchendo as sombras
   luzCeu.intensity = luzCeuBase();
@@ -1066,6 +1068,7 @@ function animarPersonagem(dt) {
   // afundou no mar: some sob a espuma; logo depois de atingida, pisca (invulnerável)
   const piscando = (combate?.invulneravel ?? 0) > 0.4 && Math.floor(tempoCena * 14) % 2 === 0;
   personagem.malha.visible = !(j.noVazio && agua && j.pos.y < agua.nivel - 0.6) && !piscando;
+  if (personagem.linha) personagem.linha.visible = personagem.malha.visible;
 }
 let pesoPes = 0, pesoPlanar = 0;
 let _ossosPorCima = null;

@@ -61,7 +61,7 @@ Para testar outro perfil: `?perfil=semPlaca`, `?perfil=fraco` ou `?perfil=normal
 No celular: bastão virtual no lado esquerdo (arrastar além da borda corre), câmera no lado direito e
 botões de pular, interagir, socar, chutar, defender e pegar.
 
-Outros parâmetros do endereço: `?capitulo=2` (abre um capítulo direto), `?ktx2=0` (texturas
+Outros parâmetros do endereço: `?estilo=0` (desliga o visual estilizado de jogo mobile), `?capitulo=2` (abre um capítulo direto), `?ktx2=0` (texturas
 originais em vez das comprimidas KTX2), `?oclusao=0` (desliga o occlusion culling) e
 `?mapa=antigo` (o mapa antigo do Meshy).
 

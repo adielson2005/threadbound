@@ -41,6 +41,18 @@ emulação de celular.** O que falta depende de um aparelho de verdade: medir FP
   menos distância e vegetação leve mais perto.
 - **Falta:** medir num aparelho de verdade (este ambiente não tem emulador Android nem GPU).
 
+## Visual estilo jogo mobile
+
+- `src/estilo.js`: aplicado de uma vez nos shaders padrão do three.js (Lambert, Standard e Physical),
+  então vale para todo o jogo sem passada extra de pós-processamento: luz em faixas suaves (cel
+  shading), sombra fria e luz quente, brilho de borda e "vibrance" (realça cores apagadas sem estourar
+  as já saturadas). `?estilo=0` desliga.
+- Contorno escuro de desenho animado na Brisa (casco invertido com o mesmo esqueleto: um desenho a
+  mais, nada de pós-processamento).
+- No celular a sombra fixa do mapa passou a existir também no Low (2048, filtro simples): ela é
+  calculada uma vez só, então custa só a leitura da textura.
+- Céu do dia um pouco mais vivo e sol mais quente.
+
 ## Sessão longa de memória
 
 4 minutos andando em círculos pela ilha, com chuva, no Chromium sem GPU (medido com
