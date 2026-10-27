@@ -106,6 +106,31 @@ O efeito de pontilhado aparece como uma trama fina nas folhas que estão saindo 
 - Testes: Capítulos 1 e 2 do começo ao fim no perfil celular (25/25), 66 programas de shader todos
   compilados no carregamento, chamadas e triângulos iguais aos do ciclo anterior, console sem erros.
 
+## Ciclo 6: espuma nas falésias e otimização geral (27/10/2026)
+
+Medido antes de mexer (perfil celular, um quadro): a Brisa tinha 38 mil triângulos (mais 17 mil
+do contorno), a cachoeira 57 mil, e o controle de resolução trocava o tamanho da tela até uma vez
+por segundo quando o fps oscilava perto da meta.
+
+- Espuma no pé das falésias, em todas as ilhas: no carregamento, raios rente à água (do centro de
+  cada ilha para fora) acham onde a falésia encontra o mar e viram uma textura de distância até a
+  costa (512×512, 256 KB). O shader do mar lê essa textura: faixa branca batendo na rocha, uma
+  segunda faixa chegando e a água um pouco mais clara perto da costa. Anda com as ondas.
+- Rocha molhada: a falésia fica escura e esverdeada (limo) até onde a onda alcança, com a borda
+  de cima irregular (no shader do terreno, duas contas por pixel).
+- Brisa com nível de detalhe: com a câmera a mais de ~4,5 m ela usa metade dos triângulos. São só
+  outros índices sobre os mesmos vértices e pesos dos ossos (animação idêntica, nada novo vai para
+  a GPU na troca); bem de perto volta a malha completa.
+- Cachoeira com nível do meio (~35% dos triângulos, a partir de ~18 m): a completa só bem de perto.
+- Resolução dinâmica com folga: desce depois de 2 s lentos seguidos (na hora se a queda é grande)
+  e sobe só depois de 4 s seguidos com folga, em vez de trocar todo segundo (cada troca realoca a
+  tela na GPU, um tranco no celular).
+- Medido depois (2 quadros, perfil celular), triângulos: vila 414 mil → 376 mil, vista aérea
+  402 → 353 mil, floresta 350 → 312 mil, praia 275 → 237 mil, horizonte (com a cachoeira)
+  403 → 291 mil (−28%). Chamadas de desenho iguais. Nenhum shader compilado durante o jogo.
+  Capítulo 1 do começo ao fim, console sem erros. O fps real num celular continua sem medição
+  aqui (sem GPU).
+
 ## Ciclo 5: a ilha desce até o mar e encontra a praia (27/10/2026)
 
 - O mar sobe até logo abaixo da borda mais baixa das ilhas (calculado por capítulo, em ilha.js):

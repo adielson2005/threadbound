@@ -1081,6 +1081,7 @@ function animarPersonagem(dt) {
   const piscando = (combate?.invulneravel ?? 0) > 0.4 && Math.floor(tempoCena * 14) % 2 === 0;
   personagem.malha.visible = !(j.noVazio && agua && j.pos.y < agua.nivel - 0.6) && !piscando;
   if (personagem.linha) personagem.linha.visible = personagem.malha.visible;
+  personagem.ajustarDetalhe(camera.position.distanceTo(j.pos));
 }
 let pesoPes = 0, pesoPlanar = 0;
 let _ossosPorCima = null;
@@ -1268,7 +1269,13 @@ function medirDesempenho(dt) {
   // meta: 45 fps no PC; no celular, 60 (a tela atualiza a 60 Hz ou mais e menos que isso se sente
   // no toque): abaixo da meta a resolução desce, com folga ela sobe
   const meta = nivel.metaFps ?? 45;
-  if (medidor.fps < meta) r -= 0.08; else if (medidor.fps > Math.max(58, meta + 1)) r += 0.04;
+  // cada troca de resolução realoca a tela na GPU (um tranco de vários ms no celular): com o fps
+  // oscilando perto da meta ela trocava todo segundo. Agora desce depois de 2 s lentos seguidos
+  // (na hora se a queda é grande) e sobe só depois de 4 s seguidos com folga
+  RESOLUCAO.lento = medidor.fps < meta ? (RESOLUCAO.lento ?? 0) + 1 : 0;
+  RESOLUCAO.folga = medidor.fps > Math.max(58, meta + 1) ? (RESOLUCAO.folga ?? 0) + 1 : 0;
+  if (RESOLUCAO.lento >= 2 || medidor.fps < meta * 0.75) { r -= 0.08; RESOLUCAO.lento = 0; }
+  else if (RESOLUCAO.folga >= 4) { r += 0.04; RESOLUCAO.folga = 0; }
   r = THREE.MathUtils.clamp(r, min, max);
   if (Math.abs(r - RESOLUCAO.atual) > 0.01) { RESOLUCAO.atual = r; renderer.setPixelRatio(r); redimensionarPos(); }
   // mesmo na menor resolução o fps continua baixo por 3 s: um passo a menos no orçamento.
@@ -1388,6 +1395,7 @@ Promise.all([
     // a praia de areia na beira do mar (com a rampa que desce da enseada)
     praia = criarPraia({ cena, agua, renderer, mapa: m });
     agua.definirPraia(praia.contorno);
+    if (m.mar?.ilhas) agua.definirCosta(m.malha, m.mar.ilhas); // espuma no pé das falésias
     ceuJogo.definirMapa(m); // o sol atrás da ilha apaga os reflexos de lente
     { // (raio que cobre todas as ilhas, a partir do centro do mar)
       const b = m.geo.boundingBox, c = agua.centro;

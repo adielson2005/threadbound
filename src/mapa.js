@@ -13,6 +13,9 @@ import { simplificar, simplificarIndices } from './simplificar.js';
 // (frustum culling) e troca para uma versão mais leve conforme a distância (LOD).
 // Colisão e raycasts usam uma malha inteira separada, que nunca é desenhada.
 
+// nível do mar para a rocha molhada no pé das falésias (ilha.js define; longe = sem faixa)
+export const NIVEL_MAR = { value: -1e4 };
+
 export const ESCALA_MAPA = 0.6; // deixa casas, pontes e trilhas no tamanho da personagem (1,7 m)
 const PASTA = new URL('../assets/mapa/', import.meta.url).href; // funciona de qualquer página
 const MAGICO = 0x4150414d; // "MAPA"
@@ -340,6 +343,7 @@ export function aplicarDetalhe(material, simples, renderer) {
     texGrama.anisotropy = Math.min(4, renderer.capabilities.getMaxAnisotropy());
   }
   material.onBeforeCompile = sh => {
+    sh.uniforms.uNivelMar = NIVEL_MAR;
     sh.uniforms.uDetalhe = { value: texDetalhe };
     sh.uniforms.uGrama = { value: texGrama };
     sh.vertexShader = sh.vertexShader
@@ -351,6 +355,7 @@ export function aplicarDetalhe(material, simples, renderer) {
       .replace('#include <common>', `#include <common>
         uniform sampler2D uDetalhe;
         uniform sampler2D uGrama;
+        uniform float uNivelMar;
         varying vec3 vMundoDet;
         varying vec3 vNormalDet;
         vec3 pesoDet;
@@ -369,6 +374,12 @@ export function aplicarDetalhe(material, simples, renderer) {
         ${simples ? 'vec3 det2 = det1;' : 'vec3 det2 = amostraDet(1.7);'}
         float corDet = (det1.z - 0.5) * 0.55 + (det2.z - 0.5) * 0.35;
         diffuseColor.rgb *= 1.0 + corDet * pertoDet;
+        // rocha molhada no pé das falésias: escura e esverdeada (limo) até onde a onda alcança,
+        // com a borda de cima irregular
+        {
+          float molhada = 1.0 - smoothstep(0.6, 2.4 + det1.z * 1.6, vMundoDet.y - uNivelMar);
+          diffuseColor.rgb *= mix(vec3(1.0), vec3(0.55, 0.62, 0.55), molhada * (1.0 - smoothstep(0.75, 0.9, normalize(vNormalDet).y)));
+        }
         // gramado: só onde o chão é verde e plano (trilha, areia, rocha e falésia ficam como estão)
         {
           float verde = smoothstep(0.0, 0.05, diffuseColor.g - max(diffuseColor.r, diffuseColor.b) * 0.92) * smoothstep(0.55, 0.8, normalize(vNormalDet).y);
@@ -411,7 +422,7 @@ export function aplicarDetalhe(material, simples, renderer) {
         }`);
     }
   };
-  material.customProgramCacheKey = () => 'mapa-detalhe3-' + (simples ? 's' : 'p');
+  material.customProgramCacheKey = () => 'mapa-detalhe4-' + (simples ? 's' : 'p');
 }
 
 // Troca material, texturas e distâncias de LOD conforme o nível gráfico.
@@ -423,7 +434,7 @@ export async function aplicarQualidadeMapa(mapa, nivel) {
       ? new THREE.MeshLambertMaterial({ vertexColors: true })
       : new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.95, metalness: 0 });
     aplicarDetalhe(mapa.material, nivel.materialSimples, mapa.renderer);
-    mapa.material.customProgramCacheKey = () => 'ilha-detalhe3-' + (nivel.materialSimples ? 's' : 'p');
+    mapa.material.customProgramCacheKey = () => 'ilha-detalhe4-' + (nivel.materialSimples ? 's' : 'p');
     trocarNiveis(mapa, nivel);
     antigoP?.dispose();
     mapa.aoMudarQualidade?.(nivel);

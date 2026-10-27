@@ -4,7 +4,7 @@ import { FBXLoader } from 'three/addons/loaders/FBXLoader.js';
 import { mergeVertices } from 'three/addons/utils/BufferGeometryUtils.js';
 import { corrigirPernas, corrigirTrilhasPernas, removerPicos, fecharCiclo, alinharGolpe, velocidadeNatural } from './reparos.js';
 import { carregarTextura } from './texturas.js';
-import { simplificar } from './simplificar.js';
+import { simplificar, simplificarIndices } from './simplificar.js';
 import { ESTILO_LIGADO } from './estilo.js';
 
 // animações em ciclo (precisam terminar exatamente onde começam)
@@ -506,7 +506,20 @@ export async function criarBoneca(renderer, nivel, aoProgredir) {
     linha.frustumCulled = false; linha.castShadow = false;
     malha.parent.add(linha);
   }
-  const boneca = { raiz, corpo, malha: malhaVisivel, linha, costura, mixer, acoes, velocidades, diagnostico, pernas: [perna('Left'), perna('Right')], rig: { ossos: Object.fromEntries(ossos.map(o => [o.name, o])), lista: ossos, ligacao, papeis: PAPEIS } };
+  // nível de detalhe: com a câmera a mais de ~4,5 m (o jogo quase todo) ela fica com metade dos
+  // triângulos. São só outros índices sobre os mesmos vértices e pesos dos ossos: a animação é a
+  // mesma e trocar não envia nada de novo para a GPU (os dois índices ficam lá)
+  let ajustarDetalhe = () => {};
+  if (!costura && malha.geometry.index) {
+    const g = malha.geometry, completo = g.index;
+    const leve = new THREE.BufferAttribute(await simplificarIndices(g, 0.5, 0.004), 1);
+    let usandoLeve = false;
+    ajustarDetalhe = distancia => {
+      const querLeve = usandoLeve ? distancia > 4.0 : distancia > 4.5; // folga: não fica trocando na borda
+      if (querLeve !== usandoLeve) { usandoLeve = querLeve; g.setIndex(querLeve ? leve : completo); }
+    };
+  }
+  const boneca = { raiz, corpo, malha: malhaVisivel, linha, costura, mixer, acoes, velocidades, diagnostico, ajustarDetalhe, pernas: [perna('Left'), perna('Right')], rig: { ossos: Object.fromEntries(ossos.map(o => [o.name, o])), lista: ossos, ligacao, papeis: PAPEIS } };
   await aplicarQualidadeBoneca(boneca, renderer, nivel);
   return boneca;
 }

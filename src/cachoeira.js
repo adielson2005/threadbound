@@ -55,6 +55,8 @@ export async function carregarCachoeira(renderer) {
   // raio do "pé" (onde toca o chão/a água): o topo é bem mais largo que a base
   let raioPe = 0;
   for (let i = 0; i < pos.count; i++) if (pos.getY(i) < 0.08) raioPe = Math.max(raioPe, Math.hypot(pos.getX(i), pos.getZ(i)));
+  // nível do meio (~35%, gerado aqui): a malha completa só é usada bem de perto
+  niveis.splice(1, 0, await (async () => { const g = new THREE.BufferGeometry(); g.setAttribute('position', geo.attributes.position); g.setIndex(new THREE.BufferAttribute(niveis[0], 1)); return simplificarIndices(g, 0.35, 0.006); })());
   const geos = niveis.map(ind => {
     const g = new THREE.BufferGeometry();
     for (const [n, a] of Object.entries(geo.attributes)) g.setAttribute(n, a);
@@ -98,14 +100,14 @@ export async function carregarCachoeira(renderer) {
     return material;
   }
 
-  // uma cópia: LOD com a malha completa perto e a leve longe.
+  // uma cópia: LOD com a malha completa bem perto, a do meio e a leve longe.
   // largura (opcional): escala horizontal — uma queda alta e estreita, como água caindo de um penhasco
   function criar(altura, largura = altura) {
     const lod = new THREE.LOD();
-    const perto = new THREE.Mesh(geos[0]), longe = new THREE.Mesh(geos[1]);
-    lod.addLevel(perto, 0); lod.addLevel(longe, Math.max(60, largura * 8));
+    const perto = new THREE.Mesh(geos[0]), meio = new THREE.Mesh(geos[1]), longe = new THREE.Mesh(geos[2]);
+    lod.addLevel(perto, 0); lod.addLevel(meio, Math.max(18, largura * 2.5)); lod.addLevel(longe, Math.max(60, largura * 8));
     lod.scale.set(largura, altura, largura);
-    lod.userData.malhas = [perto, longe];
+    lod.userData.malhas = [perto, meio, longe];
     return lod;
   }
 
