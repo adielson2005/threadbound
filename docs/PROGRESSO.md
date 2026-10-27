@@ -106,6 +106,15 @@ O efeito de pontilhado aparece como uma trama fina nas folhas que estão saindo 
 - Testes: Capítulos 1 e 2 do começo ao fim no perfil celular (25/25), 66 programas de shader todos
   compilados no carregamento, chamadas e triângulos iguais aos do ciclo anterior, console sem erros.
 
+## Site: three.js dava 404 no GitHub Pages (28/10/2026)
+
+O console do site mostrou a causa real: `vendor/three/build/three.module.js` dava 404. A regra
+`build/` do .gitignore (feita para a pasta do APK) valia para qualquer pasta "build", então
+vendor/three/build/ e vendor/three-mesh-bvh/build/ nunca entraram no repositório (aqui elas existiam,
+por isso os testes passavam). A regra agora é `/build/` (só a da raiz) e os dois arquivos foram
+adicionados. Testado com uma cópia limpa só com os arquivos do commit (git archive), servida numa
+subpasta como a do site: carrega sem nenhum 404. O favicon ganhou um ícone vazio (sem o 404 dele).
+
 ## Site (GitHub Pages) não carregava depois das atualizações (28/10/2026)
 
 As publicações do Pages davam certo e o jogo carrega numa subpasta igual à do site (testado
