@@ -906,7 +906,8 @@ function passoFisica(dt) {
 
   // último ponto seguro (chão plano), para voltar se cair das ilhas
   j.tempoSeguro += dt;
-  if (j.noChao && col.normal.y > 0.85 && j.tempoSeguro > 0.5) { j.seguro.copy(j.pos); j.tempoSeguro = 0; }
+  // (na areia seca: no raso da praia o chão é plano, mas voltar para dentro d'água não adianta)
+  if (j.noChao && col.normal.y > 0.85 && j.tempoSeguro > 0.5 && (!agua || j.pos.y > agua.nivel + 0.2)) { j.seguro.copy(j.pos); j.tempoSeguro = 0; }
   // caiu da ilha: despenca até o mar lá embaixo; no impacto a água sobe e as ondas se espalham.
   // Custa uma fôlego e, depois de afundar um pouco, volta ao último chão seguro (se era a
   // última, game over)
@@ -918,17 +919,20 @@ function passoFisica(dt) {
     impacto.tremor = Math.max(impacto.tremor, 0.8); impacto.mergulho = Math.max(impacto.mergulho, 0.35);
     cairDaIlha();
   }
-  const superficie = agua ? agua.nivel : terreno.limiteQueda;
+  // andando pela praia dá para entrar no raso: só a água acima da cintura (ou uma queda) conta
+  const superficie = agua ? agua.nivel - (j.noChao ? 0.8 : 0) : terreno.limiteQueda;
   if (j.pos.y < superficie && !j.noVazio) {
     j.noVazio = true;
     j.tempoAfundar = 0;
+    // entrou andando (sem cair de cima): volta para a areia sem custar fôlego
+    const andando = (j.alturaMax ?? j.pos.y) - j.pos.y < 3;
     if (agua) {
-      const forca = THREE.MathUtils.clamp(-j.vel.y / 30, 0.35, 1.3);
+      const forca = andando ? 0.3 : THREE.MathUtils.clamp(-j.vel.y / 30, 0.35, 1.3);
       agua.respingo(j.pos.x, j.pos.z, forca);
-      impacto.tremor = Math.max(impacto.tremor, 0.35 + forca * 0.5);
-      j.tempoAfundar = 0.9;
+      if (!andando) impacto.tremor = Math.max(impacto.tremor, 0.35 + forca * 0.5);
+      j.tempoAfundar = andando ? 0.5 : 0.9;
     }
-    cairDaIlha();
+    if (!andando) cairDaIlha();
   }
   if (j.noVazio) {
     // dentro d'água o arrasto é forte: freia na hora e afunda devagar
@@ -1379,13 +1383,17 @@ Promise.all([
     // primeiro mapa: oficina, âncoras, Coração do Fio, rochas flutuantes, correntes de vento…
     mundo = criarMundo({ cena, mapa: m, terreno });
     correntes = mundo.correntes;
-    // mar lá embaixo, ao redor da ilha
+    // o mar em volta da ilha (logo abaixo da borda dela)
     agua = criarAgua({ cena, mapa: m, renderer });
-    // praia de areia lá embaixo, no mar, sob a ilha
-    praia = criarPraia({ cena, agua, renderer });
+    // a praia de areia na beira do mar (com a rampa que desce da enseada)
+    praia = criarPraia({ cena, agua, renderer, mapa: m });
     agua.definirPraia(praia.contorno);
     ceuJogo.definirMapa(m); // o sol atrás da ilha apaga os reflexos de lente
-    nevoa = criarNevoa({ cena, agua });
+    { // (raio que cobre todas as ilhas, a partir do centro do mar)
+      const b = m.geo.boundingBox, c = agua.centro;
+      const raioIlhas = m.mar ? Math.max(Math.hypot(b.min.x - c.x, b.min.z - c.z), Math.hypot(b.max.x - c.x, b.max.z - c.z), Math.hypot(b.min.x - c.x, b.max.z - c.z), Math.hypot(b.max.x - c.x, b.min.z - c.z)) * 0.8 : null;
+      nevoa = criarNevoa({ cena, agua, raioIlhas });
+    }
     if (cach) {
       modeloCachoeira = cach;
       cachoeiras = posicionarCachoeiras({ cena, mapa: m, terreno, mundo, agua, nevoa, modelo: cach, praia });

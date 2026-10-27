@@ -148,12 +148,13 @@ function texturaNuvem() {
   const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace;
   return t;
 }
-function criarNuvens(caixa) {
+function criarNuvens(caixa, nivelMar = null) {
   const tex = texturaNuvem(), grupo = new THREE.Group(), centro = caixa.getCenter(new THREE.Vector3());
   const lista = [];
   for (let i = 0; i < 44; i++) {
     // nuvens baixas entre as ilhas e o mar (ralas, para o mar aparecer); o resto, altas ao longe
-    const embaixo = i < 24;
+    // (com o mar logo abaixo da borda das ilhas não há espaço entre elas: todas ficam no alto)
+    const embaixo = nivelMar === null && i < 24;
     const ang = Math.random() * Math.PI * 2, raio = embaixo ? 30 + Math.random() * 150 : 140 + Math.random() * 120;
     // cor acima de 1: depois do tone mapping elas continuam brancas (senão ficam cinza)
     const mat = new THREE.SpriteMaterial({ map: tex, transparent: true, depthWrite: false, opacity: embaixo ? 0.55 : 0.75, fog: false });
@@ -203,7 +204,7 @@ export function criarEfeitosAltos({ renderer, cena, camera, mapa, terreno }) {
   const ambiente = pmrem.fromScene(cenaCeu, 0, 0.1, 200).texture;
 
   const grama = criarGrama(mapa, terreno, tempo);
-  const nuvens = criarNuvens(mapa.geo.boundingBox);
+  const nuvens = criarNuvens(mapa.geo.boundingBox, mapa.mar?.nivel ?? null);
   const polen = criarPolen();
 
   let composer = null, gtao = null, bloom = null, smaa = null;

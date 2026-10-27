@@ -687,7 +687,7 @@ export function construirGruta({ centro, alturaEm, rnd, nome }) {
 }
 
 // ---------------- Cap. 1: o cais da enseada ----------------
-// tábuas sobre estacas, saindo da areia e avançando sobre a borda da ilha (o mar, lá embaixo)
+// tábuas sobre estacas, saindo da areia da praia e avançando mar adentro
 export function construirCais({ inicio, direcao, alturaEm, rnd }) {
   const A = materiais(), grupo = new THREE.Group(); grupo.name = 'cais';
   const g = new THREE.Group(); g.position.copy(inicio); g.rotation.y = Math.atan2(direcao.x, direcao.z); grupo.add(g);
@@ -700,7 +700,7 @@ export function construirCais({ inicio, direcao, alturaEm, rnd }) {
     const e = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.14, 6, 7), A.madeiraEscura); e.position.set(lado * 1.0, y - 3, k); e.userData.solido = true; e.castShadow = true; g.add(e);
     g.add(caixa(0.08, 0.9, 0.08, A.madeiraEscura, lado * 1.05, y + 0.45, k, false));
   }
-  // um barco a remo amarrado na ponta, balançando no ar
+  // um barco a remo amarrado na ponta, na água
   const barco = new THREE.Group();
   for (const lado of [-1, 1]) { const t = caixa(0.08, 0.4, 2.4, A.madeira, lado * 0.45, 0.2, 0, false); t.rotation.z = -lado * 0.25; barco.add(t); }
   barco.add(caixa(0.75, 0.06, 2.2, A.madeira, 0, 0.03, 0, false));

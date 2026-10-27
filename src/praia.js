@@ -1,32 +1,22 @@
 import * as THREE from 'three';
 import { detectarHardware } from './graficos.js';
+import { formaPraia, HARMONICOS } from './praiaForma.js';
 
-// Praia lá embaixo: uma ilha baixa de areia no mar, logo abaixo da ilha flutuante.
-// O contorno (linha d'água) é um círculo deformado por três senoides, a mesma função usada no
-// shader do mar (água rasa turquesa e espuma na beira) — por isso os parâmetros saem daqui.
-// A areia sobe em dunas suaves até ~3 m no meio, molhada e mais escura perto da água, e continua
-// descendo por baixo d'água (aparece como água rasa). Pedras e troncos na beira.
+// Praia na beira do mar. Com o mapa gerado, ela fica do lado de fora da enseada da ilha principal
+// e uma rampa de areia desce da borda da ilha até ela (praiaForma.js); no mapa antigo, é a ilha
+// baixa de areia logo abaixo da ilha flutuante. O contorno (linha d'água) é a mesma função usada
+// no shader do mar (água rasa turquesa e espuma na beira). A areia sobe em dunas suaves, molhada e
+// mais escura perto da água, e continua descendo por baixo d'água. Pedras e troncos na beira.
 
 const PASTA = new URL('../assets/efeitos/', import.meta.url).href;
-const TOPO = 3.0;            // m acima do nível do mar no meio da praia
-const HARMONICOS = [[0.09, 2, 0.7], [0.06, 3, 2.1], [0.04, 5, 4.0]]; // amplitude, frequência, fase
 
 const rnd = (() => { let s = 4242; return () => ((s = (s * 16807) % 2147483647) / 2147483647); })();
 
-export function criarPraia({ cena, agua, renderer }) {
-  const cx = agua.centro.x, cz = agua.centro.z, nivel = agua.nivel;
-  const R0 = 46;
-  const raio = ang => R0 * (1 + HARMONICOS.reduce((s, [a, k, f]) => s + a * Math.sin(k * ang + f), 0));
-  const dunas = (x, z) => Math.sin(x * 0.13 + 1.3) * Math.sin(z * 0.11 + 0.4) * 0.5 + Math.sin(x * 0.051 - z * 0.047) * 0.6;
-  // altura da areia acima do nível do mar (negativa embaixo d'água)
-  function perfil(x, z) {
-    const dx = x - cx, dz = z - cz, d = Math.hypot(dx, dz), R = raio(Math.atan2(dz, dx)), t = d / R;
-    if (t <= 1) {
-      const sobe = 1 - THREE.MathUtils.smoothstep(t, 0.2, 1);
-      return TOPO * sobe + dunas(x, z) * sobe * 0.9 + (1 - t) * 0.25;
-    }
-    return -Math.min(8, (t - 1) * R * 0.14); // continua descendo debaixo d'água
-  }
+export function criarPraia({ cena, agua, renderer, mapa }) {
+  const nivel = agua.nivel;
+  const forma = mapa?.mar?.praia ?? { cx: agua.centro.x, cz: agua.centro.z, R0: 46, topo: 3.0 };
+  const { cx, cz, R0 } = forma;
+  const { raio, perfil, circulo, naRampa, dir } = formaPraia(forma);
 
   // malha polar: anéis até 1,45× o raio (a parte submersa vira a água rasa)
   // (no celular, metade: é a praia lá embaixo, vista de longe)
@@ -37,7 +27,7 @@ export function criarPraia({ cena, agua, renderer }) {
     for (let s = 0; s < SETORES; s++) {
       const a = (s / SETORES) * Math.PI * 2, R = raio(a) * 1.45 * f;
       const x = cx + Math.cos(a) * R, z = cz + Math.sin(a) * R;
-      pos.push(x, nivel + perfil(x, z), z);
+      pos.push(x, nivel + circulo(x, z), z);
       uv.push(x * 0.22, z * 0.22); // a textura repete a cada ~4,5 m
     }
   }
@@ -45,6 +35,26 @@ export function criarPraia({ cena, agua, renderer }) {
   for (let i = 0; i < ANEIS; i++) for (let s = 0; s < SETORES; s++) {
     const a = v(i, s), b = v(i, s + 1), c = v(i + 1, s), d = v(i + 1, s + 1);
     idx.push(a, b, d, a, d, c); // sentido anti-horário visto de cima: normais para cima
+  }
+  // a rampa que desce da ilha: uma grade própria (a mesma textura, nas mesmas coordenadas do
+  // mundo: onde ela encontra a praia as duas areias se cruzam sem emenda visível)
+  if (forma.rampa) {
+    const { s0, s1, meia } = forma.rampa, PASSO = celular ? 1.6 : 1.2;
+    const sIni = s0 - meia * 0.9, sFim = s1 + 16, tMax = meia * 1.5; // (dos lados a borda da ilha recua)
+    const NS = Math.ceil((sFim - sIni) / PASSO), NT = Math.ceil((2 * tMax) / PASSO);
+    const base = pos.length / 3, alt = [];
+    for (let i = 0; i <= NS; i++) for (let k = 0; k <= NT; k++) {
+      const sl = sIni + (sFim - sIni) * i / NS, tl = -tMax + 2 * tMax * k / NT;
+      const x = dir[0] * sl - dir[1] * tl, z = dir[1] * sl + dir[0] * tl, h = Math.max(-6, naRampa(x, z));
+      pos.push(x, nivel + h, z); uv.push(x * 0.22, z * 0.22); alt.push(h);
+    }
+    const w = (i, k) => i * (NT + 1) + k;
+    for (let i = 0; i < NS; i++) for (let k = 0; k < NT; k++) {
+      const a = w(i, k), b = w(i, k + 1), c = w(i + 1, k), d = w(i + 1, k + 1);
+      if (Math.max(alt[a], alt[b], alt[c], alt[d]) < -3) continue; // fundo do mar: ninguém vê
+      // (s para fora, t para a esquerda: este sentido deixa a normal para cima)
+      idx.push(base + a, base + d, base + c, base + a, base + b, base + d);
+    }
   }
   const geo = new THREE.BufferGeometry();
   geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
@@ -76,12 +86,16 @@ export function criarPraia({ cena, agua, renderer }) {
           // do ladrilho de 4,5 m não forma mais um padrão
           float macro = dot(texture2D(map, vMapUv * 0.093 + 0.37).rgb, vec3(0.333)) * 0.6 + dot(texture2D(map, vMapUv * 0.031).rgb, vec3(0.333)) * 0.4;
           diffuseColor.rgb *= 0.72 + 0.38 * macro / 0.75;
+          // de longe (vista do alto da ilha) o ladrilho ainda aparecia como bolinhas em fileira:
+          // ali a cor vai para a média da textura (o último nível do mipmap), mantendo as manchas
+          float longeAreia = smoothstep(14.0, 55.0, length(vViewPosition));
+          diffuseColor.rgb = mix(diffuseColor.rgb, texture2D(map, vMapUv, 9.0).rgb * (0.72 + 0.38 * macro / 0.75), longeAreia * 0.8);
           molhado = 1.0 - smoothstep(0.05, 0.5, vAlturaAgua - uNivel);
           diffuseColor.rgb *= mix(1.0, 0.6, molhado);`)
         .replace('#include <roughnessmap_fragment>', pbr ? `#include <roughnessmap_fragment>
           roughnessFactor *= mix(1.0, 0.35, molhado);` : '#include <roughnessmap_fragment>');
     };
-    material.customProgramCacheKey = () => 'praia-' + (pbr ? 'p' : 's');
+    material.customProgramCacheKey = () => 'praia2-' + (pbr ? 'p' : 's');
     return material;
   };
   const malha = new THREE.Mesh(geo);
