@@ -616,30 +616,44 @@ const MODELOS = {
 };
 
 // ---------------- material da vegetação (atlas + vento no shader) ----------------
-function materialVegetacao(simples, tempo) {
+function materialVegetacao(simples, tempo, foco) {
   const comum = { vertexColors: true, map: atlasVegetacao(), alphaTest: 0.42, side: THREE.DoubleSide };
   const m = simples
     ? new THREE.MeshLambertMaterial(comum)
     : new THREE.MeshStandardMaterial({ ...comum, roughness: 0.88, metalness: 0 });
   m.onBeforeCompile = sh => {
     sh.uniforms.uTempo = tempo;
+    sh.uniforms.uFoco = foco;
     sh.vertexShader = 'uniform float uTempo;\nattribute float balanco;\n' + sh.vertexShader.replace('#include <begin_vertex>', `#include <begin_vertex>
       vec3 raizV = (modelMatrix * vec4(position, 1.0)).xyz;
       float vento = sin(uTempo * 1.3 + raizV.x * 0.21 + raizV.z * 0.17) * 0.6 + sin(uTempo * 2.9 + raizV.x * 0.9) * 0.25;
       transformed.x += vento * balanco * 0.18;
       transformed.z += vento * balanco * 0.11;`)
-      .replace('#include <project_vertex>', '#include <project_vertex>\n      vDistCamVeg = -mvPosition.z;')
-      .replace('#include <common>', '#include <common>\nvarying float vDistCamVeg;');
+      .replace('#include <project_vertex>', '#include <project_vertex>\n      vDistCamVeg = -mvPosition.z;\n      vMundoVeg = (modelMatrix * vec4(transformed, 1.0)).xyz;')
+      .replace('#include <common>', '#include <common>\nvarying float vDistCamVeg;\nvarying vec3 vMundoVeg;');
     // folhagem colada na câmera some aos poucos, com pontilhado (dither): sem isso as copas tampam
     // a tela na floresta. Descartar pixels é barato (já há alphaTest) e não precisa ordenar nada
-    sh.fragmentShader = 'varying float vDistCamVeg;\n' + sh.fragmentShader.replace('#include <alphatest_fragment>', `#include <alphatest_fragment>
+    // E a "janela": folhagem no caminho entre a câmera e a Brisa (um cilindro estreito em volta
+    // dessa linha, só na frente dela) some com o mesmo pontilhado: ela nunca fica escondida atrás
+    // de uma árvore na floresta
+    sh.fragmentShader = 'varying float vDistCamVeg;\nvarying vec3 vMundoVeg;\nuniform vec3 uFoco;\n' + sh.fragmentShader.replace('#include <alphatest_fragment>', `#include <alphatest_fragment>
       {
         vec2 q = mod(floor(gl_FragCoord.xy), 4.0);
         float limiar = (mod(q.x * 2.0 + q.y * 3.0, 4.0) + mod(q.y, 2.0) * 0.5 + 0.25) / 4.5; // grade 4×4 espalhada
-        if (smoothstep(1.4, 4.2, vDistCamVeg) < limiar) discard;
+        float fica = smoothstep(1.4, 4.2, vDistCamVeg);
+        vec3 aFoco = uFoco - cameraPosition;
+        float L = length(aFoco);
+        vec3 dirFoco = aFoco / max(L, 1e-3), w = vMundoVeg - cameraPosition;
+        float tFoco = dot(w, dirFoco);
+        if (tFoco > 0.0 && tFoco < L - 0.5) {
+          float perp = length(w - dirFoco * tFoco);
+          float raioJanela = mix(0.5, 1.5, tFoco / L); // mais larga perto da Brisa
+          fica = min(fica, mix(0.15, 1.0, smoothstep(raioJanela * 0.55, raioJanela, perp)));
+        }
+        if (fica < limiar) discard;
       }`);
   };
-  m.customProgramCacheKey = () => 'vegetacao3-' + (simples ? 's' : 'p');
+  m.customProgramCacheKey = () => 'vegetacao4-' + (simples ? 's' : 'p');
   return m;
 }
 // ---------------- geração ----------------
@@ -904,7 +918,8 @@ export async function gerarIlha(renderer, aoProgredir = () => {}) {
 
   // ---------- setores de vegetação ----------
   const tempo = { value: 0 };
-  let matVeg = materialVegetacao(false, tempo);
+  const foco = { value: new THREE.Vector3(0, -1e4, 0) }; // a Brisa (jogo.js atualiza): a "janela" na folhagem
+  let matVeg = materialVegetacao(false, tempo, foco);
   const vegetacao = new THREE.Group(); vegetacao.name = 'vegetacao';
   const setoresLod = [];
   for (const s of setores.values()) {
@@ -942,6 +957,7 @@ export async function gerarIlha(renderer, aoProgredir = () => {}) {
     malha, geo, grupo, lods, renderer, texturas: new Map(), amostrar, qualidade: null, procedural: true,
     enfeites: [vegetacao, construcoes],
     setores: setoresLod, // setores de vegetação (occlusion culling: oclusao.js)
+    focoVegetacao: foco.value,
     nascimentoPreferido: new THREE.Vector3(VILA.x, alturaVila, VILA.z),
     pontos: { vila: VILA, morro: MORRO, ilhotas: ILHOTAS.map(i => ({ nome: i.nome, x: i.cx, z: i.cz, topo: alturaEm(i.cx, i.cz) })), casas },
     alturaEm,
@@ -950,7 +966,7 @@ export async function gerarIlha(renderer, aoProgredir = () => {}) {
       for (const o of obras) o.atualizar?.(t, noite);
     },
     aoMudarQualidade(nivel) {
-      const novo = materialVegetacao(nivel.materialSimples, tempo);
+      const novo = materialVegetacao(nivel.materialSimples, tempo, foco);
       vegetacao.traverse(o => { if (o.isMesh) o.material = novo; });
       matVeg.dispose(); matVeg = novo;
       const longe = nivel.vegetacaoLonge ?? (nivel.materialSimples ? 38 : nivel.efeitos ? 85 : 60);

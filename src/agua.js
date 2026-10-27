@@ -260,7 +260,9 @@ const FRAGMENT = /* glsl */`
     vec3 ceuBaixo = mix(uHorizonte, uBaixo, pow(clamp(-D.y, 0.0, 1.0), 0.5));
     vec3 longe = mix(fogColor, ceuBaixo, uGradiente);
     float f = smoothstep(fogNear, fogFar, dist * 0.72);
-    f = max(f, smoothstep(uLonge * 0.72, uLonge * 0.96, dist));
+    // some aos poucos até o limite do desenho (uma faixa estreita aparecia como um disco de borda
+    // redonda no mar visto do alto, no celular, onde o limite é mais perto)
+    f = max(f, smoothstep(uLonge * 0.3, uLonge * 0.97, dist) * smoothstep(uLonge * 0.3, uLonge * 0.97, dist));
     cor = mix(cor, longe, f);
 
     gl_FragColor = vec4(cor, 1.0);
