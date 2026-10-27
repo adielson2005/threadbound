@@ -6,6 +6,10 @@ import { construirVila, construirFarol, construirRuinas, construirGruta, constru
 import { CONFIG } from './capitulo.js';
 import { CASAS } from './historia.js';
 import { formaPraia } from './praiaForma.js';
+import { detectarHardware } from './graficos.js';
+
+// celular e PC fraco: a folhagem perto da câmera some com corte seco em vez de pontilhado (ver materialVegetacao)
+const CORTE_SECO = ['celular', 'fraco'].includes(detectarHardware().perfil);
 
 // Arquipélago gerado por código (substitui o mapa.fbx do Meshy, que segue disponível em ?mapa=antigo).
 // Devolve o mesmo formato de carregarMapa() (mapa.js): malha de colisão com BVH, blocos com LOD,
@@ -352,8 +356,39 @@ function atlasVegetacao() {
     gr.addColorStop(0, `hsl(${85 + r() * 20}, 40%, 18%)`); gr.addColorStop(1, `hsl(${60 + r() * 35}, ${40 + r() * 20}%, ${42 + r() * 18}%)`);
     g.fillStyle = gr; g.beginPath(); g.moveTo(x - w, 1024); g.quadraticCurveTo(x + curva * 0.5, 1024 - h * 0.6, x + curva, 1024 - h); g.quadraticCurveTo(x + curva * 0.5 + w * 0.3, 1024 - h * 0.6, x + w, 1024); g.fill();
   }
-  const t = new THREE.CanvasTexture(c);
-  t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4;
+  // Cor garantida nos pixels transparentes: enviado como canvas, o fundo transparente fica com a cor
+  // que o navegador quiser (em muitos celulares, branco); as versões reduzidas da textura (mipmaps)
+  // misturavam esse branco com as folhas e o recorte deixava passar manchas brancas em blocos nas
+  // copas. Aqui os pixels vão direto, e a cor das folhas "vaza" para o transparente ao redor
+  // (três passadas de vizinhança e, no que sobrar, a cor média da região), com o alfa intacto.
+  const N = 1024, img = g.getImageData(0, 0, N, N).data, px = new Uint8Array(img);
+  let cheio = new Uint8Array(N * N);
+  for (let i = 0; i < N * N; i++) cheio[i] = img[i * 4 + 3] > 8 ? 1 : 0;
+  for (let passada = 0; passada < 3; passada++) {
+    const novo = cheio.slice();
+    for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) {
+      const i = y * N + x;
+      if (cheio[i]) continue;
+      let r0 = 0, g0 = 0, b0 = 0, n = 0;
+      for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+        const xx = x + dx, yy = y + dy;
+        if (xx < 0 || yy < 0 || xx >= N || yy >= N || !cheio[yy * N + xx]) continue;
+        const j = (yy * N + xx) * 4; r0 += px[j]; g0 += px[j + 1]; b0 += px[j + 2]; n++;
+      }
+      if (n) { px[i * 4] = r0 / n; px[i * 4 + 1] = g0 / n; px[i * 4 + 2] = b0 / n; novo[i] = 1; }
+    }
+    cheio = novo;
+  }
+  for (const [x0, y0] of [[0, 0], [512, 0], [0, 512], [512, 512]]) {
+    let r0 = 0, g0 = 0, b0 = 0, n = 0;
+    for (let y = y0; y < y0 + 512; y += 2) for (let x = x0; x < x0 + 512; x += 2) { const j = (y * N + x) * 4; if (img[j + 3] > 200) { r0 += img[j]; g0 += img[j + 1]; b0 += img[j + 2]; n++; } }
+    if (!n) continue;
+    for (let y = y0; y < y0 + 512; y++) for (let x = x0; x < x0 + 512; x++) { const i = y * N + x; if (!cheio[i]) { px[i * 4] = r0 / n; px[i * 4 + 1] = g0 / n; px[i * 4 + 2] = b0 / n; } }
+  }
+  const t = new THREE.DataTexture(px, N, N, THREE.RGBAFormat);
+  t.flipY = true; // como a CanvasTexture: a linha de cima do desenho é v = 1
+  t.generateMipmaps = true; t.minFilter = THREE.LinearMipmapLinearFilter; t.magFilter = THREE.LinearFilter;
+  t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4; t.needsUpdate = true;
   ATLAS = t;
   return t;
 }
@@ -627,6 +662,7 @@ function materialVegetacao(simples, tempo, foco) {
   const m = simples
     ? new THREE.MeshLambertMaterial(comum)
     : new THREE.MeshStandardMaterial({ ...comum, roughness: 0.88, metalness: 0 });
+  if (CORTE_SECO) m.defines = { CORTE_SECO: '' };
   m.onBeforeCompile = sh => {
     sh.uniforms.uTempo = tempo;
     sh.uniforms.uFoco = foco;
@@ -645,8 +681,14 @@ function materialVegetacao(simples, tempo, foco) {
     sh.fragmentShader = 'varying float vDistCamVeg;\nvarying vec3 vMundoVeg;\nuniform vec3 uFoco;\n' + sh.fragmentShader.replace('#include <alphatest_fragment>', `#include <alphatest_fragment>
       {
         // ruído de gradiente intercalado: um grão fino e espalhado (a grade 4×4 de antes formava
-        // bolinhas em fileira bem visíveis); o FXAA depois ainda alisa um pouco
-        float limiar = fract(52.9829189 * fract(dot(floor(gl_FragCoord.xy), vec2(0.06711056, 0.00583715))));
+        // bolinhas em fileira bem visíveis). No celular e no PC fraco a imagem é desenhada em
+        // resolução menor e ampliada com FXAA: ali o grão virava uma mancha de pontos escuros, então
+        // o corte é seco (some inteiro, sem a faixa pontilhada)
+        #ifdef CORTE_SECO
+          float limiar = 0.5;
+        #else
+          float limiar = fract(52.9829189 * fract(dot(floor(gl_FragCoord.xy), vec2(0.06711056, 0.00583715))));
+        #endif
         float fica = smoothstep(2.4, 3.4, vDistCamVeg); // faixa curta: pouca área em meio-pontilhado
         vec3 aFoco = uFoco - cameraPosition;
         float L = length(aFoco);
@@ -677,7 +719,7 @@ function materialVegetacao(simples, tempo, foco) {
       ? sh.fragmentShader.replace('float lumEstilo', translucida + 'float lumEstilo')
       : sh.fragmentShader.replace('#include <opaque_fragment>', translucida + '#include <opaque_fragment>');
   };
-  m.customProgramCacheKey = () => 'vegetacao6-' + (simples ? 's' : 'p');
+  m.customProgramCacheKey = () => 'vegetacao7-' + (simples ? 's' : 'p') + (CORTE_SECO ? '-seco' : '');
   return m;
 }
 // ---------------- geração ----------------

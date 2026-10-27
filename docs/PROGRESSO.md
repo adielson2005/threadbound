@@ -106,6 +106,23 @@ O efeito de pontilhado aparece como uma trama fina nas folhas que estão saindo 
 - Testes: Capítulos 1 e 2 do começo ao fim no perfil celular (25/25), 66 programas de shader todos
   compilados no carregamento, chamadas e triângulos iguais aos do ciclo anterior, console sem erros.
 
+## Correção no celular: manchas brancas nas copas e pontilhado (27/10/2026)
+
+Relatado num celular (captura do jogador): blocos brancos nas copas das árvores e uma mancha de
+pontos escuros perto da câmera.
+
+- Manchas brancas: o atlas da vegetação era enviado como canvas com fundo transparente, e a cor
+  dos pixels transparentes fica a critério do navegador (em muitos celulares, branco; no PC, preto,
+  por isso não aparecia nos testes). Os mipmaps misturavam esse branco com as folhas e o recorte
+  deixava passar blocos brancos a média distância. Agora os pixels vão direto para a GPU e a cor das
+  folhas vaza para o transparente ao redor (o alfa fica igual): a cor é a mesma em qualquer aparelho.
+- Pontilhado: no celular e no PC fraco a imagem é desenhada em resolução menor e ampliada com FXAA,
+  e o grão fino virava uma mancha de pontos. Nesses perfis a folhagem colada na câmera e a "janela"
+  até a Brisa somem com corte seco, sem a faixa pontilhada; nos outros perfis o grão continua.
+- Não deu para reproduzir num celular aqui (o renderizador deste ambiente guarda preto nos pixels
+  transparentes); conferido que as folhas ficaram iguais e que nada compila durante o jogo
+  (perfis celular e normal).
+
 ## Ciclo 7: otimização para todos os aparelhos e camadas de rocha (27/10/2026)
 
 Medido antes (tempo de quadro por grupo, desenhando a mesma vista várias vezes e escondendo um grupo
