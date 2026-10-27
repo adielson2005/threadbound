@@ -440,14 +440,15 @@ const MODELOS = {
   pinheiro(rnd, longe) {
     const peca = new Peca(), h = 2.2 + rnd() * 1.2, alturaTotal = h + 2.6;
     solida(peca, new THREE.CylinderGeometry(0.05, 0.26, alturaTotal, 7).translate(0, alturaTotal / 2, 0), [1, 1, 1], { reg: REG.casca, semente: rnd() * 1e6 });
-    const tinta = rnd() < 0.5 ? [0.75, 0.85, 0.78] : [0.85, 0.95, 0.8];
+    // (agulhas um pouco mais claras e quentes: o pinheiro lia como uma mancha quase preta)
+    const tinta = rnd() < 0.5 ? [0.86, 0.98, 0.84] : [0.96, 1.06, 0.84];
     const camadas = longe ? 3 : 5;
     for (let k = 0; k < camadas; k++) {
       const f = k / (camadas - 1), y = h * 0.55 + f * 3.6, r = misturar(2.1, 0.55, f) * (0.9 + rnd() * 0.2);
       const balFn = p => Math.min(1, 0.2 + Math.hypot(p.x, p.z) / 2.2) * (0.5 + f * 0.5);
       // núcleo escuro em cone (preenche: não se vê através do pinheiro)
       const cone = new THREE.ConeGeometry(r * 0.45, 1.3, longe ? 6 : 8).translate(0, y + 0.35, 0);
-      solida(peca, cone, [0.09, 0.17, 0.11], { oclusao: 0.45, semente: rnd() * 1e6, bal: balFn });
+      solida(peca, cone, [0.12, 0.22, 0.13], { oclusao: 0.4, semente: rnd() * 1e6, bal: balFn });
       // galhos-cartão caindo para fora, com agulhas
       const galhos = longe ? 6 : 11;
       for (let g = 0; g < galhos; g++) {

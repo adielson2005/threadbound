@@ -383,6 +383,19 @@ export function aplicarDetalhe(material, simples, renderer) {
             g *= mix(vec3(0.88, 1.06, 0.86), vec3(1.16, 1.03, 0.72), smoothstep(0.3, 0.72, tom)); // viçoso x seco
             diffuseColor.rgb = mix(diffuseColor.rgb, g, verde);
           }
+          // areia clara (enseada, praia lá embaixo, dunas): ondulações de vento, como as marcas que o
+          // vento deixa na praia; a terra da praça e as trilhas são mais escuras e ficam de fora
+          float lumC = dot(diffuseColor.rgb, vec3(0.299, 0.587, 0.114));
+          float areia = smoothstep(0.42, 0.5, lumC) * step(diffuseColor.b * 1.4, diffuseColor.r) * (1.0 - verde) * smoothstep(0.6, 0.85, normalize(vNormalDet).y);
+          if (areia > 0.0) {
+            vec2 macroA = texture2D(uGrama, vMundoDet.xz * 0.03).gb;
+            vec2 dirA = normalize(vec2(0.8, 0.6) + (macroA - 0.5) * 0.6);
+            float onda = sin(dot(vMundoDet.xz, dirA) * 3.4 + (macroA.x - 0.5) * 9.0);
+            onda = onda * abs(onda); // crista estreita e vale largo, como a areia de verdade
+            float distA = distance(vMundoDet, cameraPosition);
+            float rippleA = mix(1.0, 0.9 + 0.12 * onda, 1.0 - smoothstep(6.0, 45.0, distA));
+            diffuseColor.rgb *= mix(1.0, rippleA * (0.94 + 0.12 * macroA.y), areia);
+          }
         }`);
     if (!simples) {
       // relevo: inclina a normal (no espaço de mundo, convertida para o da câmera) pelos dois detalhes
