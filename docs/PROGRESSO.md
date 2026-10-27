@@ -106,6 +106,31 @@ O efeito de pontilhado aparece como uma trama fina nas folhas que estão saindo 
 - Testes: Capítulos 1 e 2 do começo ao fim no perfil celular (25/25), 66 programas de shader todos
   compilados no carregamento, chamadas e triângulos iguais aos do ciclo anterior, console sem erros.
 
+## Ciclo 7: otimização para todos os aparelhos e camadas de rocha (27/10/2026)
+
+Medido antes (tempo de quadro por grupo, desenhando a mesma vista várias vezes e escondendo um grupo
+por vez; renderizador por software deste ambiente): a vegetação era o mais caro (floresta 267 de
+590 ms, horizonte 567 de 805 ms), depois terreno, mar e céu.
+
+- Tentado e desfeito: pré-passada de profundidade na vegetação (a folha de trás deixaria de receber
+  luz). Aqui ficou mais lento (floresta 590 → 659 ms, horizonte 805 → 1060 ms), porque os vértices
+  da vegetação passam duas vezes. Sem medir ganho, não ficou.
+- Menos trabalho por pixel, sem mudar a imagem: o terreno só lê a textura de detalhe nos lados que
+  pesam (no chão plano, uma leitura em vez de três) e nenhuma depois de 45 m, onde ela já não
+  aparecia; o mar pula o micro-relevo depois de 280 m (já pesava zero) e a distância exata até a
+  praia longe dela (um atan e três senos a menos por pixel no mar todo); o céu só calcula o disco e
+  a coroa do sol perto do sol; as nuvens leem o ruído de uma textura (uma leitura por oitava, em vez
+  de quatro senos). Neste ambiente o tempo medido não mudou além do ruído (±5%): o renderizador por
+  software não ganha com isso. Numa GPU a conta é menor, mas não consegui medir aqui.
+- Inimigos: olhos e fios viraram geometrias únicas compartilhadas e o balanço dos fios foi para a
+  GPU (o mesmo movimento). Cada Retalho custa 3 desenhos em vez de 8, e a CPU não atualiza mais 5
+  objetos por Retalho a cada quadro. Malhas dos 13 Retalhos: 104 → 39; geometrias na memória
+  371 → 282. Medido (2 quadros): vila 216 → 194 chamadas.
+- Camadas de rocha nas falésias e barrancos: faixas horizontais que ondulam, visíveis também de
+  longe (a falésia de longe era uma parede lisa).
+- Testes: perfis celular, fraco e normal carregam sem erros e sem compilar shader durante o jogo;
+  Capítulo 1 do começo ao fim; inimigo comparado de perto, igual.
+
 ## Ciclo 6: espuma nas falésias e otimização geral (27/10/2026)
 
 Medido antes de mexer (perfil celular, um quadro): a Brisa tinha 38 mil triângulos (mais 17 mil

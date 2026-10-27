@@ -360,24 +360,44 @@ export function aplicarDetalhe(material, simples, renderer) {
         varying vec3 vNormalDet;
         vec3 pesoDet;
         float pertoDet;
-        // amostra triplanar: x = relevo u, y = relevo v, z = cor
+        // amostra triplanar: x = relevo u, y = relevo v, z = cor. Só lê os lados que pesam: no chão
+        // plano é uma leitura em vez de três. (Na borda entre pixels que leem e que não leem o
+        // mipmap pode errar, mas ali o peso daquele lado é quase zero: não aparece)
         vec3 amostraDet(float escala) {
-          vec3 p = vMundoDet * escala;
-          vec3 a = texture2D(uDetalhe, p.zy).xyz, b = texture2D(uDetalhe, p.xz).xyz, c = texture2D(uDetalhe, p.xy).xyz;
-          return a * pesoDet.x + b * pesoDet.y + c * pesoDet.z;
+          vec3 p = vMundoDet * escala, s = vec3(0.0);
+          if (pesoDet.x > 0.0) s += texture2D(uDetalhe, p.zy).xyz * pesoDet.x;
+          if (pesoDet.y > 0.0) s += texture2D(uDetalhe, p.xz).xyz * pesoDet.y;
+          if (pesoDet.z > 0.0) s += texture2D(uDetalhe, p.xy).xyz * pesoDet.z;
+          return s;
         }`)
       .replace('#include <map_fragment>', `#include <map_fragment>
         pesoDet = pow(abs(normalize(vNormalDet)), vec3(4.0));
         pesoDet /= (pesoDet.x + pesoDet.y + pesoDet.z);
+        // lados com menos de 2% do peso não contam (não se vê a diferença; poupa as leituras)
+        pesoDet = max(pesoDet - 0.02, 0.0); pesoDet /= (pesoDet.x + pesoDet.y + pesoDet.z);
         pertoDet = 1.0 - smoothstep(6.0, 45.0, distance(vMundoDet, cameraPosition));
-        vec3 det1 = amostraDet(0.45);
-        ${simples ? 'vec3 det2 = det1;' : 'vec3 det2 = amostraDet(1.7);'}
+        // além de 45 m o detalhe não aparece mais: nenhuma leitura (valor neutro)
+        vec3 det1 = vec3(0.5), det2 = vec3(0.5);
+        if (pertoDet > 0.0) {
+          det1 = amostraDet(0.45);
+          ${simples ? 'det2 = det1;' : 'det2 = amostraDet(1.7);'}
+        }
         float corDet = (det1.z - 0.5) * 0.55 + (det2.z - 0.5) * 0.35;
         diffuseColor.rgb *= 1.0 + corDet * pertoDet;
+        // camadas de rocha nas paredes (falésias, barrancos): faixas horizontais que ondulam de leve,
+        // visíveis também de longe (o detalhe da textura some depois de 45 m); só onde é parede
+        {
+          float parede = 1.0 - smoothstep(0.45, 0.75, normalize(vNormalDet).y);
+          if (parede > 0.0) {
+            float ond = sin(vMundoDet.x * 0.045 + 1.7) * 1.6 + sin(vMundoDet.z * 0.06 - 0.4) * 1.3;
+            float estrato = sin(vMundoDet.y * 1.15 + ond) * 0.6 + sin(vMundoDet.y * 2.9 + ond * 1.7) * 0.4;
+            diffuseColor.rgb *= 1.0 + estrato * 0.24 * parede;
+          }
+        }
         // rocha molhada no pé das falésias: escura e esverdeada (limo) até onde a onda alcança,
         // com a borda de cima irregular
         {
-          float molhada = 1.0 - smoothstep(0.6, 2.4 + det1.z * 1.6, vMundoDet.y - uNivelMar);
+          float molhada = 1.0 - smoothstep(0.6, 2.4 + mix(0.5, det1.z, pertoDet) * 1.6, vMundoDet.y - uNivelMar);
           diffuseColor.rgb *= mix(vec3(1.0), vec3(0.55, 0.62, 0.55), molhada * (1.0 - smoothstep(0.75, 0.9, normalize(vNormalDet).y)));
         }
         // gramado: só onde o chão é verde e plano (trilha, areia, rocha e falésia ficam como estão)
@@ -422,7 +442,7 @@ export function aplicarDetalhe(material, simples, renderer) {
         }`);
     }
   };
-  material.customProgramCacheKey = () => 'mapa-detalhe4-' + (simples ? 's' : 'p');
+  material.customProgramCacheKey = () => 'mapa-detalhe6-' + (simples ? 's' : 'p');
 }
 
 // Troca material, texturas e distâncias de LOD conforme o nível gráfico.
@@ -434,7 +454,7 @@ export async function aplicarQualidadeMapa(mapa, nivel) {
       ? new THREE.MeshLambertMaterial({ vertexColors: true })
       : new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.95, metalness: 0 });
     aplicarDetalhe(mapa.material, nivel.materialSimples, mapa.renderer);
-    mapa.material.customProgramCacheKey = () => 'ilha-detalhe4-' + (nivel.materialSimples ? 's' : 'p');
+    mapa.material.customProgramCacheKey = () => 'ilha-detalhe6-' + (nivel.materialSimples ? 's' : 'p');
     trocarNiveis(mapa, nivel);
     antigoP?.dispose();
     mapa.aoMudarQualidade?.(nivel);
