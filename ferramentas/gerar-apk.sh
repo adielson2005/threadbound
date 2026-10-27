@@ -11,6 +11,7 @@ set -e
 ANDROID_JAR=${ANDROID_JAR:-/usr/lib/android-sdk/platforms/android-23/android.jar}
 DX=${DX:-/usr/lib/android-sdk/build-tools/debian/dx}
 cd "$(dirname "$0")/.."
+python3 ferramentas/versionar.py # (o index.html com a versão de cada módulo, igual ao do site)
 B=build/apk
 rm -rf "$B"; mkdir -p "$B/assets/www/assets/boneca" "$B/assets/www/assets/cachoeira" "$B/classes"
 

@@ -273,7 +273,7 @@
   }
 </style>
 <!-- bibliotecas na própria pasta (vendor/): three 0.165.0, three-mesh-bvh 0.7.6, meshoptimizer 0.21.0. O jogo roda sem internet (e dentro do APK) -->
-<script type="importmap">{"imports":{"three":"./vendor/three/build/three.module.js","three/addons/":"./vendor/three/examples/jsm/","three-mesh-bvh":"./vendor/three-mesh-bvh/build/index.module.js","meshoptimizer/simplifier":"./vendor/meshoptimizer/meshopt_simplifier.module.js"}}</script>
+<script type="importmap">{"imports":{"three":"./vendor/three/build/three.module.js","three/addons/":"./vendor/three/examples/jsm/","three-mesh-bvh":"./vendor/three-mesh-bvh/build/index.module.js","meshoptimizer/simplifier":"./vendor/meshoptimizer/meshopt_simplifier.module.js","./src/agua.js":"./src/agua.js?v=9efdf22ef0","./src/altos.js":"./src/altos.js?v=2a02b62f01","./src/boneca.js":"./src/boneca.js?v=00c5c8fab3","./src/cachoeira.js":"./src/cachoeira.js?v=dcefc27eb3","./src/cambalhota.js":"./src/cambalhota.js?v=aff8debf26","./src/campanha.js":"./src/campanha.js?v=474ac6db62","./src/capitulo.js":"./src/capitulo.js?v=5631f04f86","./src/casas.js":"./src/casas.js?v=76936c97f1","./src/ceu.js":"./src/ceu.js?v=97437cab05","./src/chuva.js":"./src/chuva.js?v=6cf0295986","./src/colisao.js":"./src/colisao.js?v=ac6260ec0b","./src/combate.js":"./src/combate.js?v=9928a96ead","./src/costura.js":"./src/costura.js?v=cc67b57b49","./src/distancia.js":"./src/distancia.js?v=9a5844420e","./src/estilo.js":"./src/estilo.js?v=c1da3ea6da","./src/fisica.js":"./src/fisica.js?v=4044479a49","./src/graficos.js":"./src/graficos.js?v=e03423b26a","./src/historia.js":"./src/historia.js?v=21af753ccb","./src/ilha.js":"./src/ilha.js?v=19b95b39e2","./src/inimigos.js":"./src/inimigos.js?v=3ff2afb711","./src/jogo.js":"./src/jogo.js?v=c654a95504","./src/lotes.js":"./src/lotes.js?v=f3831174bf","./src/mapa.js":"./src/mapa.js?v=c28d176bf4","./src/mundo.js":"./src/mundo.js?v=e54442ba84","./src/nevoa.js":"./src/nevoa.js?v=9bccad8ac5","./src/oclusao.js":"./src/oclusao.js?v=a1ec74f05f","./src/particulas.js":"./src/particulas.js?v=efad11a94e","./src/pes.js":"./src/pes.js?v=9f8ed5d180","./src/praia.js":"./src/praia.js?v=700cd3c717","./src/praiaForma.js":"./src/praiaForma.js?v=79c406a618","./src/reparos.js":"./src/reparos.js?v=b47215e4c9","./src/salvar.js":"./src/salvar.js?v=0d75e7e284","./src/simplificar.js":"./src/simplificar.js?v=a439e6c6ca","./src/suavizar.js":"./src/suavizar.js?v=042d8dcf4b","./src/terreno.js":"./src/terreno.js?v=30a71b0a42","./src/texturas.js":"./src/texturas.js?v=5b74c7049c"}}</script>
 </head>
 <body>
 <div id="hud">
@@ -404,6 +404,22 @@
 <div class="toque" id="tDefesa">🛡</div>
 <div class="toque" id="tPegar">✋</div>
 <div id="golpe"></div>
-<script type="module" src="src/jogo.js"></script>
+<script>
+  // se o jogo não conseguir carregar (um arquivo que não veio, versões misturadas no cache), a tela
+  // mostra o erro e um botão para recarregar, em vez de ficar parada em "Costurando a ilha…"
+  addEventListener('error', e => {
+    if (window.__jogo) return;
+    const script = e.target && e.target.tagName === 'SCRIPT';
+    if (!script && !(e instanceof ErrorEvent)) return;
+    const msg = document.getElementById('msg');
+    if (!msg) return;
+    msg.textContent = 'Não foi possível carregar o jogo' + (e.message ? ': ' + e.message : script ? ' (' + e.target.src + ')' : '') + '. ';
+    const b = document.createElement('button');
+    b.className = 'botao secundario'; b.textContent = 'Recarregar';
+    b.onclick = () => location.reload();
+    msg.appendChild(b);
+  }, true);
+</script>
+<script type="module" src="src/jogo.js?v=c654a95504"></script>
 </body>
 </html>
