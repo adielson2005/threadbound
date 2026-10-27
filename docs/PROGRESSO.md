@@ -95,6 +95,17 @@ sem erros.
 **Limites:** FPS e tempo de quadro de verdade só num celular (aqui não há GPU nem emulador Android).
 O efeito de pontilhado aparece como uma trama fina nas folhas que estão saindo da frente da câmera.
 
+## Ciclo 2 de gráficos (27/10/2026)
+
+- Pólen de dia e vaga-lumes piscando à noite, em todos os níveis (`src/particulas.js`): animados
+  na GPU, a CPU só atualiza quatro valores por quadro; 120 pontos no celular, uma chamada de
+  desenho; somem na chuva e ficam desligados quando o pólen do High está ativo.
+- Areia clara com ondulações de vento (no shader do chão, sem textura nova), só na areia clara.
+- Pinheiros mais claros (liam como manchas quase pretas); reboco cinza-azulado da vila trocado por
+  um tom quente; o frio das sombras ficou mais fraco (deixava cinzas azulados).
+- Testes: Capítulos 1 e 2 do começo ao fim no perfil celular (25/25), 66 programas de shader todos
+  compilados no carregamento, chamadas e triângulos iguais aos do ciclo anterior, console sem erros.
+
 ## Sessão longa de memória
 
 4 minutos andando em círculos pela ilha, com chuva, no Chromium sem GPU (medido com

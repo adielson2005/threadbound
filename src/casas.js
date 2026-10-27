@@ -26,7 +26,7 @@ function materiais() {
     madeiraEscura: new THREE.MeshStandardMaterial({ map: madeira, normalMap: madeiraN, roughness: 0.85, color: '#6e5240' }),
     pedra: new THREE.MeshStandardMaterial({ map: pedra, normalMap: pedraN, roughness: 0.93, color: '#d6d2c8' }),
     pedraClara: new THREE.MeshStandardMaterial({ map: pedra, normalMap: pedraN, normalScale: new THREE.Vector2(0.6, 0.6), roughness: 0.88, color: '#f3ece0' }),
-    reboco: ['#efe3c8', '#d9e3e6', '#f0d6cf', '#e8d49c'].map(c => new THREE.MeshStandardMaterial({ map: pedra, normalScale: new THREE.Vector2(0.3, 0.3), normalMap: pedraN, roughness: 0.97, color: c })),
+    reboco: ['#efe3c8', '#e3dccd', '#f0d6cf', '#e8d49c'].map(c => new THREE.MeshStandardMaterial({ map: pedra, normalScale: new THREE.Vector2(0.3, 0.3), normalMap: pedraN, roughness: 0.97, color: c })),
     telhado: ['#d9a08a', '#a9b0bd', '#c9a07e'].map(c => new THREE.MeshStandardMaterial({ map: telhas, roughness: 0.85, color: c })),
     tecido: ['#b48fd6', '#d98fa8', '#8fb4d6'].map(c => new THREE.MeshStandardMaterial({ color: c, roughness: 1 })),
     escuro: new THREE.MeshStandardMaterial({ color: '#1d1712', roughness: 1 }),

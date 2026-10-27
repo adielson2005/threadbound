@@ -25,7 +25,8 @@ const GRADE = `
 		float maxC = max( outgoingLight.r, max( outgoingLight.g, outgoingLight.b ) ), minC = min( outgoingLight.r, min( outgoingLight.g, outgoingLight.b ) );
 		float satEstilo = ( maxC - minC ) / max( maxC, 1e-4 );
 		outgoingLight = mix( vec3( lumEstilo ), outgoingLight, 1.0 + 0.5 * ( 1.0 - smoothstep( 0.2, 0.75, satEstilo ) ) );
-		outgoingLight *= mix( vec3( 0.8, 0.88, 1.2 ), vec3( 1.1, 1.01, 0.88 ), smoothstep( 0.03, 0.5, lumEstilo ) );
+		// (o frio entra só na sombra funda e mais fraco: forte, ele deixava reboco e pedra cinza azulados)
+		outgoingLight *= mix( vec3( 0.9, 0.95, 1.08 ), vec3( 1.08, 1.01, 0.9 ), smoothstep( 0.02, 0.35, lumEstilo ) );
 		#if defined( ESTILO_RIM )
 			// brilho de borda: mais forte onde já há luz (não acende o lado de dentro da sombra)
 			float bordaEstilo = 1.0 - saturate( dot( normal, normalize( vViewPosition ) ) );

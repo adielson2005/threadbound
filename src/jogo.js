@@ -7,6 +7,7 @@ import { carregarMapa, aplicarQualidadeMapa, atualizarLodPorVisao, aquecerMapa, 
 import { gerarIlha } from './ilha.js';
 import { criarChuva } from './chuva.js';
 import { criarOclusao } from './oclusao.js';
+import { criarParticulas } from './particulas.js';
 import { lerProgresso, salvarProgresso, apagarProgresso, lerConfig, salvarConfig, lerConcluidos, ultimoCapitulo } from './salvar.js';
 import { CAPITULO_ATUAL, TOTAL_CAPITULOS, CONFIG, urlCapitulo } from './capitulo.js';
 import { analisarTerreno, calcularLancamento } from './terreno.js';
@@ -114,6 +115,9 @@ camera.position.set(0, 10, 10);
 const ceuJogo = criarCeu({ cena, camera, corHorizonte: COR_CEU });
 // clima: pancadas de chuva que vêm e vão (Y liga/desliga)
 const chuva = criarChuva({ cena, camera });
+// pólen de dia e vaga-lumes à noite, em todos os níveis (animados na GPU)
+const particulas = criarParticulas({ cena, celular: hardware.perfil === 'celular' });
+const _tamTela = new THREE.Vector2();
 // o clima e o céu de cada capítulo (capitulo.js): a garoa sem fim do recife, o céu dourado do fundo
 chuva.definirMinimo(CONFIG.ambiente.chuva);
 ceuJogo.definirTom(CONFIG.ambiente.ceu);
@@ -1337,6 +1341,7 @@ renderer.setAnimationLoop(() => {
   ceuJogo.atualizar(estado === 'jogando' ? dt : 0, t);
   aplicarHora();
   altos?.atualizar(dt, t, jogador.pos);
+  particulas.atualizar(t, jogador.pos, ceuJogo.estado.noite, chuva.intensidade, !!altos?.ativo, renderer.getDrawingBufferSize(_tamTela).y);
   if (assarSombra) {
     assarSombra = false;
     renderer.shadowMap.needsUpdate = true;
