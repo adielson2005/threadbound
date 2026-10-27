@@ -115,8 +115,10 @@ export function ajustarAoHardware(base, hw = detectarHardware()) {
     n.sombraSuave = false;
     if (base !== NIVEIS.low) { n.texturaMapa = NIVEIS.medium.texturaMapa; n.texturaBoneca = NIVEIS.medium.texturaBoneca; }
     n.lod = n.lod.map(d => Math.round(d * 0.75));
-    n.distancia = Math.min(n.distancia, base === NIVEIS.high ? 320 : 220);
-    n.neblina = [Math.min(n.neblina[0], 60), Math.min(n.neblina[1], base === NIVEIS.high ? 280 : 190)];
+    // vista longa o bastante para as ilhotas aparecerem no horizonte (escala e vontade de explorar):
+    // o que fica longe já está no nível de detalhe mais leve, então custa pouco
+    n.distancia = base === NIVEIS.low ? 210 : Math.min(n.distancia, base === NIVEIS.high ? 320 : 240);
+    n.neblina = base === NIVEIS.low ? [55, 195] : [Math.min(n.neblina[0], 60), Math.min(n.neblina[1], base === NIVEIS.high ? 280 : 220)];
     n.alcanceObjetos = Math.min(n.alcanceObjetos, 70);
     n.metaFps = 58;
     n.vegetacaoLonge = base === NIVEIS.high ? 45 : 26; // a vegetação troca para o nível leve mais perto (cartões transparentes custam caro na GPU do celular)

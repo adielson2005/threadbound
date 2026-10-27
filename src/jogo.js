@@ -84,6 +84,9 @@ if (hardware.semWebGL) {
 // ---------- Cena ----------
 // antisserrilhado só pode ser escolhido ao criar o contexto: vale o nível salvo ao abrir o jogo
 const renderer = new THREE.WebGLRenderer({ antialias: nivel.antialias, powerPreference: 'high-performance' });
+// conferir o log de cada shader força a compilação a terminar na hora (o quadro trava esperando);
+// sem a conferência o driver compila em paralelo. ?debug liga de novo para achar erros de shader
+renderer.debug.checkShaderErrors = new URLSearchParams(location.search).has('debug');
 // GPU fraca às vezes reinicia o driver no meio do jogo: avisa e recarrega quando ela volta
 renderer.domElement.addEventListener('webglcontextlost', ev => {
   ev.preventDefault();
@@ -1427,7 +1430,20 @@ Promise.all([
     tocar('parada');
       // compila os shaders e sobe todos os níveis de detalhe do mapa para a GPU antes de começar
     // (evita travadinhas na primeira vez que algo aparece ou quando a câmera vira)
+    // compila TODOS os materiais, inclusive os que ainda estão escondidos (ponte de luz, chuva,
+    // objetos longe, faíscas): o compile do three.js só olha o que está visível, e o resto
+    // compilava no meio do jogo, com travadinha
+    const escondidos = [], recortados = [];
+    cena.traverse(o => {
+      if (!o.visible) { escondidos.push(o); o.visible = true; }
+      if (o.frustumCulled) { recortados.push(o); o.frustumCulled = false; } // inclusive fora da câmera
+    });
     renderer.compile(cena, camera);
+    // e um quadro de verdade pelo mesmo caminho do jogo (FXAA/pós-processamento desenham numa
+    // textura intermediária: o shader de lá é outra variante da que vai direto para a tela)
+    desenhar();
+    for (const o of escondidos) o.visible = false;
+    for (const o of recortados) o.frustumCulled = true;
     aquecerMapa(m, renderer, cena, camera);
 
     estado = 'menu';

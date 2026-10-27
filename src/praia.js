@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { detectarHardware } from './graficos.js';
 
 // Praia lá embaixo: uma ilha baixa de areia no mar, logo abaixo da ilha flutuante.
 // O contorno (linha d'água) é um círculo deformado por três senoides, a mesma função usada no
@@ -28,7 +29,9 @@ export function criarPraia({ cena, agua, renderer }) {
   }
 
   // malha polar: anéis até 1,45× o raio (a parte submersa vira a água rasa)
-  const ANEIS = 70, SETORES = 180, pos = [], uv = [], idx = [];
+  // (no celular, metade: é a praia lá embaixo, vista de longe)
+  const celular = detectarHardware().perfil === 'celular';
+  const ANEIS = celular ? 46 : 70, SETORES = celular ? 120 : 180, pos = [], uv = [], idx = [];
   for (let i = 0; i <= ANEIS; i++) {
     const f = i / ANEIS;
     for (let s = 0; s < SETORES; s++) {

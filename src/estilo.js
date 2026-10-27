@@ -35,9 +35,34 @@ const GRADE = `
 	}
 	#include <opaque_fragment>`;
 
+// Névoa por altura: além da neblina de distância (que fecha a vista no limite do desenho, sem
+// corte), uma bruma azulada que engrossa da metade das falésias para baixo. As ilhas ficam
+// flutuando sobre um mar de névoa e o mar e a praia lá embaixo ganham profundidade, com o custo de
+// uma conta por vértice e duas por pixel. A altura do pixel vem da posição na câmera (a matriz de
+// vista é rígida), então funciona em qualquer shader que já tem neblina: malhas, sprites, água.
+const NEVOA_VERT = `#ifdef USE_FOG
+	vFogDepth = - mvPosition.z;
+	vFogAltura = ( transpose( mat3( viewMatrix ) ) * ( mvPosition.xyz - viewMatrix[ 3 ].xyz ) ).y;
+#endif`;
+const NEVOA_FRAG = `#ifdef USE_FOG
+	#ifdef FOG_EXP2
+		float fogFactor = 1.0 - exp( - fogDensity * fogDensity * vFogDepth * vFogDepth );
+	#else
+		float fogFactor = smoothstep( fogNear, fogFar, vFogDepth );
+	#endif
+	// bruma baixa: começa uns 15 m abaixo do topo das ilhas e cobre quase tudo 70 m abaixo
+	float brumaBaixa = ( 1.0 - smoothstep( -75.0, -15.0, vFogAltura ) ) * smoothstep( 8.0, 50.0, vFogDepth ) * 0.82;
+	vec3 corNevoa = mix( fogColor, fogColor * vec3( 0.86, 0.95, 1.08 ), brumaBaixa );
+	gl_FragColor.rgb = mix( gl_FragColor.rgb, corNevoa, max( fogFactor, brumaBaixa ) );
+#endif`;
+
 export function aplicarEstilo() {
   if (!ESTILO_LIGADO) return;
   const C = THREE.ShaderChunk;
+  C.fog_pars_vertex = C.fog_pars_vertex.replace('varying float vFogDepth;', 'varying float vFogDepth;\n\tvarying float vFogAltura;');
+  C.fog_pars_fragment = C.fog_pars_fragment.replace('varying float vFogDepth;', 'varying float vFogDepth;\n\tvarying float vFogAltura;');
+  C.fog_vertex = NEVOA_VERT;
+  C.fog_fragment = NEVOA_FRAG;
   for (const nome of ['lights_lambert_pars_fragment', 'lights_physical_pars_fragment']) {
     if (!C[nome].includes(LINHA_LUZ)) { console.warn('estilo: trecho mudou', nome); continue; }
     // a faixa vale para a luz direta (sol/lua); a luz do céu continua suave

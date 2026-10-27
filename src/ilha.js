@@ -626,9 +626,19 @@ function materialVegetacao(simples, tempo) {
       vec3 raizV = (modelMatrix * vec4(position, 1.0)).xyz;
       float vento = sin(uTempo * 1.3 + raizV.x * 0.21 + raizV.z * 0.17) * 0.6 + sin(uTempo * 2.9 + raizV.x * 0.9) * 0.25;
       transformed.x += vento * balanco * 0.18;
-      transformed.z += vento * balanco * 0.11;`);
+      transformed.z += vento * balanco * 0.11;`)
+      .replace('#include <project_vertex>', '#include <project_vertex>\n      vDistCamVeg = -mvPosition.z;')
+      .replace('#include <common>', '#include <common>\nvarying float vDistCamVeg;');
+    // folhagem colada na câmera some aos poucos, com pontilhado (dither): sem isso as copas tampam
+    // a tela na floresta. Descartar pixels é barato (já há alphaTest) e não precisa ordenar nada
+    sh.fragmentShader = 'varying float vDistCamVeg;\n' + sh.fragmentShader.replace('#include <alphatest_fragment>', `#include <alphatest_fragment>
+      {
+        vec2 q = mod(floor(gl_FragCoord.xy), 4.0);
+        float limiar = (mod(q.x * 2.0 + q.y * 3.0, 4.0) + mod(q.y, 2.0) * 0.5 + 0.25) / 4.5; // grade 4×4 espalhada
+        if (smoothstep(1.4, 4.2, vDistCamVeg) < limiar) discard;
+      }`);
   };
-  m.customProgramCacheKey = () => 'vegetacao2-' + (simples ? 's' : 'p');
+  m.customProgramCacheKey = () => 'vegetacao3-' + (simples ? 's' : 'p');
   return m;
 }
 // ---------------- geração ----------------
@@ -700,7 +710,9 @@ export async function gerarIlha(renderer, aoProgredir = () => {}) {
   const setores = new Map(); // chave -> { perto: [], longe: [] }
   const colisores = []; // geometrias (mundo) que entram na malha de colisão
   const oclusores = []; // [x, z, y, raio, força]: escurecem o chão em volta
-  const colocar = (x, z, tipo, extra) => {
+  const colocar = (x, z, tipo, extra) => colocarCom(rnd, x, z, tipo, extra);
+  const rndCapim = aleatorio(MAPA.semente ^ 0x5f3759d);
+  function colocarCom(rnd, x, z, tipo, extra) {
     const y = alturaEm(x, z);
     if (y === null) return false;
     const chave = `${Math.floor(x / TAM_SETOR)},${Math.floor(z / TAM_SETOR)}`;
@@ -783,8 +795,13 @@ export async function gerarIlha(renderer, aoProgredir = () => {}) {
       } else if (r < floresta * 0.62 + 0.025 + 0.06 + floresta * 0.12) colocar(x, z, 'arbusto');
       else if (r < 0.2 + campina * 0.5) colocar(x, z, 'flores');
       else if (r > 0.985 || (l.d > 0.84 && r > 0.94)) colocar(x, z, 'pedra', l.d > 0.86 && rnd() < 0.3);
-      // capim alto: muito nas campinas, pouco dentro da floresta
+      // capim alto: muito nas campinas, pouco dentro da floresta (dois sorteios por célula: o campo
+      // ganha volume de verdade; o capim só existe no nível de detalhe de perto, então o custo fica
+      // em volta da câmera)
+      // (o segundo vem de outro gerador: o resto do mapa, que é sorteado depois, fica idêntico e os
+      // saves continuam valendo)
       if (rnd() < 0.18 + campina * 0.55 - floresta * 0.12) colocar(x + (rnd() - 0.5) * 1.5, z + (rnd() - 0.5) * 1.5, 'capim');
+      if (rndCapim() < 0.18 + campina * 0.55 - floresta * 0.12) colocarCom(rndCapim, x + (rndCapim() - 0.5) * 2.6, z + (rndCapim() - 0.5) * 2.6, 'capim');
     }
   }
   // pomar: fileiras de árvores frutíferas na ilhota baixa

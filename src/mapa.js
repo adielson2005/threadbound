@@ -287,16 +287,61 @@ export function aquecerMapa(mapa, renderer, cena, camera) {
 // duas escalas, e some com a distância (longe a textura original já basta e não tremula).
 // No Low (Lambert) entra só a variação de cor e uma escala.
 const PASTA_EFEITOS = new URL('../assets/efeitos/', import.meta.url).href;
-let texDetalhe = null;
+let texDetalhe = null, texGrama = null;
+
+// Textura de grama vista de cima (gerada uma vez, 256×256, repetível):
+//  R = folhinhas finas (tracinhos claros e escuros em várias direções), para o gramado perto da
+//      câmera deixar de ser uma cor lisa;
+//  G = manchas grandes e suaves (moitas mais densas e falhas), usadas numa escala bem maior;
+//  B = capim seco x viçoso, em outra escala, para o campo variar de tom como um campo de verdade.
+function texturaGrama() {
+  const N = 256, c = document.createElement('canvas'); c.width = c.height = N;
+  const g = c.getContext('2d'), img = g.createImageData(N, N), d = img.data;
+  let sem = 1234567; const rnd = () => ((sem = (sem * 16807) % 2147483647) / 2147483647);
+  // G e B: ruído suave repetível (soma de senos com períodos inteiros na tela)
+  const onda = (x, y, f, fase) => Math.sin((x * f.a + y * f.b) * 2 * Math.PI / N + fase);
+  const ondas = Array.from({ length: 6 }, (_, i) => ({ a: 1 + Math.floor(rnd() * 4), b: 1 + Math.floor(rnd() * 4), fase: rnd() * 6, peso: 1 / (1 + i * 0.4) }));
+  for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) {
+    let m = 0, t = 0;
+    ondas.forEach((o, i) => { const v = onda(x, y, o, o.fase) * o.peso; if (i % 2) t += v; else m += v; });
+    const k = (y * N + x) * 4;
+    d[k] = 128; d[k + 1] = Math.max(0, Math.min(255, 128 + m * 55)); d[k + 2] = Math.max(0, Math.min(255, 128 + t * 60)); d[k + 3] = 255;
+  }
+  g.putImageData(img, 0, 0);
+  // R: folhinhas (desenhadas só no canal vermelho, em 9 cópias deslocadas para repetir sem emenda)
+  g.globalCompositeOperation = 'source-over';
+  const tracos = [];
+  for (let i = 0; i < 2600; i++) tracos.push({ x: rnd() * N, y: rnd() * N, a: rnd() * Math.PI, l: 2 + rnd() * 5, claro: rnd() < 0.55 });
+  const camadaR = document.createElement('canvas'); camadaR.width = camadaR.height = N;
+  const r = camadaR.getContext('2d');
+  r.fillStyle = 'rgb(128,0,0)'; r.fillRect(0, 0, N, N);
+  r.lineCap = 'round';
+  for (const t of tracos) {
+    r.strokeStyle = t.claro ? `rgba(${200 + rnd() * 55},0,0,0.8)` : `rgba(${30 + rnd() * 40},0,0,0.7)`;
+    r.lineWidth = 0.7 + rnd() * 0.8;
+    for (const dx of [-N, 0, N]) for (const dy of [-N, 0, N]) {
+      r.beginPath(); r.moveTo(t.x + dx, t.y + dy); r.lineTo(t.x + dx + Math.cos(t.a) * t.l, t.y + dy + Math.sin(t.a) * t.l); r.stroke();
+    }
+  }
+  const pr = r.getImageData(0, 0, N, N).data, final = g.getImageData(0, 0, N, N);
+  for (let i = 0; i < N * N; i++) final.data[i * 4] = pr[i * 4];
+  g.putImageData(final, 0, 0);
+  const tex = new THREE.CanvasTexture(c);
+  tex.wrapS = tex.wrapT = THREE.RepeatWrapping; tex.colorSpace = THREE.NoColorSpace;
+  return tex;
+}
 export function aplicarDetalhe(material, simples, renderer) {
   if (!texDetalhe) {
     texDetalhe = tl.load(PASTA_EFEITOS + 'detalhe.png');
     texDetalhe.wrapS = texDetalhe.wrapT = THREE.RepeatWrapping;
     texDetalhe.colorSpace = THREE.NoColorSpace;
     texDetalhe.anisotropy = Math.min(8, renderer.capabilities.getMaxAnisotropy());
+    texGrama = texturaGrama();
+    texGrama.anisotropy = Math.min(4, renderer.capabilities.getMaxAnisotropy());
   }
   material.onBeforeCompile = sh => {
     sh.uniforms.uDetalhe = { value: texDetalhe };
+    sh.uniforms.uGrama = { value: texGrama };
     sh.vertexShader = sh.vertexShader
       .replace('#include <common>', '#include <common>\nvarying vec3 vMundoDet;\nvarying vec3 vNormalDet;')
       .replace('#include <begin_vertex>', `#include <begin_vertex>
@@ -305,6 +350,7 @@ export function aplicarDetalhe(material, simples, renderer) {
     sh.fragmentShader = sh.fragmentShader
       .replace('#include <common>', `#include <common>
         uniform sampler2D uDetalhe;
+        uniform sampler2D uGrama;
         varying vec3 vMundoDet;
         varying vec3 vNormalDet;
         vec3 pesoDet;
@@ -322,7 +368,22 @@ export function aplicarDetalhe(material, simples, renderer) {
         vec3 det1 = amostraDet(0.45);
         ${simples ? 'vec3 det2 = det1;' : 'vec3 det2 = amostraDet(1.7);'}
         float corDet = (det1.z - 0.5) * 0.55 + (det2.z - 0.5) * 0.35;
-        diffuseColor.rgb *= 1.0 + corDet * pertoDet;`);
+        diffuseColor.rgb *= 1.0 + corDet * pertoDet;
+        // gramado: só onde o chão é verde e plano (trilha, areia, rocha e falésia ficam como estão)
+        {
+          float verde = smoothstep(0.0, 0.05, diffuseColor.g - max(diffuseColor.r, diffuseColor.b) * 0.92) * smoothstep(0.55, 0.8, normalize(vNormalDet).y);
+          if (verde > 0.0) {
+            float distG = distance(vMundoDet, cameraPosition);
+            float folhas = texture2D(uGrama, vMundoDet.xz * 0.9).r;
+            vec2 macro = texture2D(uGrama, vMundoDet.xz * 0.021).gb;
+            float tom = texture2D(uGrama, vMundoDet.xz * 0.0093 + 0.37).b;
+            vec3 g = diffuseColor.rgb;
+            g *= mix(1.0, 0.5 + 1.0 * folhas, 1.0 - smoothstep(5.0, 38.0, distG)); // folhinhas perto
+            g *= 0.74 + 0.52 * macro.x;                                             // moitas e falhas
+            g *= mix(vec3(0.88, 1.06, 0.86), vec3(1.16, 1.03, 0.72), smoothstep(0.3, 0.72, tom)); // viçoso x seco
+            diffuseColor.rgb = mix(diffuseColor.rgb, g, verde);
+          }
+        }`);
     if (!simples) {
       // relevo: inclina a normal (no espaço de mundo, convertida para o da câmera) pelos dois detalhes
       sh.fragmentShader = sh.fragmentShader.replace('#include <normal_fragment_maps>', `#include <normal_fragment_maps>
@@ -334,7 +395,7 @@ export function aplicarDetalhe(material, simples, renderer) {
         }`);
     }
   };
-  material.customProgramCacheKey = () => 'mapa-detalhe-' + (simples ? 's' : 'p');
+  material.customProgramCacheKey = () => 'mapa-detalhe2-' + (simples ? 's' : 'p');
 }
 
 // Troca material, texturas e distâncias de LOD conforme o nível gráfico.
@@ -346,7 +407,7 @@ export async function aplicarQualidadeMapa(mapa, nivel) {
       ? new THREE.MeshLambertMaterial({ vertexColors: true })
       : new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.95, metalness: 0 });
     aplicarDetalhe(mapa.material, nivel.materialSimples, mapa.renderer);
-    mapa.material.customProgramCacheKey = () => 'ilha-detalhe-' + (nivel.materialSimples ? 's' : 'p');
+    mapa.material.customProgramCacheKey = () => 'ilha-detalhe2-' + (nivel.materialSimples ? 's' : 'p');
     trocarNiveis(mapa, nivel);
     antigoP?.dispose();
     mapa.aoMudarQualidade?.(nivel);

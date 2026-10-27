@@ -330,7 +330,7 @@ export function criarCeu({ cena, camera, corHorizonte }) {
     uniNuvens.uTempo.value = t;
     uniNuvens.uChuva.value = chuva; uniCupula.uChuva.value = chuva;
     uniCupula.uFase.value = ((dias + hora / 24) / 8) % 1; // ciclo da lua: 8 dias do jogo
-    uniNuvens.uCobertura.value = 0.6 - chuva * 0.32;
+    uniNuvens.uCobertura.value = 0.5 - chuva * 0.25; // mais nuvens no dia: o céu deixa de ser um azul liso e ganha escala
     uniCupula.uTempo.value = t;
     uniCupula.uTopo.value.copy(estado.topo); uniCupula.uHorizonte.value.copy(estado.neblina); uniCupula.uBaixo.value.copy(estado.baixo);
     uniCupula.uSol.value.copy(estado.solVisivel); uniCupula.uLua.value.copy(estado.luaVisivel);

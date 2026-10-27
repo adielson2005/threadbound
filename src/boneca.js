@@ -4,6 +4,7 @@ import { FBXLoader } from 'three/addons/loaders/FBXLoader.js';
 import { mergeVertices } from 'three/addons/utils/BufferGeometryUtils.js';
 import { corrigirPernas, corrigirTrilhasPernas, removerPicos, fecharCiclo, alinharGolpe, velocidadeNatural } from './reparos.js';
 import { carregarTextura } from './texturas.js';
+import { simplificar } from './simplificar.js';
 import { ESTILO_LIGADO } from './estilo.js';
 
 // animações em ciclo (precisam terminar exatamente onde começam)
@@ -487,6 +488,8 @@ export async function criarBoneca(renderer, nivel, aoProgredir) {
   // contorno de desenho animado (estilo de jogo mobile): o "casco invertido", uma cópia da malha
   // inflada um pouquinho pela normal e desenhada só por dentro, em marrom escuro. Usa o mesmo
   // esqueleto, então segue todas as animações; custa um desenho a mais, sem pós-processamento.
+  // A malha do contorno é uma versão simplificada (~25% dos triângulos, com os mesmos pesos dos
+  // ossos): de longe ninguém vê a diferença na borda, e a GPU anima 4× menos vértices.
   let linha = null;
   if (!costura && ESTILO_LIGADO) {
     malha.geometry.computeBoundingBox();
@@ -496,7 +499,8 @@ export async function criarBoneca(renderer, nivel, aoProgredir) {
       sh.vertexShader = sh.vertexShader.replace('#include <begin_vertex>', `vec3 transformed = vec3( position ) + normalize( normal ) * ${espessura.toFixed(5)};`);
     };
     mat.customProgramCacheKey = () => 'boneca-linha';
-    linha = new THREE.SkinnedMesh(malha.geometry, mat);
+    const leve = await simplificar(malha.geometry, 0.25, 0.01);
+    linha = new THREE.SkinnedMesh(leve, mat);
     linha.position.copy(malha.position); linha.quaternion.copy(malha.quaternion); linha.scale.copy(malha.scale);
     linha.bind(malha.skeleton, malha.bindMatrix);
     linha.frustumCulled = false; linha.castShadow = false;
