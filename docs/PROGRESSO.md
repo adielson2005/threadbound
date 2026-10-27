@@ -106,6 +106,22 @@ O efeito de pontilhado aparece como uma trama fina nas folhas que estão saindo 
 - Testes: Capítulos 1 e 2 do começo ao fim no perfil celular (25/25), 66 programas de shader todos
   compilados no carregamento, chamadas e triângulos iguais aos do ciclo anterior, console sem erros.
 
+## Site (GitHub Pages) não carregava depois das atualizações (28/10/2026)
+
+As publicações do Pages davam certo e o jogo carrega numa subpasta igual à do site (testado
+localmente em /threadbound/, sem erros). A causa provável é o cache: o Pages manda o navegador guardar
+cada arquivo por 10 minutos, e depois de uma atualização ele misturava módulos novos com antigos (um
+módulo novo importando algo que o antigo ainda não exporta); o carregamento quebrava antes do jogo
+começar e a tela ficava parada em "Costurando a ilha…", sem mensagem.
+
+- ferramentas/versionar.py: cada módulo de src/ ganha "?v=<hash do conteúdo>" pelo mapa de
+  importação do index.html (vale também para os imports entre os módulos). Arquivo novo = endereço
+  novo; o que não mudou continua vindo do cache. Rodar antes de cada commit que mexe em src/ (o
+  gerar-apk.sh já roda; o APK ignora o "?v=").
+- Se algo não carregar, a tela mostra o erro e um botão "Recarregar" em vez de ficar parada.
+- Testado: os 36 módulos chegam com a versão, nenhum carregado duas vezes; com um arquivo bloqueado
+  de propósito, aparece o aviso. O site em si não abre deste ambiente (a rede bloqueia o github.io).
+
 ## Correção no celular: manchas brancas nas copas e pontilhado (27/10/2026)
 
 Relatado num celular (captura do jogador): blocos brancos nas copas das árvores e uma mancha de
