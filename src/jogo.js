@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { aplicarEstilo } from './estilo.js';
+import { aplicarEstilo, atualizarNevoaSol } from './estilo.js';
 aplicarEstilo(); // estilo de jogo mobile em todos os materiais (antes de qualquer um compilar)
 import { criarBoneca, aplicarQualidadeBoneca } from './boneca.js';
 import { aplicarCambalhota, aplicarPose } from './cambalhota.js';
@@ -294,6 +294,7 @@ function aplicarHora() {
   luzCeu.color.copy(e.corCeuLuz); luzCeu.groundColor.copy(e.corChaoLuz);
   luzCeu.intensity = luzCeuBase() * e.forcaCeuLuz + chuva.relampago * 2.5; // relâmpago clareia tudo por um instante
   cena.fog.color.copy(e.neblina);
+  atualizarNevoaSol(e, chuva.intensidade);
   // na chuva a neblina chega mais perto
   const fb = cena.userData.neblinaBase;
   if (fb) { cena.fog.near = fb[0] * (1 - 0.45 * chuva.intensidade); cena.fog.far = fb[1] * (1 - 0.4 * chuva.intensidade); }

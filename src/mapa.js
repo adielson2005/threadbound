@@ -393,8 +393,11 @@ export function aplicarDetalhe(material, simples, renderer) {
             float onda = sin(dot(vMundoDet.xz, dirA) * 3.4 + (macroA.x - 0.5) * 9.0);
             onda = onda * abs(onda); // crista estreita e vale largo, como a areia de verdade
             float distA = distance(vMundoDet, cameraPosition);
-            float rippleA = mix(1.0, 0.9 + 0.12 * onda, 1.0 - smoothstep(6.0, 45.0, distA));
-            diffuseColor.rgb *= mix(1.0, rippleA * (0.94 + 0.12 * macroA.y), areia);
+            float rippleA = mix(1.0, 0.86 + 0.18 * onda, 1.0 - smoothstep(8.0, 60.0, distA));
+            // manchas grandes de areia mais dourada e mais clara (a areia lisa e igual estourava no sol)
+            float tomA = texture2D(uGrama, vMundoDet.xz * 0.012 + 0.61).b;
+            vec3 tinta = mix(vec3(0.95, 0.9, 0.82), vec3(1.0, 0.88, 0.7), smoothstep(0.3, 0.7, tomA));
+            diffuseColor.rgb *= mix(vec3(1.0), tinta * rippleA * (0.92 + 0.14 * macroA.y), areia);
           }
         }`);
     if (!simples) {
@@ -408,7 +411,7 @@ export function aplicarDetalhe(material, simples, renderer) {
         }`);
     }
   };
-  material.customProgramCacheKey = () => 'mapa-detalhe2-' + (simples ? 's' : 'p');
+  material.customProgramCacheKey = () => 'mapa-detalhe3-' + (simples ? 's' : 'p');
 }
 
 // Troca material, texturas e distâncias de LOD conforme o nível gráfico.
@@ -420,7 +423,7 @@ export async function aplicarQualidadeMapa(mapa, nivel) {
       ? new THREE.MeshLambertMaterial({ vertexColors: true })
       : new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.95, metalness: 0 });
     aplicarDetalhe(mapa.material, nivel.materialSimples, mapa.renderer);
-    mapa.material.customProgramCacheKey = () => 'ilha-detalhe2-' + (nivel.materialSimples ? 's' : 'p');
+    mapa.material.customProgramCacheKey = () => 'ilha-detalhe3-' + (nivel.materialSimples ? 's' : 'p');
     trocarNiveis(mapa, nivel);
     antigoP?.dispose();
     mapa.aoMudarQualidade?.(nivel);

@@ -43,7 +43,7 @@ const GRADE = `
 // vista é rígida), então funciona em qualquer shader que já tem neblina: malhas, sprites, água.
 const NEVOA_VERT = `#ifdef USE_FOG
 	vFogDepth = - mvPosition.z;
-	vFogAltura = ( transpose( mat3( viewMatrix ) ) * ( mvPosition.xyz - viewMatrix[ 3 ].xyz ) ).y;
+	vFogMundo = transpose( mat3( viewMatrix ) ) * ( mvPosition.xyz - viewMatrix[ 3 ].xyz );
 #endif`;
 const NEVOA_FRAG = `#ifdef USE_FOG
 	#ifdef FOG_EXP2
@@ -53,16 +53,36 @@ const NEVOA_FRAG = `#ifdef USE_FOG
 	#endif
 	// bruma baixa: começa uns 25 m abaixo do topo das ilhas e engrossa até a metade lá embaixo (o mar
 	// e a praia continuam aparecendo, azulados: é deles que vem a sensação de estar no alto)
-	float brumaBaixa = ( 1.0 - smoothstep( -90.0, -25.0, vFogAltura ) ) * smoothstep( 15.0, 70.0, vFogDepth ) * 0.5;
+	float brumaBaixa = ( 1.0 - smoothstep( -90.0, -25.0, vFogMundo.y ) ) * smoothstep( 15.0, 70.0, vFogDepth ) * 0.5;
 	vec3 corNevoa = mix( fogColor, fogColor * vec3( 0.86, 0.95, 1.08 ), brumaBaixa );
+	// o lado do sol: o ar contra o sol se acende em dourado, igual ao céu atrás (sem isso morros e
+	// ilhas distantes ficavam azul-acinzentados na frente do horizonte dourado)
+	vec3 dirNevoa = normalize( vFogMundo - cameraPosition );
+	float sNevoa = max( dot( dirNevoa, fogSol.xyz ), 0.0 );
+	corNevoa = mix( corNevoa, fogBrilho.rgb, sNevoa * sNevoa * ( 1.0 - abs( dirNevoa.y ) ) * fogSol.w ) + fogBrilho.rgb * pow( sNevoa, 5.0 ) * fogBrilho.a;
 	gl_FragColor.rgb = mix( gl_FragColor.rgb, corNevoa, max( fogFactor, brumaBaixa ) );
 #endif`;
+
+// direção do sol visível + força do dourado; cor do dourado + força do halo (ceu.js)
+export const NEVOA_SOL = new Float32Array(4), NEVOA_BRILHO = new Float32Array(4);
+export function atualizarNevoaSol(e, chuva) {
+  const acima = THREE.MathUtils.smoothstep(e.solVisivel.y, -0.08, 0.02) * (1 - chuva * 0.8);
+  const k = (0.45 * e.dia + 0.5 * e.por) * acima;
+  NEVOA_SOL[0] = e.solVisivel.x; NEVOA_SOL[1] = e.solVisivel.y; NEVOA_SOL[2] = e.solVisivel.z; NEVOA_SOL[3] = k;
+  NEVOA_BRILHO[0] = e.corBrilho.r * 1.05; NEVOA_BRILHO[1] = e.corBrilho.g * 1.05; NEVOA_BRILHO[2] = e.corBrilho.b * 1.05;
+  NEVOA_BRILHO[3] = (0.18 + 0.35 * e.por) * acima * Math.max(e.dia, e.por) * 0.6;
+}
 
 export function aplicarEstilo() {
   if (!ESTILO_LIGADO) return;
   const C = THREE.ShaderChunk;
-  C.fog_pars_vertex = C.fog_pars_vertex.replace('varying float vFogDepth;', 'varying float vFogDepth;\n\tvarying float vFogAltura;');
-  C.fog_pars_fragment = C.fog_pars_fragment.replace('varying float vFogDepth;', 'varying float vFogDepth;\n\tvarying float vFogAltura;');
+  C.fog_pars_vertex = C.fog_pars_vertex.replace('varying float vFogDepth;', 'varying float vFogDepth;\n\tvarying vec3 vFogMundo;');
+  C.fog_pars_fragment = C.fog_pars_fragment.replace('varying float vFogDepth;', 'varying float vFogDepth;\n\tvarying vec3 vFogMundo;\n\tuniform vec4 fogSol;\n\tuniform vec4 fogBrilho;');
+  // o sol da névoa é o mesmo para todos os materiais: arrays comuns (não Vector3) não são clonados
+  // pelo three.js, então todos apontam para os mesmos números e basta mudá-los uma vez por quadro
+  const extra = { fogSol: { value: NEVOA_SOL }, fogBrilho: { value: NEVOA_BRILHO } };
+  Object.assign(THREE.UniformsLib.fog, extra);
+  for (const s of Object.values(THREE.ShaderLib)) if (s.uniforms.fogColor) Object.assign(s.uniforms, extra);
   C.fog_vertex = NEVOA_VERT;
   C.fog_fragment = NEVOA_FRAG;
   for (const nome of ['lights_lambert_pars_fragment', 'lights_physical_pars_fragment']) {
