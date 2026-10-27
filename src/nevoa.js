@@ -7,7 +7,9 @@ import * as THREE from 'three';
 
 const PASTA = new URL('../assets/efeitos/', import.meta.url).href;
 
-export function criarNevoa({ cena, agua }) {
+// raioIlhas: com o mar logo abaixo da borda das ilhas (mapa gerado), a bruma fica só no mar, fora
+// delas e rente à água, girando devagar em volta (atravessar a ilha a deixava enevoada)
+export function criarNevoa({ cena, agua, raioIlhas = null }) {
   const grupo = new THREE.Group(); grupo.name = 'nevoa';
   cena.add(grupo);
   const textura = new THREE.TextureLoader().load(PASTA + 'nevoa.png');
@@ -30,11 +32,11 @@ export function criarNevoa({ cena, agua }) {
   // (a borda de baixo do sprite fica acima da água: um sprite atravessando o mar seria cortado
   // numa linha reta pela superfície)
   for (let i = 0; i < 26; i++) {
-    const ang = Math.random() * Math.PI * 2, r = 25 + Math.random() * 160;
+    const ang = Math.random() * Math.PI * 2, r = raioIlhas ? raioIlhas + 15 + Math.random() * 110 : 25 + Math.random() * 160;
     const tam = 26 + Math.random() * 30;
     novo({
-      tipo: 'bruma', x: c.x + Math.cos(ang) * r, z: c.z + Math.sin(ang) * r,
-      y: agua.nivel + tam * 0.45 * 0.5 + 1.5 + Math.random() * 3, tam, opac: 0.22 + Math.random() * 0.18,
+      tipo: 'bruma', x: c.x + Math.cos(ang) * r, z: c.z + Math.sin(ang) * r, ang, r, vel: (0.004 + Math.random() * 0.004) * (Math.random() < 0.5 ? 1 : -1),
+      y: agua.nivel + tam * 0.45 * 0.5 + (raioIlhas ? 0.6 + Math.random() * 1.2 : 1.5 + Math.random() * 3), tam, opac: 0.22 + Math.random() * 0.18,
       fase: Math.random() * 10,
     });
   }
@@ -56,10 +58,13 @@ export function criarNevoa({ cena, agua }) {
       if (!s.visible) return;
       s.material.rotation += u.giro * dt;
       if (u.tipo === 'bruma') {
-        u.x += deriva.x * dt * 0.5; u.z += deriva.y * dt * 0.5;
-        // dá a volta: o que sai do anel do lado do vento volta pelo outro lado
-        const dx = u.x - c.x, dz = u.z - c.z, r = Math.hypot(dx, dz);
-        if (r > 190) { u.x = c.x - dx * 0.9; u.z = c.z - dz * 0.9; }
+        if (raioIlhas) { u.ang += u.vel * dt; u.x = c.x + Math.cos(u.ang) * u.r; u.z = c.z + Math.sin(u.ang) * u.r; }
+        else {
+          u.x += deriva.x * dt * 0.5; u.z += deriva.y * dt * 0.5;
+          // dá a volta: o que sai do anel do lado do vento volta pelo outro lado
+          const dx = u.x - c.x, dz = u.z - c.z, r = Math.hypot(dx, dz);
+          if (r > 190) { u.x = c.x - dx * 0.9; u.z = c.z - dz * 0.9; }
+        }
         s.position.set(u.x, u.y + Math.sin(t * 0.2 + u.fase) * 0.8, u.z);
         s.scale.set(u.tam, u.tam * 0.45, 1);
         s.material.opacity = u.opac * (0.75 + 0.25 * Math.sin(t * 0.3 + u.fase));

@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { detectarHardware } from './graficos.js';
 
-// Mar lá embaixo, ao redor das ilhas.
+// Mar em volta das ilhas (logo abaixo da borda delas).
 //
 // Modelo: malha polar (anéis em progressão geométrica: detalhe perto do centro do mapa, poucos
 // triângulos até o horizonte), deslocada no vertex shader por uma soma de ondas de Gerstner.
@@ -24,7 +24,7 @@ const G = 9.8;
 const N_ONDAS = 6;
 const N_CONTATOS = 8;
 const PASTA = new URL('../assets/efeitos/', import.meta.url).href;
-// no celular o mar (que fica lá embaixo das ilhas) tem menos da metade dos vértices: as ondas são
+// no celular o mar (visto quase sempre de cima das ilhas) tem menos da metade dos vértices: as ondas são
 // calculadas por vértice, e dessa altura a diferença não aparece
 const CELULAR = detectarHardware().perfil === 'celular';
 const MALHA = CELULAR ? { raioMin: 3, raioMax: 1100, aneis: 72, setores: 128 } : { raioMin: 3, raioMax: 1100, aneis: 110, setores: 192 };
@@ -301,7 +301,7 @@ export function criarAgua({ cena, mapa, renderer }) {
   const caixa = mapa.geo.boundingBox;
   const centro = caixa.getCenter(new THREE.Vector3());
   // abaixo da ilha e do mar de nuvens; quem cai da ilha chega até aqui (respingo + ondas)
-  const nivel = caixa.min.y - 20;
+  const nivel = mapa.mar?.nivel ?? caixa.min.y - 20; // o mapa gerado diz onde fica o mar (logo abaixo da borda das ilhas)
 
   // ---- vento ----
   // direção e intensidade "de base" (ajustáveis) + rajadas lentas e um giro suave da direção

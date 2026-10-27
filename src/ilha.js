@@ -5,6 +5,7 @@ import { montarBlocos, CAMADA_SOMBRA } from './mapa.js';
 import { construirVila, construirFarol, construirRuinas, construirGruta, construirCais, construirNaufragios, construirMarcoIlhota, construirJardim, construirCostura } from './casas.js';
 import { CONFIG } from './capitulo.js';
 import { CASAS } from './historia.js';
+import { formaPraia } from './praiaForma.js';
 
 // Arquipélago gerado por código (substitui o mapa.fbx do Meshy, que segue disponível em ?mapa=antigo).
 // Devolve o mesmo formato de carregarMapa() (mapa.js): malha de colisão com BVH, blocos com LOD,
@@ -12,8 +13,8 @@ import { CASAS } from './historia.js';
 // praia funcionam sem mudança.
 //
 //  - Ilha principal (~230 m): campina com morros em terraços, floresta, a Vila de Maré Alta com
-//    casas abandonadas, trilhas de terra, borda arredondada, falésias em camadas e a base de rocha
-//    pendurada embaixo (ilha flutuante).
+//    casas abandonadas, trilhas de terra, borda arredondada e falésias em camadas que entram no
+//    mar (a base de rocha afunilada fica embaixo d'água). A enseada desce em rampa até a praia.
 //  - Três ilhotas: a do Farol (alta), a das Ruínas e a do Pomar (baixa), ligadas por correntes de vento
 //    (posicionadas pela análise do terreno).
 //  - Vegetação variada (pinheiros, árvores frondosas, bétulas, arbustos, flores, pedras), agrupada em
@@ -95,6 +96,7 @@ function alturaBasePrincipal(x, z, d) {
   return h;
 }
 let alturaVila = 0;
+let MAR = null; // { nivel, praia } (calculado em gerarIlha)
 function alturaTopo(ilha, x, z, d) {
   // x, z: mundo; d: distância ao centro / raio da borda (0..1)
   if (ilha === PRINCIPAL) {
@@ -161,12 +163,10 @@ function corTopo(x, z, d, out) {
   if (dc < 3) lerpCor(_c1, TRILHA, 1 - suave(dc, 0.9, 2.6), _c1);
   // borda da ilha: terra escura e capim ralo
   lerpCor(_c1, TERRA, suave(d, 0.9, 1.0) * 0.6, _c1);
-  // areia da enseada: clara, com a faixa úmida e mais escura perto da borda
+  // areia da enseada
   const kp = naPraia(x, z, d);
-  if (kp > 0) {
-    lerpCor(_c1, C(0.86, 0.78, 0.6), suave(kp, 0.15, 0.6), _c1);
-    lerpCor(_c1, C(0.7, 0.63, 0.5), suave(d, 0.9, 0.99) * kp * 0.7, _c1);
-  }
+  // (o mesmo tom da areia da praia lá na beira do mar, para onde a rampa desce sem emenda)
+  if (kp > 0) lerpCor(_c1, C(0.84, 0.74, 0.56), suave(kp, 0.15, 0.6), _c1);
   out[0] = _c1[0]; out[1] = _c1[1]; out[2] = _c1[2];
   return out;
 }
@@ -235,14 +235,18 @@ function malhaIlha(ilha, dados) {
     aneis.push(anel);
   }
   const topoNivel = aneis.length; // anéis do topo: 0 .. NA-1
-  // falésia: desce quase reta, com ressaltos de rocha
-  const descidaFalesia = 2.4;
+  // falésia: desce quase reta, com ressaltos de rocha, até entrar no mar (a base afunilada fica
+  // toda embaixo d'água: vista de fora, a ilha sai do mar e não paira sobre ele)
+  const fundoFalesia = MAR ? MAR.nivel - 3 : Infinity;
+  const descida = j => Math.max(2.4, (bordaY[j] - fundoFalesia) / ANEIS_FALESIA);
   for (let k = 1; k <= ANEIS_FALESIA; k++) {
     const anel = [];
     for (let j = 0; j < NS; j++) {
       const th = (j / NS) * Math.PI * 2, ct = Math.cos(th), st = Math.sin(th);
-      const y = bordaY[j] - k * descidaFalesia;
-      const ressalto = 1 + 0.05 * (fbm(ct * 6 + y * 0.12, st * 6 - y * 0.12, 3, ilha.semente + 3) - 0.5) - 0.012 * k;
+      const y = bordaY[j] - k * descida(j);
+      // (o pé abre um pouco para fora, como falésia de mar: afunilando para dentro ela parecia o
+      // casco de uma ilha pairando sobre a água)
+      const ressalto = 1 + 0.05 * (fbm(ct * 6 + y * 0.12, st * 6 - y * 0.12, 3, ilha.semente + 3) - 0.5) + (MAR ? 0.008 : -0.012) * k;
       const r = bordaR[j] * ressalto;
       const x = ilha.cx + ct * r, z = ilha.cz + st * r;
       anel.push(add(x, y, z, corRocha(x, y, z, bordaY[j], bordaY[j] - ilha.prof, corTmp)));
@@ -250,7 +254,7 @@ function malhaIlha(ilha, dados) {
     aneis.push(anel);
   }
   // base pendurada: afunila até a ponta, com saliências
-  const yIni = (j) => bordaY[j] - ANEIS_FALESIA * descidaFalesia;
+  const yIni = (j) => bordaY[j] - ANEIS_FALESIA * descida(j);
   for (let m = 1; m <= ANEIS_BASE; m++) {
     const t = m / (ANEIS_BASE + 1), anel = [];
     for (let j = 0; j < NS; j++) {
@@ -263,7 +267,9 @@ function malhaIlha(ilha, dados) {
     }
     aneis.push(anel);
   }
-  const yPonta = Math.min(...bordaY) - ANEIS_FALESIA * descidaFalesia - ilha.prof * 1.02;
+  let yPonta = Infinity;
+  for (let j = 0; j < NS; j++) yPonta = Math.min(yPonta, yIni(j));
+  yPonta -= ilha.prof * 1.02;
   const ponta = add(ilha.cx, yPonta, ilha.cz, corRocha(ilha.cx, yPonta, ilha.cz, cy, cy - 1, corTmp));
 
   // índices por nível de detalhe
@@ -704,6 +710,51 @@ export async function gerarIlha(renderer, aoProgredir = () => {}) {
   ];
   alturaVila = alturaBasePrincipal(VILA.x, VILA.z, Math.hypot(VILA.x, VILA.z) / raioBorda(PRINCIPAL, Math.atan2(VILA.z, VILA.x)));
 
+  // O mar fica logo abaixo da borda mais baixa das ilhas (fora a enseada, que desce até ele): a ilha
+  // não flutua mais, ela sai do mar com falésias. Com enseada, uma rampa de areia desce da borda até
+  // uma praia baixa na beira d'água (praia.js), do lado de fora da ilha.
+  {
+    let bordaMin = Infinity;
+    for (const il of TODAS) for (let k = 0; k < 128; k++) {
+      const th = (k / 128) * Math.PI * 2, R = raioBorda(il, th) * 0.999;
+      const x = il.cx + Math.cos(th) * R, z = il.cz + Math.sin(th) * R;
+      if (il === PRINCIPAL && naPraia(x, z, 1) > 0.01) continue;
+      bordaMin = Math.min(bordaMin, alturaTopo(il, x, z, 0.999));
+    }
+    MAR = { nivel: bordaMin - 2.5, praia: null };
+    if (PRAIA) {
+      const a = PRAIA.ang, s0 = raioBorda(PRINCIPAL, a), cx = Math.cos(a), cz = Math.sin(a);
+      const hTop = alturaTopo(PRINCIPAL, cx * s0 * 0.985, cz * s0 * 0.985, 0.985) - MAR.nivel;
+      const s1 = s0 + Math.max(14, hTop * 3.4), R0 = 30, meia = s0 * PRAIA.largura * 0.62;
+      // onde fica a borda (e a que altura) em cada faixa da rampa: a borda é curva, então a rampa
+      // começa nela ponto a ponto (começando numa linha reta, a quina da falésia aparecia dos lados)
+      const N = 96, tMax = meia * 1.5, tabS = new Float32Array(N + 1), tabH = new Float32Array(N + 1);
+      for (let i = 0; i <= N; i++) {
+        const t = -tMax + 2 * tMax * i / N;
+        let sb = s0;
+        for (let k = 0; k < 4; k++) { const R = raioBorda(PRINCIPAL, a + Math.atan2(t, sb)); sb = Math.sqrt(Math.max(1, R * R - t * t)); }
+        const x = cx * sb - cz * t, z = cz * sb + cx * t;
+        tabS[i] = sb; tabH[i] = alturaTopo(PRINCIPAL, x * 0.999, z * 0.999, 0.999) - MAR.nivel;
+      }
+      const tabela = (tab, t) => { const f = Math.min(N, Math.max(0, (t + tMax) / (2 * tMax) * N)), i = Math.min(N - 1, Math.floor(f)); return tab[i] + (tab[i + 1] - tab[i]) * (f - i); };
+      MAR.praia = {
+        cx: cx * (s1 + R0 * 0.62), cz: cz * (s1 + R0 * 0.62), R0, topo: 1.6,
+        rampa: { ang: a, s0, s1, hTop, meia, bordaS: t => tabela(tabS, t), bordaH: t => tabela(tabH, t) },
+      };
+    } else {
+      // sem enseada: uma praia encostada no pé da falésia, onde a borda é mais baixa e longe das
+      // correntes de vento para as ilhotas
+      let melhor = null;
+      for (let k = 0; k < 72; k++) {
+        const th = (k / 72) * Math.PI * 2;
+        if (ILHOTAS.some(il => Math.abs(Math.atan2(Math.sin(th - il.ang), Math.cos(th - il.ang))) < 0.7)) continue;
+        const R = raioBorda(PRINCIPAL, th), h = alturaTopo(PRINCIPAL, Math.cos(th) * R * 0.999, Math.sin(th) * R * 0.999, 0.999);
+        if (!melhor || h < melhor.h) melhor = { th, R, h };
+      }
+      if (melhor) { const R0 = 26, d = melhor.R + R0 * 0.72; MAR.praia = { cx: Math.cos(melhor.th) * d, cz: Math.sin(melhor.th) * d, R0, topo: 1.4 }; }
+    }
+  }
+
   // caixa para as UVs (só servem para a amostra de cor da análise)
   let minX = Infinity, maxX = -Infinity, minZ = Infinity, maxZ = -Infinity;
   for (const il of TODAS) { minX = Math.min(minX, il.cx - il.R * 1.2); maxX = Math.max(maxX, il.cx + il.R * 1.2); minZ = Math.min(minZ, il.cz - il.R * 1.2); maxZ = Math.max(maxZ, il.cz + il.R * 1.2); }
@@ -878,9 +929,12 @@ export async function gerarIlha(renderer, aoProgredir = () => {}) {
     obras.push(construirRuinas({ centro: naObra(ruinasI), alturaEm, rnd, evitar: centroIlhota(ruinasI) }));
     if (MAPA.gruta) { const { x, z } = MAPA.gruta; obras.push(construirGruta({ centro: new THREE.Vector3(x, alturaEm(x, z), z), alturaEm, rnd, nome: 'Gruta dos Recados' })); }
     if (PRAIA) {
-      // o cais sai da areia e avança sobre a borda (o mar fica lá embaixo)
-      const r = raioBorda(PRINCIPAL, PRAIA.ang) * 0.9, x = Math.cos(PRAIA.ang) * r, z = Math.sin(PRAIA.ang) * r;
-      obras.push(construirCais({ inicio: new THREE.Vector3(x, alturaEm(x, z), z), direcao: new THREE.Vector3(Math.cos(PRAIA.ang), 0, Math.sin(PRAIA.ang)), alturaEm, rnd }));
+      // o cais sai da areia da praia lá embaixo, do lado de fora, e avança mar adentro
+      const f = formaPraia(MAR.praia), [dx, dz] = f.dir;
+      let s = 0;
+      while (s < MAR.praia.R0 * 1.5 && f.perfil(MAR.praia.cx + dx * s, MAR.praia.cz + dz * s) > 0.45) s += 0.25;
+      const x = MAR.praia.cx + dx * s, z = MAR.praia.cz + dz * s;
+      obras.push(construirCais({ inicio: new THREE.Vector3(x, MAR.nivel + 0.45, z), direcao: new THREE.Vector3(dx, 0, dz), alturaEm, rnd }));
     }
   } else if (MAPA.construcoes === 'naufragios') {
     obras.push(construirNaufragios({ centro: centroPraca, raio: VILA.r, alturaEm, rnd, nomes: CASAS }));
@@ -976,6 +1030,7 @@ export async function gerarIlha(renderer, aoProgredir = () => {}) {
     enfeites: [vegetacao, construcoes],
     setores: setoresLod, // setores de vegetação (occlusion culling: oclusao.js)
     focoVegetacao: foco.value,
+    mar: MAR, // nível do mar e a forma da praia (agua.js, praia.js)
     nascimentoPreferido: new THREE.Vector3(VILA.x, alturaVila, VILA.z),
     pontos: { vila: VILA, morro: MORRO, ilhotas: ILHOTAS.map(i => ({ nome: i.nome, x: i.cx, z: i.cz, topo: alturaEm(i.cx, i.cz) })), casas },
     alturaEm,

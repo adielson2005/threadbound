@@ -106,6 +106,36 @@ O efeito de pontilhado aparece como uma trama fina nas folhas que estão saindo 
 - Testes: Capítulos 1 e 2 do começo ao fim no perfil celular (25/25), 66 programas de shader todos
   compilados no carregamento, chamadas e triângulos iguais aos do ciclo anterior, console sem erros.
 
+## Ciclo 5: a ilha desce até o mar e encontra a praia (27/10/2026)
+
+- O mar sobe até logo abaixo da borda mais baixa das ilhas (calculado por capítulo, em ilha.js):
+  a ilha não flutua mais, ela sai do mar com falésias que descem até dentro d'água (a base de
+  rocha afunilada ficou embaixo d'água; o pé da falésia abre um pouco para fora, como falésia de
+  mar). Fragmentos, casas, âncoras e a posição de tudo no jogo continuam no mesmo lugar.
+- Cap. 1: a enseada desce numa rampa de areia até uma praia na beira d'água, com a mesma textura
+  da praia (as duas areias se cruzam sem emenda). A rampa começa na borda real da ilha ponto a
+  ponto, cobrindo a quina da falésia. A forma (praia + rampa) fica em praiaForma.js, usada pela
+  malha da praia e pelo cais.
+- O cais sai da areia da praia e entra no mar; o barco fica na água.
+- Caps. 2 a 4: uma praia encostada no pé da falésia, onde a borda é mais baixa e longe das correntes
+  de vento.
+- Água rasa: dá para andar no raso; só água acima da cintura (ou cair das falésias) devolve ao
+  último chão seguro. Entrando andando não custa fôlego; caindo de cima, sim, como antes. O "chão
+  seguro" não é mais salvo debaixo d'água.
+- A bruma do mar fica só no mar, fora das ilhas e rente à água (passando na altura da vila, ela
+  deixava tudo enevoado). As nuvens baixas do High não ficam mais entre a ilha e o mar (não há
+  mais espaço).
+- Areia vista de longe: vai para a cor média da textura (o ladrilho aparecia em bolinhas).
+- Mudança de layout no Cap. 1: o cais deixou de ficar na borda da ilha, e a análise do terreno
+  (que o contava) põe os inimigos e os 5 fragmentos das rochas flutuantes em outros lugares. O
+  save guarda os fragmentos pelo número, então a contagem continua certa. Os outros capítulos
+  não mudam.
+- Testes (perfil celular): Capítulo 1 do começo ao fim em 2 de 3 execuções (a outra parou num
+  guardião que o teste não acalmou a tempo, a ~3 fps); andar da areia para o mar (fica no raso,
+  volta da água funda sem perder fôlego); capítulos 2 a 4 abrem sem erro; nenhum shader compilado
+  durante o jogo; console sem erros. Medido (2 quadros): vila 212 chamadas / 414 mil triângulos,
+  horizonte 138 / 403 mil (o mar agora aparece em mais vistas), memória igual (273 MB).
+
 ## Ciclo 4 de gráficos (27/10/2026)
 
 - Contra o sol, o ar se acende em dourado: a neblina e a bruma ganharam o mesmo brilho do céu do

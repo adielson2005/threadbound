@@ -146,7 +146,7 @@ const AVISOS_1 = {
 // tela de game over: o motivo muda conforme como Brisa perdeu o último fôlego
 export const GAMEOVER = {
   queda: 'A queda foi alta demais e o fôlego de Brisa acabou… por enquanto.',
-  vazio: 'Brisa despencou das ilhas até o mar lá embaixo.',
+  vazio: 'Brisa caiu das falésias no mar.',
   praia: 'Brisa despencou das ilhas e caiu na praia lá embaixo. Cuidado com as bordas!',
   golpe: 'Os Retalhos assustados foram demais desta vez. Defenda-se (Q) e acalme-os com calma.',
 };
