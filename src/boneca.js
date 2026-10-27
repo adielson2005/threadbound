@@ -4,6 +4,8 @@ import { FBXLoader } from 'three/addons/loaders/FBXLoader.js';
 import { mergeVertices } from 'three/addons/utils/BufferGeometryUtils.js';
 import { corrigirPernas, corrigirTrilhasPernas, removerPicos, fecharCiclo, alinharGolpe, velocidadeNatural } from './reparos.js';
 import { carregarTextura } from './texturas.js';
+import { simplificar } from './simplificar.js';
+import { ESTILO_LIGADO } from './estilo.js';
 
 // animações em ciclo (precisam terminar exatamente onde começam)
 const CICLOS = ['andar', 'correr', 'parada', 'queda', 'guarda'];
@@ -483,7 +485,28 @@ export async function criarBoneca(renderer, nivel, aoProgredir) {
   const mixer = new THREE.AnimationMixer(fbx);
   const acoes = Object.fromEntries(Object.entries(clipes).map(([k, c]) => [k, mixer.clipAction(c)]));
   const perna = l => ({ coxa: fbx.getObjectByName(M(`${l}UpLeg`)), canela: fbx.getObjectByName(M(`${l}Leg`)), pe: fbx.getObjectByName(M(`${l}Foot`)) });
-  const boneca = { raiz, corpo, malha: malhaVisivel, costura, mixer, acoes, velocidades, diagnostico, pernas: [perna('Left'), perna('Right')], rig: { ossos: Object.fromEntries(ossos.map(o => [o.name, o])), lista: ossos, ligacao, papeis: PAPEIS } };
+  // contorno de desenho animado (estilo de jogo mobile): o "casco invertido", uma cópia da malha
+  // inflada um pouquinho pela normal e desenhada só por dentro, em marrom escuro. Usa o mesmo
+  // esqueleto, então segue todas as animações; custa um desenho a mais, sem pós-processamento.
+  // A malha do contorno é uma versão simplificada (~25% dos triângulos, com os mesmos pesos dos
+  // ossos): de longe ninguém vê a diferença na borda, e a GPU anima 4× menos vértices.
+  let linha = null;
+  if (!costura && ESTILO_LIGADO) {
+    malha.geometry.computeBoundingBox();
+    const bb = malha.geometry.boundingBox, espessura = (bb.max.y - bb.min.y) * 0.016;
+    const mat = new THREE.MeshBasicMaterial({ color: '#2b1a14', side: THREE.BackSide });
+    mat.onBeforeCompile = sh => {
+      sh.vertexShader = sh.vertexShader.replace('#include <begin_vertex>', `vec3 transformed = vec3( position ) + normalize( normal ) * ${espessura.toFixed(5)};`);
+    };
+    mat.customProgramCacheKey = () => 'boneca-linha';
+    const leve = await simplificar(malha.geometry, 0.25, 0.01);
+    linha = new THREE.SkinnedMesh(leve, mat);
+    linha.position.copy(malha.position); linha.quaternion.copy(malha.quaternion); linha.scale.copy(malha.scale);
+    linha.bind(malha.skeleton, malha.bindMatrix);
+    linha.frustumCulled = false; linha.castShadow = false;
+    malha.parent.add(linha);
+  }
+  const boneca = { raiz, corpo, malha: malhaVisivel, linha, costura, mixer, acoes, velocidades, diagnostico, pernas: [perna('Left'), perna('Right')], rig: { ossos: Object.fromEntries(ossos.map(o => [o.name, o])), lista: ossos, ligacao, papeis: PAPEIS } };
   await aplicarQualidadeBoneca(boneca, renderer, nivel);
   return boneca;
 }

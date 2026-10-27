@@ -5,8 +5,8 @@ import { KTX2Loader } from 'three/addons/loaders/KTX2Loader.js';
 // ferramentas/gerar-ktx2.sh). A GPU guarda essas comprimidas (ETC2/ASTC/BC, o que o aparelho tiver),
 // com uns 4× menos memória de vídeo que um JPG/PNG aberto, que é o que mais pesa num celular.
 // Se o arquivo faltar ou o navegador não conseguir, carrega o original. ?ktx2=0 desliga (comparar).
-// (o transcodificador é o da mesma versão do three.js do importmap)
-const TRANSCODER = 'https://cdn.jsdelivr.net/npm/three@0.165.0/examples/jsm/libs/basis/';
+// (o transcodificador vem junto com o three.js, em vendor/)
+const TRANSCODER = new URL('../vendor/three/examples/jsm/libs/basis/', import.meta.url).href;
 const usarKtx2 = new URLSearchParams(location.search).get('ktx2') !== '0';
 let ktx2 = null;
 const tl = new THREE.TextureLoader();

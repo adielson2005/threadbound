@@ -16,7 +16,7 @@ export const DIR_SOL = new THREE.Vector3(0.55, 0.75, 0.4).normalize(); // a dire
 
 // paletas (sRGB) de cada momento
 const PALETA = {
-  dia: { topo: '#2f86ee', horizonte: '#a9d8ff', baixo: '#c9e6f5', brilho: '#ffd27a' },
+  dia: { topo: '#2a7cf2', horizonte: '#bde6ff', baixo: '#cdeaf7', brilho: '#ffd27a' },
   por: { topo: '#3d4c94', horizonte: '#f6b05a', baixo: '#e3955c', brilho: '#ff9238' },
   noite: { topo: '#040920', horizonte: '#1a2a58', baixo: '#0e1733', brilho: '#9fb4ff' },
 };
@@ -24,9 +24,9 @@ const cor = h => new THREE.Color(h);
 const PAL = Object.fromEntries(Object.entries(PALETA).map(([k, v]) => [k, Object.fromEntries(Object.entries(v).map(([n, h]) => [n, cor(h)]))]));
 // luzes da cena: sol branco-dourado, pôr do sol laranja, luar azulado; céu e chão (o reflexo de baixo)
 const LUZ = {
-  sol: { dia: cor('#fff0d4'), por: cor('#ffad66'), noite: cor('#9fb6ff') },
+  sol: { dia: cor('#fff2cc'), por: cor('#ffad66'), noite: cor('#9fb6ff') },
   ceu: { dia: cor('#dcecff'), por: cor('#ffc79a'), noite: cor('#3a4f8c') },
-  chao: { dia: cor('#b9a77e'), por: cor('#a8745a'), noite: cor('#1d1a30') },
+  chao: { dia: cor('#b3b27a'), por: cor('#a8745a'), noite: cor('#1d1a30') },
 };
 
 const CUPULA_VERT = 'varying vec3 vP; void main(){ vP = position; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }';
@@ -330,7 +330,7 @@ export function criarCeu({ cena, camera, corHorizonte }) {
     uniNuvens.uTempo.value = t;
     uniNuvens.uChuva.value = chuva; uniCupula.uChuva.value = chuva;
     uniCupula.uFase.value = ((dias + hora / 24) / 8) % 1; // ciclo da lua: 8 dias do jogo
-    uniNuvens.uCobertura.value = 0.6 - chuva * 0.32;
+    uniNuvens.uCobertura.value = 0.5 - chuva * 0.25; // mais nuvens no dia: o céu deixa de ser um azul liso e ganha escala
     uniCupula.uTempo.value = t;
     uniCupula.uTopo.value.copy(estado.topo); uniCupula.uHorizonte.value.copy(estado.neblina); uniCupula.uBaixo.value.copy(estado.baixo);
     uniCupula.uSol.value.copy(estado.solVisivel); uniCupula.uLua.value.copy(estado.luaVisivel);

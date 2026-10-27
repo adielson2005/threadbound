@@ -5,9 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
 <title>Threadbound</title>
 <!-- fontes da interface (sem internet, caem para a fonte do sistema) -->
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@600;700;800;900&display=swap">
+<link rel="stylesheet" href="vendor/fontes/fontes.css">
 <style>
   /* ---------- Interface "feita à mão", no tema do jogo: Brisa é uma boneca de pano numa oficina de
      costura. Painéis de linho com costura tracejada, retalhos de feltro lilás, plaquinhas de madeira,
@@ -141,6 +139,12 @@
   .opcao select { font: 700 14px var(--fonte); padding: 6px 10px; border-radius: 8px; border: 1.5px solid #c9ad84; background: #fffaf0; min-height: 36px; }
   .opcao.marcar { justify-content: flex-start; } .opcao.marcar input { width: 22px; height: 22px; accent-color: var(--feltro); }
   .creditos { font-size: 14px !important; line-height: 1.8 !important; }
+  .autor { display: flex; flex-direction: column; align-items: center; gap: 10px; margin: 4px 0 14px; }
+  .autor .feito { margin: 0; font: 700 22px var(--titulo); letter-spacing: .5px; color: var(--tinta); }
+  .autor .instagram { display: inline-flex; align-items: center; gap: 10px; min-height: 44px; padding: 6px 16px 6px 8px; border-radius: 999px;
+    background: rgba(255, 252, 244, 0.8); border: 1.5px dashed rgba(122, 90, 60, 0.35); color: var(--tinta); text-decoration: none; font: 600 16px var(--titulo); }
+  .autor .instagram svg { width: 30px; height: 30px; flex: none; }
+  .autor .instagram:hover { filter: brightness(1.05); }
   /* tamanho dos textos (Configurações): falas, objetivo, dicas, cartas */
   :root { --escala-texto: 1; }
   #fala, #objetivo, #dicaTutorial, #memoria, #bilhete .papel, #interagir { zoom: var(--escala-texto); }
@@ -268,7 +272,8 @@
     #interagir { bottom: 470px; }
   }
 </style>
-<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.165.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.165.0/examples/jsm/","three-mesh-bvh":"https://cdn.jsdelivr.net/npm/three-mesh-bvh@0.7.6/build/index.module.js","meshoptimizer/simplifier":"https://cdn.jsdelivr.net/npm/meshoptimizer@0.21.0/meshopt_simplifier.module.js"}}</script>
+<!-- bibliotecas na própria pasta (vendor/): three 0.165.0, three-mesh-bvh 0.7.6, meshoptimizer 0.21.0. O jogo roda sem internet (e dentro do APK) -->
+<script type="importmap">{"imports":{"three":"./vendor/three/build/three.module.js","three/addons/":"./vendor/three/examples/jsm/","three-mesh-bvh":"./vendor/three-mesh-bvh/build/index.module.js","meshoptimizer/simplifier":"./vendor/meshoptimizer/meshopt_simplifier.module.js"}}</script>
 </head>
 <body>
 <div id="hud">
@@ -351,13 +356,19 @@
   </section>
   <section class="caixa pano" data-painel="creditos">
     <h2>Créditos</h2>
+    <div class="autor">
+      <p class="feito">FEITO POR: <b>Adielson</b></p>
+      <a class="instagram" href="https://www.instagram.com/araujoooxzz/" target="_blank" rel="noopener">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><defs><linearGradient id="gradInsta" x1="0" y1="1" x2="1" y2="0"><stop offset="0" stop-color="#f9a43a"/><stop offset=".45" stop-color="#e9395d"/><stop offset="1" stop-color="#8a3ab9"/></linearGradient></defs>
+          <rect x="1.5" y="1.5" width="21" height="21" rx="6" fill="url(#gradInsta)"/><rect x="5.5" y="5.5" width="13" height="13" rx="4" fill="none" stroke="#fff" stroke-width="1.8"/><circle cx="12" cy="12" r="3.1" fill="none" stroke="#fff" stroke-width="1.8"/><circle cx="16.4" cy="7.6" r="1.1" fill="#fff"/></svg>
+        <span>INSTAGRAM: <b>@araujoooxzz</b></span>
+      </a>
+    </div>
     <p class="creditos">
       <b>Threadbound</b> — a história de Brisa em quatro capítulos<br>
-      Criação e direção: adielson2005<br>
-      Programação, mapa gerado, céu, chuva, história e interface: feitos com o Claude (Anthropic)<br>
       Boneca: modelo "Little Lavender Doll" (Meshy) · animações extras: Human Basic Motions<br>
       Motor gráfico: three.js · colisão: three-mesh-bvh · simplificação: meshoptimizer<br>
-      Fontes: Fredoka e Nunito (Google Fonts)
+      Fontes: Fredoka e Nunito (SIL Open Font License)
     </p>
     <button class="botao secundario fechar-painel">Voltar</button>
   </section>

@@ -1,4 +1,6 @@
 import * as THREE from 'three';
+import { aplicarEstilo } from './estilo.js';
+aplicarEstilo(); // estilo de jogo mobile em todos os materiais (antes de qualquer um compilar)
 import { criarBoneca, aplicarQualidadeBoneca } from './boneca.js';
 import { aplicarCambalhota, aplicarPose } from './cambalhota.js';
 import { carregarMapa, aplicarQualidadeMapa, atualizarLodPorVisao, aquecerMapa, CAMADA_SOMBRA } from './mapa.js';
@@ -82,6 +84,9 @@ if (hardware.semWebGL) {
 // ---------- Cena ----------
 // antisserrilhado só pode ser escolhido ao criar o contexto: vale o nível salvo ao abrir o jogo
 const renderer = new THREE.WebGLRenderer({ antialias: nivel.antialias, powerPreference: 'high-performance' });
+// conferir o log de cada shader força a compilação a terminar na hora (o quadro trava esperando);
+// sem a conferência o driver compila em paralelo. ?debug liga de novo para achar erros de shader
+renderer.debug.checkShaderErrors = new URLSearchParams(location.search).has('debug');
 // GPU fraca às vezes reinicia o driver no meio do jogo: avisa e recarrega quando ela volta
 renderer.domElement.addEventListener('webglcontextlost', ev => {
   ev.preventDefault();
@@ -213,6 +218,7 @@ function atualizarMenu() {
   $('perfil-pc').textContent = {
     semPlaca: 'Seu PC está desenhando sem placa de vídeo: os três modos foram ajustados para rodar leves.',
     fraco: 'Placa de vídeo integrada ou PC mais simples: os modos foram ajustados para não travar.',
+    celular: 'Celular: os modos foram ajustados para mirar 60 fps (resolução, sombra e distância se ajustam sozinhas).',
     normal: 'Os três modos se ajustam sozinhos se o fps cair.',
   }[hardware.perfil];
 }
@@ -242,7 +248,7 @@ async function aplicarNivel(nome) {
 // (um pouco mais forte que no Low: o tone mapping do High escurece)
 const luzCeuBase = () => (!nivel.efeitos ? 1.55 : nivel.materialSimples ? 1.9 : 0.65);
 function aplicarEfeitos() {
-  renderer.shadowMap.type = nivel.sombraSuave ? THREE.PCFSoftShadowMap : THREE.PCFShadowMap;
+  renderer.shadowMap.type = nivel.sombraBasica ? THREE.BasicShadowMap : nivel.sombraSuave ? THREE.PCFSoftShadowMap : THREE.PCFShadowMap;
   // com o céu físico iluminando, a luz de céu simples fica mais fraca (senão tudo lava)
   // dia bem ensolarado: sol forte e céu claro preenchendo as sombras
   luzCeu.intensity = luzCeuBase();
@@ -597,7 +603,10 @@ const paineis = $('paineis');
 function abrirPainel(nome) {
   paineis.classList.add('aberto');
   for (const s of paineis.querySelectorAll('section')) s.classList.toggle('visivel', s.dataset.painel === nome);
-  paineis.querySelector('section.visivel button, section.visivel input')?.focus();
+  // foco para o teclado/controle, sem rolar o painel até o botão (em tela baixa o título sumia)
+  const aberto = paineis.querySelector('section.visivel');
+  aberto?.querySelector('button, input')?.focus({ preventScroll: true });
+  if (aberto) aberto.scrollTop = 0;
 }
 function fecharPaineis() { paineis.classList.remove('aberto'); }
 for (const b of document.querySelectorAll('[data-painel]')) if (b.tagName === 'BUTTON') b.addEventListener('click', () => abrirPainel(b.dataset.painel));
@@ -1062,6 +1071,7 @@ function animarPersonagem(dt) {
   // afundou no mar: some sob a espuma; logo depois de atingida, pisca (invulnerável)
   const piscando = (combate?.invulneravel ?? 0) > 0.4 && Math.floor(tempoCena * 14) % 2 === 0;
   personagem.malha.visible = !(j.noVazio && agua && j.pos.y < agua.nivel - 0.6) && !piscando;
+  if (personagem.linha) personagem.linha.visible = personagem.malha.visible;
 }
 let pesoPes = 0, pesoPlanar = 0;
 let _ossosPorCima = null;
@@ -1246,13 +1256,16 @@ function medirDesempenho(dt) {
   if (estado !== 'jogando' || document.hidden || pausado) { orcamento.lento = orcamento.folga = 0; return; }
   const min = pisoResolucao(), max = nivel.resolucao[1];
   let r = RESOLUCAO.atual;
-  if (medidor.fps < 45) r -= 0.08; else if (medidor.fps > 58) r += 0.04;
+  // meta: 45 fps no PC; no celular, 60 (a tela atualiza a 60 Hz ou mais e menos que isso se sente
+  // no toque): abaixo da meta a resolução desce, com folga ela sobe
+  const meta = nivel.metaFps ?? 45;
+  if (medidor.fps < meta) r -= 0.08; else if (medidor.fps > Math.max(58, meta + 1)) r += 0.04;
   r = THREE.MathUtils.clamp(r, min, max);
   if (Math.abs(r - RESOLUCAO.atual) > 0.01) { RESOLUCAO.atual = r; renderer.setPixelRatio(r); redimensionarPos(); }
   // mesmo na menor resolução o fps continua baixo por 3 s: um passo a menos no orçamento.
   // Folga longa devolve um passo (cada queda pede mais folga, para não ficar indo e voltando)
   const noPiso = RESOLUCAO.atual <= min + 0.01;
-  orcamento.lento = noPiso && medidor.fps < 40 ? orcamento.lento + 1 : 0;
+  orcamento.lento = noPiso && medidor.fps < meta - 5 ? orcamento.lento + 1 : 0;
   // (com vsync, 55–60 já é folga; uma queda curta só desconta, não zera a conta)
   orcamento.folga = medidor.fps > 54 ? orcamento.folga + 1 : Math.max(0, orcamento.folga - 2);
   if (orcamento.lento >= 3 && orcamento.passo < PASSOS_ORCAMENTO.length - 1) {
@@ -1281,7 +1294,8 @@ function aplicarOrcamento() {
 const relogio = new THREE.Clock();
 let acumulado = 0, tempoCena = 0;
 // sem placa de vídeo a CPU também desenha a tela: a física roda a 60 passos/s em vez de 120
-const PASSO = hardware.perfil === 'semPlaca' ? 1 / 60 : 1 / 120;
+// (no celular também: a CPU do aparelho fica para o desenho, e 60 passos/s já acompanham a tela)
+const PASSO = hardware.perfil === 'semPlaca' || hardware.perfil === 'celular' ? 1 / 60 : 1 / 120;
 renderer.setAnimationLoop(() => {
   const dtBruto = relogio.getDelta();
   medirDesempenho(dtBruto);
@@ -1416,7 +1430,20 @@ Promise.all([
     tocar('parada');
       // compila os shaders e sobe todos os níveis de detalhe do mapa para a GPU antes de começar
     // (evita travadinhas na primeira vez que algo aparece ou quando a câmera vira)
+    // compila TODOS os materiais, inclusive os que ainda estão escondidos (ponte de luz, chuva,
+    // objetos longe, faíscas): o compile do three.js só olha o que está visível, e o resto
+    // compilava no meio do jogo, com travadinha
+    const escondidos = [], recortados = [];
+    cena.traverse(o => {
+      if (!o.visible) { escondidos.push(o); o.visible = true; }
+      if (o.frustumCulled) { recortados.push(o); o.frustumCulled = false; } // inclusive fora da câmera
+    });
     renderer.compile(cena, camera);
+    // e um quadro de verdade pelo mesmo caminho do jogo (FXAA/pós-processamento desenham numa
+    // textura intermediária: o shader de lá é outra variante da que vai direto para a tela)
+    desenhar();
+    for (const o of escondidos) o.visible = false;
+    for (const o of recortados) o.frustumCulled = true;
     aquecerMapa(m, renderer, cena, camera);
 
     estado = 'menu';

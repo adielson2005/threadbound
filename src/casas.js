@@ -208,8 +208,9 @@ export function construirVila({ centro, raio, alturaEm, rnd, nomes, antiga = fal
       corda.position.set((x1 + x2) / 2, (y1 + y2) / 2 + 2.05, (z1 + z2) / 2); corda.rotation.set(Math.PI / 2, 0, 0); corda.lookAt(x2, (y1 + y2) / 2 + 2.05, z2); corda.rotateX(Math.PI / 2);
       grupo.add(corda);
       for (let k = 1; k <= 4; k++) {
-        const t = k / 5, pano = new THREE.Mesh(new THREE.PlaneGeometry(0.55, 0.7), A.tecido[k % 3].clone());
-        pano.material.side = THREE.DoubleSide;
+        // (um material de dupla face por cor, compartilhado: os panos entram no mesmo lote)
+        A.tecidoDuplo ??= A.tecido.map(m => Object.assign(m.clone(), { side: THREE.DoubleSide }));
+        const t = k / 5, pano = new THREE.Mesh(new THREE.PlaneGeometry(0.55, 0.7), A.tecidoDuplo[k % 3]);
         pano.position.set(x1 + (x2 - x1) * t, (y1 + y2) / 2 + 1.7, z1 + (z2 - z1) * t); pano.rotation.y = Math.atan2(x2 - x1, z2 - z1) + Math.PI / 2; pano.castShadow = true;
         grupo.add(pano);
       } }
@@ -231,6 +232,9 @@ export function construirVila({ centro, raio, alturaEm, rnd, nomes, antiga = fal
     f.position.set(x, alturaEm(x, z) ?? centro.y, z); f.rotation.y = -a + Math.PI / 2;
     fundirEstaticos(f); grupo.add(f);
   }
+  // a vila inteira (casas, cercas e os objetos da praça) vira um lote por material: de poucas
+  // dezenas de desenhos para um por material (nada aqui se mexe)
+  fundirEstaticos(grupo);
   const cache = new Map();
   return { grupo, casas, aplicarNivel: nivel => trocarMateriais(grupo, nivel.materialSimples, cache) };
 }

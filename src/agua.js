@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { detectarHardware } from './graficos.js';
 
 // Mar lá embaixo, ao redor das ilhas.
 //
@@ -23,7 +24,10 @@ const G = 9.8;
 const N_ONDAS = 6;
 const N_CONTATOS = 8;
 const PASTA = new URL('../assets/efeitos/', import.meta.url).href;
-const MALHA = { raioMin: 3, raioMax: 1100, aneis: 110, setores: 192 };
+// no celular o mar (que fica lá embaixo das ilhas) tem menos da metade dos vértices: as ondas são
+// calculadas por vértice, e dessa altura a diferença não aparece
+const CELULAR = detectarHardware().perfil === 'celular';
+const MALHA = CELULAR ? { raioMin: 3, raioMax: 1100, aneis: 72, setores: 128 } : { raioMin: 3, raioMax: 1100, aneis: 110, setores: 192 };
 
 // Espalhamento de cada onda em volta do vento: ângulo (rad), comprimento relativo, parte da
 // inclinação total. Ângulos e comprimentos "tortos" evitam que o padrão se repita.

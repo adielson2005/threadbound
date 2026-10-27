@@ -57,7 +57,8 @@ const CHAVE = 'jogo.graficos';
 
 // ---------- Hardware ----------
 // perfil: 'semPlaca' (o navegador desenha pela CPU: SwiftShader, llvmpipe, "Microsoft Basic
-// Render Driver"), 'fraco' (GPU integrada, pouca memória ou poucos núcleos) ou 'normal'.
+// Render Driver"), 'celular' (Android, iPhone, iPad: mira 60 fps), 'fraco' (GPU integrada, pouca
+// memória ou poucos núcleos) ou 'normal'.
 // semWebGL: o navegador não abre WebGL 2 (o jogo não tem como rodar).
 let hardware = null;
 export function detectarHardware() {
@@ -78,10 +79,11 @@ export function detectarHardware() {
   const integrada = /intel|uhd|iris|mali|adreno|powervr|apple gpu|radeon\(tm\) graphics|vega \d+ graphics/i.test(gpu);
   const memoria = navigator.deviceMemory ?? 8, nucleos = navigator.hardwareConcurrency ?? 8;
   const toque = matchMedia('(pointer: coarse)').matches;
-  let perfil = software ? 'semPlaca' : (integrada || memoria <= 4 || nucleos <= 4 || toque) ? 'fraco' : 'normal';
-  // para testar como o jogo fica em outro PC: ?perfil=semPlaca | fraco | normal
+  const celular = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent) || (toque && Math.min(screen.width, screen.height) < 820);
+  let perfil = software ? 'semPlaca' : celular ? 'celular' : (integrada || memoria <= 4 || nucleos <= 4 || toque) ? 'fraco' : 'normal';
+  // para testar como o jogo fica em outro aparelho: ?perfil=semPlaca | celular | fraco | normal
   const forcado = new URLSearchParams(location.search).get('perfil');
-  if (['semPlaca', 'fraco', 'normal'].includes(forcado)) perfil = forcado;
+  if (['semPlaca', 'celular', 'fraco', 'normal'].includes(forcado)) perfil = forcado;
   hardware = { gpu, perfil, semWebGL, memoria, nucleos };
   return hardware;
 }
@@ -97,6 +99,29 @@ export function ajustarAoHardware(base, hw = detectarHardware()) {
   if (base === NIVEIS.high) {
     n.texturaMapa = NIVEIS.medium.texturaMapa;
     n.texturaBoneca = NIVEIS.medium.texturaBoneca;
+  }
+  if (hw.perfil === 'celular') {
+    // celular: 60 fps primeiro. A tela é pequena e densa, então desenhar na resolução de CSS (1) já
+    // fica nítido o bastante; sem MSAA (o FXAA custa bem menos), sombra pequena (só se o jogador
+    // escolher Medium/High), material simples no Low, menos coisa ao longe e texturas no máximo do
+    // Medium (a memória de vídeo é dividida com o sistema)
+    n.resolucao = [Math.min(n.resolucao[0], 0.75), 1];
+    n.antialias = false;
+    n.suavizacao = 'fxaa';
+    // a sombra do mapa é calculada uma vez só (fixa): no celular ela custa só a leitura da textura
+    // de sombra por pixel, então fica ligada até no Low (2048 com filtro simples: em 1024 ou sem
+    // filtro, a ilha inteira cabe em poucos pixels e a sombra fica quadriculada)
+    n.sombra = 2048;
+    n.sombraSuave = false;
+    if (base !== NIVEIS.low) { n.texturaMapa = NIVEIS.medium.texturaMapa; n.texturaBoneca = NIVEIS.medium.texturaBoneca; }
+    n.lod = n.lod.map(d => Math.round(d * 0.75));
+    // vista longa o bastante para as ilhotas aparecerem no horizonte (escala e vontade de explorar):
+    // o que fica longe já está no nível de detalhe mais leve, então custa pouco
+    n.distancia = base === NIVEIS.low ? 210 : Math.min(n.distancia, base === NIVEIS.high ? 320 : 240);
+    n.neblina = base === NIVEIS.low ? [55, 195] : [Math.min(n.neblina[0], 60), Math.min(n.neblina[1], base === NIVEIS.high ? 280 : 220)];
+    n.alcanceObjetos = Math.min(n.alcanceObjetos, 70);
+    n.metaFps = 58;
+    n.vegetacaoLonge = base === NIVEIS.high ? 45 : 26; // a vegetação troca para o nível leve mais perto (cartões transparentes custam caro na GPU do celular)
   }
   if (hw.perfil === 'semPlaca') {
     // a CPU desenha cada pixel: poucos pixels, material simples, sem MSAA nem pós-processamento,
