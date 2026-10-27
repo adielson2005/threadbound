@@ -51,8 +51,9 @@ const NEVOA_FRAG = `#ifdef USE_FOG
 	#else
 		float fogFactor = smoothstep( fogNear, fogFar, vFogDepth );
 	#endif
-	// bruma baixa: começa uns 15 m abaixo do topo das ilhas e cobre quase tudo 70 m abaixo
-	float brumaBaixa = ( 1.0 - smoothstep( -75.0, -15.0, vFogAltura ) ) * smoothstep( 8.0, 50.0, vFogDepth ) * 0.82;
+	// bruma baixa: começa uns 25 m abaixo do topo das ilhas e engrossa até a metade lá embaixo (o mar
+	// e a praia continuam aparecendo, azulados: é deles que vem a sensação de estar no alto)
+	float brumaBaixa = ( 1.0 - smoothstep( -90.0, -25.0, vFogAltura ) ) * smoothstep( 15.0, 70.0, vFogDepth ) * 0.5;
 	vec3 corNevoa = mix( fogColor, fogColor * vec3( 0.86, 0.95, 1.08 ), brumaBaixa );
 	gl_FragColor.rgb = mix( gl_FragColor.rgb, corNevoa, max( fogFactor, brumaBaixa ) );
 #endif`;

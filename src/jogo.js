@@ -1341,6 +1341,8 @@ renderer.setAnimationLoop(() => {
   ceuJogo.atualizar(estado === 'jogando' ? dt : 0, t);
   aplicarHora();
   altos?.atualizar(dt, t, jogador.pos);
+  // a janela na folhagem acompanha o meio do corpo da Brisa
+  if (mapa?.focoVegetacao) mapa.focoVegetacao.copy(jogador.pos).y += 0.8;
   particulas.atualizar(t, jogador.pos, ceuJogo.estado.noite, chuva.intensidade, !!altos?.ativo, renderer.getDrawingBufferSize(_tamTela).y);
   if (assarSombra) {
     assarSombra = false;

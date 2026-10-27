@@ -106,6 +106,17 @@ O efeito de pontilhado aparece como uma trama fina nas folhas que estão saindo 
 - Testes: Capítulos 1 e 2 do começo ao fim no perfil celular (25/25), 66 programas de shader todos
   compilados no carregamento, chamadas e triângulos iguais aos do ciclo anterior, console sem erros.
 
+## Ciclo 3 de gráficos (27/10/2026)
+
+- "Janela" na folhagem: folhas e galhos no caminho entre a câmera e a Brisa somem com pontilhado
+  (no shader da vegetação, poucas contas por pixel): ela não fica mais escondida atrás de árvores.
+- O mar visto do alto voltou: a bruma baixa ficou mais rala (máx. 50%, começando 25 m abaixo do
+  topo) e a água some aos poucos até o limite do desenho (antes uma faixa estreita formava um disco
+  de borda redonda no mar, no celular).
+- Testes: Capítulo 3 do começo ao fim no perfil celular (2 de 3 execuções concluíram; a que falhou
+  não mostrou a etapa e não se repetiu, provavelmente o teste a ~3 fps), nenhum shader compilado
+  durante o jogo, console sem erros.
+
 ## Sessão longa de memória
 
 4 minutos andando em círculos pela ilha, com chuva, no Chromium sem GPU (medido com
