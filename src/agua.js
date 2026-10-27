@@ -90,6 +90,15 @@ const IMPACTO_GLSL = /* glsl */`
 // Praia (praia.js): o contorno da areia é um círculo deformado por três senoides; perto dele as
 // ondas acalmam (enseada abrigada), a água fica rasa e turquesa e a espuma vai e volta na beira.
 const PRAIA_GLSL = /* glsl */`
+  // costa das ilhas (definirCosta): distância (m, até 16) da água até o pé da falésia, numa textura
+  uniform sampler2D uCosta;
+  uniform vec4 uCostaCaixa; // minX, minZ, 1/tamanho, 1 = existe
+  float distCosta(vec2 xz) {
+    if (uCostaCaixa.w <= 0.0) return 1e4;
+    vec2 t = (xz - uCostaCaixa.xy) * uCostaCaixa.z;
+    if (t.x < 0.0 || t.y < 0.0 || t.x > 1.0 || t.y > 1.0) return 1e4;
+    return texture2D(uCosta, t).r * 16.0;
+  }
   uniform vec4 uPraia;   // centro x, centro z, raio base, 1 = existe praia
   uniform vec3 uHarm[3]; // amplitude, frequência, fase de cada senoide do contorno
   // distância (m) até a linha d'água: < 0 dentro da areia, > 0 no mar
@@ -251,6 +260,16 @@ const FRAGMENT = /* glsl */`
     float espPraia = (1.0 - smoothstep(0.0, 1.6 + 0.9 * vaiVem, sp)) * smoothstep(-1.5, 0.0, sp);
     espPraia = max(espPraia, smoothstep(0.75, 1.0, vaiVem) * (1.0 - smoothstep(2.0, 9.0, sp)) * 0.6);
     espContato = max(espContato, espPraia * smoothstep(0.15, 0.55, padrao + 0.2));
+    // espuma no pé das falésias: a onda bate na rocha, uma faixa branca rente a ela e outra que vem
+    // chegando, e a água um pouco mais clara perto da costa
+    float sc = distCosta(uv);
+    if (sc < 16.0) {
+      float bate = sin(uTempo * 1.5 - sc * 1.2 + padrao * 2.5);
+      float espCosta = (1.0 - smoothstep(0.2, 1.4 + 0.9 * bate, sc));
+      espCosta = max(espCosta, smoothstep(0.7, 1.0, bate) * (1.0 - smoothstep(1.5, 7.0, sc)) * 0.55);
+      espContato = max(espContato, espCosta * smoothstep(0.12, 0.5, padrao + 0.25));
+      cor = mix(cor, cor * 1.12 + uRaso * 0.08, (1.0 - smoothstep(0.0, 10.0, sc)) * (1.0 - fres));
+    }
     float esp = clamp(max(espCrista, espContato) * uEspuma, 0.0, 1.0) * (0.35 + 0.65 * perto);
     cor = mix(cor, uCorEspuma * luz * uLuzAgua, esp);
 
@@ -322,6 +341,8 @@ export function criarAgua({ cena, mapa, renderer }) {
     uContatos: { value: Array.from({ length: N_CONTATOS }, () => new THREE.Vector4()) },
     uImpactos: { value: Array.from({ length: N_IMPACTOS }, () => new THREE.Vector4()) },
     uPraia: { value: new THREE.Vector4(0, 0, 0, 0) },
+    uCosta: { value: null },
+    uCostaCaixa: { value: new THREE.Vector4(0, 0, 0, 0) },
     uHarm: { value: [new THREE.Vector3(), new THREE.Vector3(), new THREE.Vector3()] },
     uRasoPraia: { value: new THREE.Color('#5fdcd2') },
     uLuzAgua: { value: new THREE.Color(1, 1, 1) },
@@ -536,5 +557,68 @@ export function criarAgua({ cena, mapa, renderer }) {
     harmonicos.forEach(([a, k, f], i) => uniforms.uHarm.value[i].set(a, k, f));
   }
 
-  return { mar, nivel, centro, vento, ventoAtual, respingo, adicionarContato, atualizar, aplicarNivel, definirPraia, definirCeu };
+  // Costa: onde cada ilha encontra a água (raios do centro para fora, rente à água, até a
+  // falésia) vira uma textura de distância até a costa (calculada uma vez, ~256 KB) que o shader
+  // usa para a espuma no pé das falésias. Sem textura ainda, o shader recebe um pixel "longe".
+  uniforms.uCosta.value = (() => { const t = new THREE.DataTexture(new Uint8Array([255]), 1, 1, THREE.RedFormat); t.unpackAlignment = 1; t.needsUpdate = true; return t; })();
+  function definirCosta(malhaColisao, ilhas) {
+    const rc = new THREE.Raycaster(); rc.firstHitOnly = true; rc.layers.enableAll();
+    const K = 256, y = nivel + 0.05, o = new THREE.Vector3(), d = new THREE.Vector3();
+    // (os raios saem de dentro da ilha: a falésia é vista por trás, então vale dos dois lados)
+    const lado = malhaColisao.material.side;
+    malhaColisao.material.side = THREE.DoubleSide;
+    const contornos = ilhas.map(il => {
+      const r = new Float32Array(K);
+      for (let k = 0; k < K; k++) {
+        const a = (k / K) * Math.PI * 2;
+        o.set(il.cx, y, il.cz); d.set(Math.cos(a), 0, Math.sin(a));
+        rc.set(o, d); rc.far = il.R * 2;
+        r[k] = rc.intersectObject(malhaColisao)[0]?.distance ?? 0;
+      }
+      return { ...il, r, rMax: Math.max(...r) };
+    });
+    malhaColisao.material.side = lado;
+    let minX = Infinity, maxX = -Infinity, minZ = Infinity, maxZ = -Infinity;
+    for (const c of contornos) { minX = Math.min(minX, c.cx - c.rMax); maxX = Math.max(maxX, c.cx + c.rMax); minZ = Math.min(minZ, c.cz - c.rMax); maxZ = Math.max(maxZ, c.cz + c.rMax); }
+    const margem = 20, tam = Math.max(maxX - minX, maxZ - minZ) + margem * 2;
+    const x0 = (minX + maxX) / 2 - tam / 2, z0 = (minZ + maxZ) / 2 - tam / 2;
+    const N = 512, passo = tam / N, dist = new Float32Array(N * N);
+    // terra (dentro de algum contorno) = 0; água = "longe"
+    for (let j = 0; j < N; j++) for (let i = 0; i < N; i++) {
+      const x = x0 + (i + 0.5) * passo, z = z0 + (j + 0.5) * passo;
+      let terra = false;
+      for (const c of contornos) {
+        const dx = x - c.cx, dz = z - c.cz, dd = Math.hypot(dx, dz);
+        if (dd > c.rMax) continue;
+        const f = ((Math.atan2(dz, dx) / (Math.PI * 2) + 1) % 1) * K, k = Math.floor(f) % K, k2 = (k + 1) % K, t = f - Math.floor(f);
+        if (dd < c.r[k] + (c.r[k2] - c.r[k]) * t) { terra = true; break; }
+      }
+      dist[j * N + i] = terra ? 0 : 1e9;
+    }
+    // distância por chanfro (duas passadas, vizinhos retos e diagonais): erro de poucos por cento
+    const a = passo, b = passo * Math.SQRT2;
+    for (let j = 0; j < N; j++) for (let i = 0; i < N; i++) {
+      let v = dist[j * N + i];
+      if (i > 0) v = Math.min(v, dist[j * N + i - 1] + a);
+      if (j > 0) { v = Math.min(v, dist[(j - 1) * N + i] + a); if (i > 0) v = Math.min(v, dist[(j - 1) * N + i - 1] + b); if (i < N - 1) v = Math.min(v, dist[(j - 1) * N + i + 1] + b); }
+      dist[j * N + i] = v;
+    }
+    for (let j = N - 1; j >= 0; j--) for (let i = N - 1; i >= 0; i--) {
+      let v = dist[j * N + i];
+      if (i < N - 1) v = Math.min(v, dist[j * N + i + 1] + a);
+      if (j < N - 1) { v = Math.min(v, dist[(j + 1) * N + i] + a); if (i < N - 1) v = Math.min(v, dist[(j + 1) * N + i + 1] + b); if (i > 0) v = Math.min(v, dist[(j + 1) * N + i - 1] + b); }
+      dist[j * N + i] = v;
+    }
+    const dados = new Uint8Array(N * N);
+    for (let k = 0; k < N * N; k++) dados[k] = Math.min(255, Math.round(dist[k] / 16 * 255));
+    const tex = new THREE.DataTexture(dados, N, N, THREE.RedFormat);
+    tex.unpackAlignment = 1;
+    tex.magFilter = tex.minFilter = THREE.LinearFilter;
+    tex.needsUpdate = true;
+    uniforms.uCosta.value.dispose();
+    uniforms.uCosta.value = tex;
+    uniforms.uCostaCaixa.value.set(x0, z0, 1 / tam, 1);
+  }
+
+  return { mar, nivel, centro, vento, ventoAtual, respingo, adicionarContato, atualizar, aplicarNivel, definirPraia, definirCeu, definirCosta };
 }

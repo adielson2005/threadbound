@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { mergeGeometries, mergeVertices } from 'three/addons/utils/BufferGeometryUtils.js';
 import { MeshBVH, acceleratedRaycast } from 'three-mesh-bvh';
-import { montarBlocos, CAMADA_SOMBRA } from './mapa.js';
+import { montarBlocos, CAMADA_SOMBRA, NIVEL_MAR } from './mapa.js';
 import { construirVila, construirFarol, construirRuinas, construirGruta, construirCais, construirNaufragios, construirMarcoIlhota, construirJardim, construirCostura } from './casas.js';
 import { CONFIG } from './capitulo.js';
 import { CASAS } from './historia.js';
@@ -721,7 +721,8 @@ export async function gerarIlha(renderer, aoProgredir = () => {}) {
       if (il === PRINCIPAL && naPraia(x, z, 1) > 0.01) continue;
       bordaMin = Math.min(bordaMin, alturaTopo(il, x, z, 0.999));
     }
-    MAR = { nivel: bordaMin - 2.5, praia: null };
+    MAR = { nivel: bordaMin - 2.5, praia: null, ilhas: TODAS.map(il => ({ cx: il.cx, cz: il.cz, R: il.R })) };
+    NIVEL_MAR.value = MAR.nivel;
     if (PRAIA) {
       const a = PRAIA.ang, s0 = raioBorda(PRINCIPAL, a), cx = Math.cos(a), cz = Math.sin(a);
       const hTop = alturaTopo(PRINCIPAL, cx * s0 * 0.985, cz * s0 * 0.985, 0.985) - MAR.nivel;
