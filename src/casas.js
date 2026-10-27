@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { mergeVertices } from 'three/addons/utils/BufferGeometryUtils.js';
+import { mergeVertices, mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { fundirEstaticos } from './lotes.js';
 
 // Construções da ilha gerada (ilha.js): a Vila de Maré Alta (casas abandonadas onde dá para entrar),
@@ -20,13 +20,13 @@ function materiais() {
   // as caixas têm UV em metros (caixa()): repeat = quantas vezes a textura cabe em 1 m
   const madeira = tex('madeira_cor.jpg', true, 0.9, 0.6), madeiraN = tex('madeira_normal.png', false, 0.9, 0.6);
   const pedra = tex('pedra_cor.jpg', true, 0.75, 0.75), pedraN = tex('pedra_normal.png', false, 0.75, 0.75);
-  const telhas = texturaTelhas();
+  const telhas = texturaTelhas(), reboco = texturaReboco();
   M = {
     madeira: new THREE.MeshStandardMaterial({ map: madeira, normalMap: madeiraN, roughness: 0.85, color: '#c9a989' }),
     madeiraEscura: new THREE.MeshStandardMaterial({ map: madeira, normalMap: madeiraN, roughness: 0.85, color: '#6e5240' }),
     pedra: new THREE.MeshStandardMaterial({ map: pedra, normalMap: pedraN, roughness: 0.93, color: '#d6d2c8' }),
     pedraClara: new THREE.MeshStandardMaterial({ map: pedra, normalMap: pedraN, normalScale: new THREE.Vector2(0.6, 0.6), roughness: 0.88, color: '#f3ece0' }),
-    reboco: ['#efe3c8', '#e3dccd', '#f0d6cf', '#e8d49c'].map(c => new THREE.MeshStandardMaterial({ map: pedra, normalScale: new THREE.Vector2(0.3, 0.3), normalMap: pedraN, roughness: 0.97, color: c })),
+    reboco: ['#fbf1dc', '#f2ece2', '#fbe3da', '#f6e2ae'].map(c => new THREE.MeshStandardMaterial({ map: reboco, roughness: 0.97, color: c })),
     telhado: ['#d9a08a', '#a9b0bd', '#c9a07e'].map(c => new THREE.MeshStandardMaterial({ map: telhas, roughness: 0.85, color: c })),
     tecido: ['#b48fd6', '#d98fa8', '#8fb4d6'].map(c => new THREE.MeshStandardMaterial({ color: c, roughness: 1 })),
     escuro: new THREE.MeshStandardMaterial({ color: '#1d1712', roughness: 1 }),
@@ -49,7 +49,7 @@ function trocarMateriais(grupo, simples, cache) {
     if (!orig.isMeshStandardMaterial || orig === M.vidro) return;
     m.userData.materialOriginal = orig;
     if (!simples) { m.material = orig; return; }
-    if (!cache.has(orig)) cache.set(orig, new THREE.MeshLambertMaterial({ map: orig.map, color: orig.color, emissive: orig.emissive, emissiveIntensity: orig.emissiveIntensity }));
+    if (!cache.has(orig)) cache.set(orig, new THREE.MeshLambertMaterial({ map: orig.map, color: orig.color, emissive: orig.emissive, emissiveIntensity: orig.emissiveIntensity, vertexColors: orig.vertexColors, side: orig.side }));
     m.material = cache.get(orig);
   });
 }
@@ -68,6 +68,49 @@ function texturaTelhas() {
   }
   const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.wrapS = t.wrapT = THREE.RepeatWrapping; t.anisotropy = 8;
   t.repeat.set(0.9, 0.9); t.rotation = Math.PI / 2;
+  return t;
+}
+
+// reboco caiado: branco quente com manchas suaves de umidade, pinceladas e, aqui e ali, um trecho
+// onde o reboco caiu e aparecem os tijolos (antes as paredes usavam a pedra cinza com musgo, que
+// deixava as casas com cara de sujas). Desenhada uma vez, repete a cada 2 m, sem normal map
+function texturaReboco() {
+  const T = 256, c = document.createElement('canvas'); c.width = c.height = T;
+  const g = c.getContext('2d');
+  let semente = 9137;
+  const rnd = () => (semente = (semente * 16807) % 2147483647) / 2147483647;
+  // desenha repetindo nas bordas, para a textura emendar sem costura
+  const repetir = (x, y, r, f) => { for (const dx of [-T, 0, T]) for (const dy of [-T, 0, T]) if (Math.abs(x + dx - T / 2) < T / 2 + r && Math.abs(y + dy - T / 2) < T / 2 + r) f(x + dx, y + dy); };
+  g.fillStyle = '#f4ede0'; g.fillRect(0, 0, T, T);
+  for (let i = 0; i < 70; i++) {
+    const x = rnd() * T, y = rnd() * T, r = 12 + rnd() * 46, a = 0.03 + rnd() * 0.05, claro = rnd() < 0.45;
+    repetir(x, y, r, (px, py) => {
+      const gr = g.createRadialGradient(px, py, 0, px, py, r);
+      gr.addColorStop(0, claro ? `rgba(255,252,244,${a * 1.6})` : `rgba(150,120,90,${a})`); gr.addColorStop(1, 'rgba(0,0,0,0)');
+      g.fillStyle = gr; g.fillRect(px - r, py - r, r * 2, r * 2);
+    });
+  }
+  // pinceladas horizontais finas da cal
+  for (let i = 0; i < 90; i++) {
+    const x = rnd() * T, y = rnd() * T, w = 20 + rnd() * 60;
+    repetir(x, y, w, (px, py) => { g.fillStyle = `rgba(${rnd() < 0.5 ? '255,255,250' : '170,150,120'},0.05)`; g.fillRect(px, py, w, 1 + rnd() * 2); });
+  }
+  // dois trechos sem reboco, com tijolos
+  for (let k = 0; k < 2; k++) {
+    const cx = rnd() * T, cy = rnd() * T, rx = 26 + rnd() * 18, ry = 16 + rnd() * 10;
+    repetir(cx, cy, rx + 8, (px, py) => {
+      g.save(); g.beginPath();
+      for (let a = 0; a < 6.283; a += 0.35) { const q = 0.75 + rnd() * 0.35; g.lineTo(px + Math.cos(a) * rx * q, py + Math.sin(a) * ry * q); }
+      g.closePath(); g.fillStyle = '#d9c8b0'; g.fill(); g.clip();
+      for (let y = py - ry - 8; y < py + ry + 8; y += 8) for (let x = px - rx - 16 + ((y / 8) % 2) * 8; x < px + rx + 16; x += 16) {
+        g.fillStyle = `rgb(${190 + rnd() * 30 | 0},${110 + rnd() * 25 | 0},${80 + rnd() * 20 | 0})`; g.fillRect(x + 1, y + 1, 14, 6);
+      }
+      g.restore();
+      g.strokeStyle = 'rgba(120,95,70,0.35)'; g.lineWidth = 1.5; g.stroke();
+    });
+  }
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.wrapS = t.wrapT = THREE.RepeatWrapping; t.anisotropy = 8;
+  t.repeat.set(0.5, 0.5);
   return t;
 }
 
@@ -553,8 +596,10 @@ export function construirGruta({ centro, alturaEm, rnd, nome }) {
   const p = geo.attributes.position, v = new THREE.Vector3();
   for (let i = 0; i < p.count; i++) {
     v.fromBufferAttribute(p, i);
-    const n = 1 + 0.12 * Math.sin(v.x * 5.1 + 1) * Math.cos(v.z * 4.3) + 0.08 * Math.sin(v.y * 7.7);
-    p.setXYZ(i, v.x * R * n, Math.max(-0.4, v.y * ALT * n), v.z * R * n);
+    const n = 1 + 0.12 * Math.sin(v.x * 5.1 + 1) * Math.cos(v.z * 4.3) + 0.08 * Math.sin(v.y * 7.7) + 0.045 * Math.sin(v.x * 13.3 + v.z * 9.1) * Math.sin(v.y * 11.7 + 2);
+    // a metade de baixo vira uma saia funda: no lado mais baixo do morro a borda da casca ficava no
+    // ar (uma lâmina cinza solta); agora ela entra no chão
+    p.setXYZ(i, v.x * R * n, v.y > 0 ? v.y * ALT * n : v.y * 2.6, v.z * R * n);
   }
   // abre a entrada (+x local, baixa) e tira o fundo (o chão é o terreno)
   const ind = geo.index.array, fica = [], c = new THREE.Vector3();
@@ -562,7 +607,7 @@ export function construirGruta({ centro, alturaEm, rnd, nome }) {
     c.set(0, 0, 0);
     for (let k = 0; k < 3; k++) c.add(v.fromBufferAttribute(p, ind[t + k]));
     c.divideScalar(3);
-    if ((Math.abs(Math.atan2(c.z, c.x)) < 0.42 && c.y < 2.2) || c.y < -0.3) continue;
+    if ((Math.abs(Math.atan2(c.z, c.x)) < 0.42 && c.y < 2.2) || c.y < -2.4) continue;
     fica.push(ind[t], ind[t + 1], ind[t + 2]);
   }
   geo.setIndex(fica);
@@ -570,8 +615,54 @@ export function construirGruta({ centro, alturaEm, rnd, nome }) {
   const uv = new Float32Array(p.count * 2);
   for (let i = 0; i < p.count; i++) { uv[i * 2] = (p.getX(i) + p.getZ(i)) * 0.3; uv[i * 2 + 1] = p.getY(i) * 0.3; }
   geo.setAttribute('uv', new THREE.BufferAttribute(uv, 2));
+  // musgo no alto (onde a pedra fica de frente para o céu), pedra quente nos lados, mais escura
+  // perto do chão
+  const nr = geo.attributes.normal, cores = new Float32Array(p.count * 3), cor = new THREE.Color();
+  const pedraCor = new THREE.Color('#d2c6b0'), musgo = new THREE.Color('#8fa85a'), base = new THREE.Color('#8c8070');
+  for (let i = 0; i < p.count; i++) {
+    const y = p.getY(i), mancha = 0.5 + 0.5 * Math.sin(p.getX(i) * 1.7 + p.getZ(i) * 2.3) * Math.cos(p.getZ(i) * 1.3 - y);
+    cor.copy(pedraCor).lerp(base, THREE.MathUtils.smoothstep(-y, -1.2, 0.6));
+    cor.lerp(musgo, THREE.MathUtils.smoothstep(nr.getY(i) + mancha * 0.3 - 0.15, 0.6, 0.92) * 0.85);
+    cores.set([cor.r, cor.g, cor.b], i * 3);
+  }
+  geo.setAttribute('color', new THREE.BufferAttribute(cores, 3));
   const rocha = new THREE.Mesh(geo, A.pedra.clone());
-  rocha.material.side = THREE.DoubleSide;
+  rocha.material.side = THREE.DoubleSide; rocha.material.vertexColors = true; rocha.material.color.set('#ffffff');
+  // pedras roladas em volta da entrada: a borda da casca, vista de lado, era uma lâmina fina de
+  // papel; com as pedras em cima ela vira a boca de uma caverna de verdade
+  {
+    const usos = new Map(), chave = (a, b) => a < b ? a + ',' + b : b + ',' + a;
+    for (let t = 0; t < fica.length; t += 3) for (let k = 0; k < 3; k++) { const ch = chave(fica[t + k], fica[t + (k + 1) % 3]); usos.set(ch, (usos.get(ch) || 0) + 1); }
+    const pontos = [], a = new THREE.Vector3(), b = new THREE.Vector3();
+    for (const [ch, n] of usos) {
+      if (n !== 1) continue;
+      const [i, j] = ch.split(',').map(Number);
+      a.fromBufferAttribute(p, i); b.fromBufferAttribute(p, j);
+      if (Math.min(a.y, b.y) < -0.6) continue; // a borda de baixo da saia fica enterrada
+      const m = a.add(b).multiplyScalar(0.5);
+      if (pontos.every(q => q.distanceTo(m) > 0.75)) pontos.push(m.clone());
+    }
+    const pedras = [];
+    for (const q of pontos) {
+      const r = 0.35 + rnd() * 0.3, g = new THREE.IcosahedronGeometry(r, 1);
+      const gp = g.attributes.position;
+      for (let i = 0; i < gp.count; i++) { const k = 0.8 + 0.4 * Math.abs(Math.sin(gp.getX(i) * 9 + gp.getZ(i) * 7 + q.x)); gp.setXYZ(i, gp.getX(i) * k, gp.getY(i) * k * 0.8, gp.getZ(i) * k); }
+      g.rotateY(rnd() * 6).translate(q.x, q.y, q.z);
+      pedras.push(mergeVertices(g.deleteAttribute('normal')));
+    }
+    if (pedras.length) {
+      const gp = mergeGeometries(pedras.map(g => g.toNonIndexed()));
+      gp.computeVertexNormals();
+      const n2 = gp.attributes.normal, c2 = new Float32Array(gp.attributes.position.count * 3);
+      for (let i = 0; i < n2.count; i++) { cor.copy(pedraCor).multiplyScalar(0.92).lerp(musgo, THREE.MathUtils.smoothstep(n2.getY(i), 0.75, 0.98) * 0.6); c2.set([cor.r, cor.g, cor.b], i * 3); }
+      gp.setAttribute('color', new THREE.BufferAttribute(c2, 3));
+      const uv2 = new Float32Array(n2.count * 2), pp = gp.attributes.position;
+      for (let i = 0; i < n2.count; i++) { uv2[i * 2] = (pp.getX(i) + pp.getZ(i)) * 0.6; uv2[i * 2 + 1] = pp.getY(i) * 0.6; }
+      gp.setAttribute('uv', new THREE.BufferAttribute(uv2, 2));
+      const m = new THREE.Mesh(gp, rocha.material); m.castShadow = m.receiveShadow = true;
+      rocha.add(m);
+    }
+  }
   const y0 = Math.min(centro.y, alturaEm(centro.x + R, centro.z) ?? centro.y) - 0.15;
   rocha.position.set(centro.x, y0, centro.z);
   // a entrada fica de costas para a vila (escondida entre as árvores)

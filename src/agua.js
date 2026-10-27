@@ -173,6 +173,7 @@ const FRAGMENT = /* glsl */`
   uniform float uForcaSol;
   uniform vec3 fogColor;
   uniform float fogNear, fogFar;
+  uniform vec4 fogSol, fogBrilho; // o dourado do lado do sol (estilo.js)
   varying vec3 vMundo;
   varying vec3 vNormal;
   varying float vAltura;
@@ -259,6 +260,8 @@ const FRAGMENT = /* glsl */`
     vec3 D = -V;
     vec3 ceuBaixo = mix(uHorizonte, uBaixo, pow(clamp(-D.y, 0.0, 1.0), 0.5));
     vec3 longe = mix(fogColor, ceuBaixo, uGradiente);
+    float sLonge = max(dot(D, fogSol.xyz), 0.0);
+    longe = mix(longe, fogBrilho.rgb, sLonge * sLonge * (1.0 - abs(D.y)) * fogSol.w) + fogBrilho.rgb * pow(sLonge, 5.0) * fogBrilho.a;
     float f = smoothstep(fogNear, fogFar, dist * 0.72);
     // some aos poucos até o limite do desenho (uma faixa estreita aparecia como um disco de borda
     // redonda no mar visto do alto, no celular, onde o limite é mais perto)

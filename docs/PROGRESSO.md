@@ -106,6 +106,26 @@ O efeito de pontilhado aparece como uma trama fina nas folhas que estão saindo 
 - Testes: Capítulos 1 e 2 do começo ao fim no perfil celular (25/25), 66 programas de shader todos
   compilados no carregamento, chamadas e triângulos iguais aos do ciclo anterior, console sem erros.
 
+## Ciclo 4 de gráficos (27/10/2026)
+
+- Contra o sol, o ar se acende em dourado: a neblina e a bruma ganharam o mesmo brilho do céu do
+  lado do sol (antes morros e mar distantes ficavam azul-acinzentados na frente do horizonte
+  dourado). Um valor comum a todos os materiais, atualizado uma vez por quadro, e duas contas por pixel.
+- Folhas contra o sol acendem em verde-dourado (luz atravessando a folha), só nas partes verdes.
+- Casas com reboco caiado (textura desenhada no jogo, sem normal map, com uns trechos de tijolo à
+  mostra) no lugar da pedra cinza com musgo, que deixava as paredes com cara de sujas.
+- Pontilhado da folhagem: a faixa em que as copas coladas na câmera somem ficou curta (2,4–3,4 m
+  em vez de 1,4–4,2 m) e o pontilhado virou um grão fino espalhado (antes, bolinhas em fileira). A
+  "janela" até a Brisa não apaga mais o capim do chão (riscava linhas pontilhadas na encosta).
+- Gruta dos Recados: a borda da casca não fica mais solta no ar (era uma lâmina cinza fina vista de
+  lado), musgo no alto, pedra mais quente e pedras roladas na boca da entrada. No celular a troca
+  para o material simples agora mantém as cores por vértice.
+- Areia: ondulações mais marcadas e manchas grandes mais douradas ou mais claras.
+- Medido (2 quadros, perfil celular): chamadas e triângulos iguais aos de antes (ex.: vila 199→208
+  chamadas, floresta 132→126; a diferença vem dos destroços que giram em volta da ilha);
+  programas 66→68, todos compilados no carregamento (nenhum durante o jogo). Capítulo 1 do
+  começo ao fim, console sem erros; capítulos 2 a 4 abrem sem erro.
+
 ## Ciclo 3 de gráficos (27/10/2026)
 
 - "Janela" na folhagem: folhas e galhos no caminho entre a câmera e a Brisa somem com pontilhado

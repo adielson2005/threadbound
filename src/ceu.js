@@ -265,7 +265,7 @@ export function criarCeu({ cena, camera, corHorizonte }) {
     hora, dia: 1, por: 0, noite: 0,
     neblina: PAL.dia.horizonte.clone(), topo: PAL.dia.topo.clone(), baixo: PAL.dia.baixo.clone(),
     solVisivel: DIR_SOL.clone(), luaVisivel: DIR_SOL.clone(), dirLuzVisivel: DIR_SOL.clone(),
-    corLuz: new THREE.Color(), forcaLuz: 1, corCeuLuz: new THREE.Color(), corChaoLuz: new THREE.Color(), forcaCeuLuz: 1,
+    corLuz: new THREE.Color(), corBrilho: new THREE.Color(), forcaLuz: 1, corCeuLuz: new THREE.Color(), corChaoLuz: new THREE.Color(), forcaCeuLuz: 1,
   };
   const mistura = (alvo, a, b, c, dia, por) => alvo.copy(c).lerp(a, dia).lerp(b, por * 0.85);
   const tmp = new THREE.Color(), BRANCO = new THREE.Color(1, 1, 1);
@@ -299,6 +299,7 @@ export function criarCeu({ cena, camera, corHorizonte }) {
     mistura(estado.baixo, PAL.dia.baixo, PAL.por.baixo, PAL.noite.baixo, dia, por);
     mistura(tmp, PAL.dia.brilho, PAL.por.brilho, PAL.noite.brilho, dia, por);
     uniCupula.uCorBrilho.value.copy(tmp);
+    estado.corBrilho.copy(tmp);
     // luzes: sol branco-dourado, pôr do sol laranja e mais fraco, luar azulado e fraco
     mistura(estado.corLuz, LUZ.sol.dia, LUZ.sol.por, LUZ.sol.noite, dia, por);
     estado.forcaLuz = THREE.MathUtils.lerp(0.22, 1, dia) * (1 - por * 0.35);

@@ -638,22 +638,40 @@ function materialVegetacao(simples, tempo, foco) {
     // de uma árvore na floresta
     sh.fragmentShader = 'varying float vDistCamVeg;\nvarying vec3 vMundoVeg;\nuniform vec3 uFoco;\n' + sh.fragmentShader.replace('#include <alphatest_fragment>', `#include <alphatest_fragment>
       {
-        vec2 q = mod(floor(gl_FragCoord.xy), 4.0);
-        float limiar = (mod(q.x * 2.0 + q.y * 3.0, 4.0) + mod(q.y, 2.0) * 0.5 + 0.25) / 4.5; // grade 4×4 espalhada
-        float fica = smoothstep(1.4, 4.2, vDistCamVeg);
+        // ruído de gradiente intercalado: um grão fino e espalhado (a grade 4×4 de antes formava
+        // bolinhas em fileira bem visíveis); o FXAA depois ainda alisa um pouco
+        float limiar = fract(52.9829189 * fract(dot(floor(gl_FragCoord.xy), vec2(0.06711056, 0.00583715))));
+        float fica = smoothstep(2.4, 3.4, vDistCamVeg); // faixa curta: pouca área em meio-pontilhado
         vec3 aFoco = uFoco - cameraPosition;
         float L = length(aFoco);
         vec3 dirFoco = aFoco / max(L, 1e-3), w = vMundoVeg - cameraPosition;
         float tFoco = dot(w, dirFoco);
-        if (tFoco > 0.0 && tFoco < L - 0.5) {
+        // (só o que está acima do joelho dela e não é capim: a grama do chão no caminho fica, sem
+        // riscar pontilhado na encosta; o capim é o canto inferior direito do atlas)
+        bool capim = vMapUv.x > 0.5 && vMapUv.y < 0.5;
+        if (!capim && tFoco > 0.0 && tFoco < L - 0.5 && vMundoVeg.y > uFoco.y - 0.2) {
           float perp = length(w - dirFoco * tFoco);
           float raioJanela = mix(0.5, 1.5, tFoco / L); // mais larga perto da Brisa
           fica = min(fica, mix(0.15, 1.0, smoothstep(raioJanela * 0.55, raioJanela, perp)));
         }
         if (fica < limiar) discard;
       }`);
+    // folha contra o sol: a luz atravessa a folha e ela acende em verde-dourado (a copa vira um
+    // vitral quando se olha para o sol). Só nas partes verdes (o tronco não), poucas contas
+    const translucida = `
+      #ifdef USE_FOG
+      {
+        float folha = smoothstep(0.0, 0.08, diffuseColor.g - diffuseColor.r);
+        float contraSol = pow(max(dot(normalize(vMundoVeg - cameraPosition), fogSol.xyz), 0.0), 6.0);
+        outgoingLight += diffuseColor.rgb * vec3(1.25, 1.2, 0.55) * contraSol * folha * fogSol.w * 1.6;
+      }
+      #endif
+      `;
+    sh.fragmentShader = sh.fragmentShader.includes('float lumEstilo')
+      ? sh.fragmentShader.replace('float lumEstilo', translucida + 'float lumEstilo')
+      : sh.fragmentShader.replace('#include <opaque_fragment>', translucida + '#include <opaque_fragment>');
   };
-  m.customProgramCacheKey = () => 'vegetacao4-' + (simples ? 's' : 'p');
+  m.customProgramCacheKey = () => 'vegetacao6-' + (simples ? 's' : 'p');
   return m;
 }
 // ---------------- geração ----------------
