@@ -105,6 +105,10 @@ const PRAIA_GLSL = /* glsl */`
   float distPraia(vec2 xz) {
     if (uPraia.w <= 0.0) return 1e4;
     vec2 d = xz - uPraia.xy;
+    // longe da praia (o contorno nunca passa de 1,2× o raio) a distância exata não importa: nem
+    // a água rasa, nem a espuma, nem a calmaria chegam lá (poupa o atan e os senos no mar todo)
+    float dd = length(d);
+    if (dd > uPraia.z * 1.2 + 50.0) return dd - uPraia.z;
     float a = atan(d.y, d.x);
     float k = 1.0;
     for (int i = 0; i < 3; i++) k += uHarm[i].x * sin(uHarm[i].y * a + uHarm[i].z);
@@ -197,8 +201,9 @@ const FRAGMENT = /* glsl */`
     float perto = 1.0 - clamp(dist / 280.0, 0.0, 1.0);
 
     // dois normal maps em direções/velocidades diferentes + uma amostra larga contra repetição
-    vec3 na = amostraNormal(uv * 0.045 + uDeslocA);
-    vec3 nb = amostraNormal(uv * 0.11 + uDeslocB);
+    // (depois de 280 m o micro-relevo já pesava zero: lá as duas leituras finas nem são feitas)
+    vec3 na = vec3(0.0, 0.0, 1.0), nb = vec3(0.0, 0.0, 1.0);
+    if (perto > 0.0) { na = amostraNormal(uv * 0.045 + uDeslocA); nb = amostraNormal(uv * 0.11 + uDeslocB); }
     vec3 nc = amostraNormal(uv * 0.009 + uDeslocA * 0.3);
     float relevo = (0.35 + uVentoForca * 0.5) * perto;
     vec2 micro = (na.xy * 0.55 + nb.xy * 0.45) * relevo + nc.xy * 0.25;

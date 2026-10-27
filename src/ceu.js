@@ -69,17 +69,20 @@ const CUPULA_FRAG = /* glsl */`
     // o lado do sol aquece em dourado perto do horizonte (o "céu ensolarado" das referências)
     c = mix(c, uCorBrilho * 1.05, pow(s, 2.0) * (1.0 - abs(h)) * (0.45 * uDia + 0.5 * uPor) * acima);
     // disco do sol: centro branco-quente, borda dourada (escurece na borda) e coroa de raios girando devagar
+    // (só perto do sol: a 0,35 rad a coroa já vale menos de 0,4%; o resto do céu pula estas contas)
     float limpo = 1.0 - uChuva;
-    float angSol = acos(clamp(dot(d, uSol), -1.0, 1.0));
-    float rSol = 0.03;
-    float discoSol = smoothstep(rSol, rSol * 0.86, angSol);
-    float borda = clamp(angSol / rSol, 0.0, 1.0);
-    vec3 corDisco = mix(vec3(1.0, 0.98, 0.9) * 2.0, uCorBrilho * 1.6, borda * borda);
-    c = mix(c, corDisco, discoSol * acima * max(uDia, uPor) * limpo);
-    vec3 sx = normalize(cross(uSol, vec3(0.0, 1.0, 0.0))), sy = cross(sx, uSol);
-    float angRaio = atan(dot(d, sy), dot(d, sx));
-    float raios = pow(0.5 + 0.5 * sin(angRaio * 14.0 + uTempo * 0.15), 8.0) + pow(0.5 + 0.5 * sin(angRaio * 9.0 - uTempo * 0.1 + 1.7), 10.0) * 0.6;
-    c += uCorBrilho * raios * exp(-angSol * 16.0) * smoothstep(rSol * 0.9, rSol * 1.6, angSol) * 0.35 * acima * max(uDia, uPor) * limpo;
+    if (s > 0.94) {
+      float angSol = acos(clamp(dot(d, uSol), -1.0, 1.0));
+      float rSol = 0.03;
+      float discoSol = smoothstep(rSol, rSol * 0.86, angSol);
+      float borda = clamp(angSol / rSol, 0.0, 1.0);
+      vec3 corDisco = mix(vec3(1.0, 0.98, 0.9) * 2.0, uCorBrilho * 1.6, borda * borda);
+      c = mix(c, corDisco, discoSol * acima * max(uDia, uPor) * limpo);
+      vec3 sx = normalize(cross(uSol, vec3(0.0, 1.0, 0.0))), sy = cross(sx, uSol);
+      float angRaio = atan(dot(d, sy), dot(d, sx));
+      float raios = pow(0.5 + 0.5 * sin(angRaio * 14.0 + uTempo * 0.15), 8.0) + pow(0.5 + 0.5 * sin(angRaio * 9.0 - uTempo * 0.1 + 1.7), 10.0) * 0.6;
+      c += uCorBrilho * raios * exp(-angSol * 16.0) * smoothstep(rSol * 0.9, rSol * 1.6, angSol) * 0.35 * acima * max(uDia, uPor) * limpo;
+    }
 
     // ---- noite: estrelas, Via Láctea e lua ----
     if (noite > 0.01) {
@@ -136,8 +139,15 @@ const NUVENS_FRAG = (oitavas) => /* glsl */`
   uniform float uTempo, uCobertura, uBrilho, uDia, uPor, uChuva;
   uniform vec3 uSol, uLua, uCorBrilho;
   uniform vec2 uVento;
+  uniform sampler2D uRuido;
   varying vec3 vP;
-  ${RUIDO_GLSL}
+  // ruído de valor lido de uma textura (256×256 valores sorteados, filtro linear): com a fração
+  // passada pela curva suave antes da leitura, o filtro linear dá a mesma interpolação suave do
+  // ruído calculado, numa leitura só (antes: 4 senos por oitava, por pixel, no céu inteiro)
+  float ruido(vec2 p) {
+    vec2 i = floor(p), f = fract(p), u = f * f * (3.0 - 2.0 * f);
+    return texture2D(uRuido, (i + u + 0.5) / 256.0).r;
+  }
   float fbm(vec2 p) {
     float v = 0.0, a = 0.5;
     for (int i = 0; i < ${oitavas}; i++) { v += a * ruido(p); p = p * 2.03 + 17.1; a *= 0.5; }
@@ -227,7 +237,15 @@ export function criarCeu({ cena, camera, corHorizonte }) {
   cena.add(cupula);
 
   // ---- nuvens (compartilham sol, lua, hora e cor do brilho com a cúpula) ----
+  const texRuido = (() => {
+    const N = 256, d = new Uint8Array(N * N);
+    let sem = 1234567; for (let k = 0; k < N * N; k++) { sem = (Math.imul(sem, 1664525) + 1013904223) >>> 0; d[k] = sem >>> 24; }
+    const t = new THREE.DataTexture(d, N, N, THREE.RedFormat);
+    t.wrapS = t.wrapT = THREE.RepeatWrapping; t.magFilter = t.minFilter = THREE.LinearFilter; t.unpackAlignment = 1; t.needsUpdate = true;
+    return t;
+  })();
   const uniNuvens = {
+    uRuido: { value: texRuido },
     uTempo: { value: 0 }, uCobertura: { value: 0.6 }, uBrilho: { value: 1 }, uChuva: { value: 0 }, uVento: { value: new THREE.Vector2(0.012, 0.006) },
     uSol: uniCupula.uSol, uLua: uniCupula.uLua, uCorBrilho: uniCupula.uCorBrilho, uDia: uniCupula.uDia, uPor: uniCupula.uPor,
   };

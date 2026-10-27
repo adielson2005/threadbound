@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { RAIO, ALTURA } from './fisica.js';
 import { linhaLivre } from './colisao.js';
 
@@ -82,6 +83,7 @@ function materiais() {
     corpo: new THREE.MeshStandardMaterial({ map: texturaRetalho(), roughness: 0.9, emissive: '#2a0a45', emissiveIntensity: 0.6 }),
     olho: new THREE.MeshBasicMaterial({ color: '#ff8cf0' }),
     fio: new THREE.MeshBasicMaterial({ color: '#7a3cc8' }),
+    fiosAnimados: null,
     luz: (() => {
       const c = document.createElement('canvas'); c.width = c.height = 64;
       const g = c.getContext('2d'), gr = g.createRadialGradient(32, 32, 0, 32, 32, 32);
@@ -90,30 +92,56 @@ function materiais() {
       return new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(c), transparent: true, blending: THREE.AdditiveBlending, depthWrite: false });
     })(),
   };
+  MATS.fiosAnimados = materialFios(MATS.fio);
   return MATS;
 }
 
+// Eyes and threads are shared, pre-merged geometries: 3 draw calls per Retalho instead of 8.
+// The threads sway in the vertex shader (same motion as before, which only depended on the time
+// and on each thread's angle), so the CPU no longer updates 5 objects per Retalho every frame.
+const TEMPO_FIOS = { value: 0 };
+let GEO = null;
+function geometrias() {
+  if (GEO) return GEO;
+  const olhos = mergeGeometries([-0.14, 0.14].map(x => new THREE.SphereGeometry(0.06, 8, 6).scale(1, 1.4, 0.5).translate(x, 0.55, 0.36)));
+  const fios = mergeGeometries(Array.from({ length: 5 }, (_, k) => {
+    const g = new THREE.CylinderGeometry(0.015, 0.03, 0.5, 4).translate(0, -0.25, 0);
+    g.setAttribute('anguloFio', new THREE.Float32BufferAttribute(new Array(g.attributes.position.count).fill((k / 5) * Math.PI * 2), 1));
+    return g;
+  }));
+  fios.boundingSphere = new THREE.Sphere(new THREE.Vector3(0, 0.1, 0), 0.9); // covers the whole sway
+  GEO = { olhos, fios };
+  return GEO;
+}
+function materialFios(base) {
+  const m = base.clone();
+  m.onBeforeCompile = sh => {
+    sh.uniforms.uTempoFios = TEMPO_FIOS;
+    sh.vertexShader = 'uniform float uTempoFios;\nattribute float anguloFio;\n' + sh.vertexShader.replace('#include <begin_vertex>', `#include <begin_vertex>
+      {
+        float a = anguloFio;
+        float rx = 0.6 * sin(a) + sin(uTempoFios * 3.0 + a) * 0.25, rz = -0.6 * cos(a) + cos(uTempoFios * 2.6 + a) * 0.25;
+        // Euler XYZ with y = 0 (as Object3D.rotation.set did): Rx * Rz, then to the thread's root
+        float cz = cos(rz), sz = sin(rz), cx = cos(rx), sx = sin(rx);
+        vec3 v = vec3(transformed.x * cz - transformed.y * sz, transformed.x * sz + transformed.y * cz, transformed.z);
+        v = vec3(v.x, v.y * cx - v.z * sx, v.y * sx + v.z * cx);
+        transformed = v + vec3(cos(a) * 0.3, 0.3, sin(a) * 0.3);
+      }`);
+  };
+  m.customProgramCacheKey = () => 'retalho-fios';
+  return m;
+}
+
 function criarModelo() {
-  const M = materiais();
+  const M = materiais(), G = geometrias();
   const g = new THREE.Group();
   const corpo = new THREE.Mesh(geometriaCorpo(), M.corpo.clone());
   corpo.position.y = 0.45; // no cast shadow: the map shadow is baked once, moving things would leave a ghost
   g.add(corpo);
-  for (const x of [-0.14, 0.14]) {
-    const o = new THREE.Mesh(new THREE.SphereGeometry(0.06, 8, 6), M.olho); o.position.set(x, 0.55, 0.36); o.scale.set(1, 1.4, 0.5);
-    g.add(o);
-  }
+  g.add(new THREE.Mesh(G.olhos, M.olho));
   // loose threads (tentacles) that sway
-  const fios = [];
-  for (let k = 0; k < 5; k++) {
-    const a = (k / 5) * Math.PI * 2;
-    const f = new THREE.Mesh(new THREE.CylinderGeometry(0.015, 0.03, 0.5, 4), M.fio);
-    f.geometry.translate(0, -0.25, 0);
-    f.position.set(Math.cos(a) * 0.3, 0.3, Math.sin(a) * 0.3);
-    f.rotation.set(0.6 * Math.sin(a), 0, -0.6 * Math.cos(a));
-    g.add(f); fios.push({ f, a });
-  }
-  return { g, corpo, fios };
+  g.add(new THREE.Mesh(G.fios, M.fiosAnimados));
+  return { g, corpo };
 }
 
 export function criarInimigos({ cena, mapa, posicoes }) {
@@ -188,6 +216,7 @@ export function criarInimigos({ cena, mapa, posicoes }) {
 
   // player: { pos, vivo }, aoAcertarJogadora(e) -> called when a lunge connects
   function atualizar(dt, t, jogadora, aoAcertarJogadora) {
+    TEMPO_FIOS.value = t;
     peitoJ.copy(jogadora.pos).y += ALTURA * 0.7;
     for (const e of lista) {
       if (e.estado === 'morrendo') {
@@ -283,7 +312,6 @@ export function criarInimigos({ cena, mapa, posicoes }) {
       e.corpo.position.y = 0.45 + Math.abs(Math.sin(t * 9 + e.fase)) * 0.06 * Math.min(1, vel);
       if (e.estado !== 'preparando') e.corpo.rotation.x += (Math.min(0.3, vel * 0.06) - e.corpo.rotation.x) * Math.min(1, dt * 8);
       e.corpo.rotation.z = Math.sin(t * 4 + e.fase) * 0.08 + (e.estado === 'preparando' ? Math.sin(t * 50) * 0.08 : 0);
-      for (const { f, a } of e.fios) f.rotation.set(0.6 * Math.sin(a) + Math.sin(t * 3 + a) * 0.25, 0, -0.6 * Math.cos(a) + Math.cos(t * 2.6 + a) * 0.25);
       e.flash = Math.max(0, e.flash - dt * 4);
       e.corpo.material.emissive.setRGB(0.16 + e.flash, 0.04 + e.flash * 0.9, 0.27 + e.flash * 0.8);
       atualizarHitbox(e);
