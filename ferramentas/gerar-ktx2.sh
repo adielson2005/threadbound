@@ -14,10 +14,10 @@ cd "$(dirname "$0")/.."
 cor() { "$TOKTX" --t2 --genmipmap --lower_left_maps_to_s0t0 --encode etc1s --clevel 4 --qlevel 200 --assign_oetf srgb "${1%.*}.ktx2" "$1"; }
 dado() { "$TOKTX" --t2 --genmipmap --lower_left_maps_to_s0t0 --encode etc1s --clevel 4 --qlevel 200 --assign_oetf linear "${1%.*}.ktx2" "$1"; }
 normal() { "$TOKTX" --t2 --genmipmap --lower_left_maps_to_s0t0 --encode uastc --uastc_quality 2 --zcmp 18 --assign_oetf linear "${1%.*}.ktx2" "$1"; }
-for f in assets/boneca/boneca_cor_1024.jpg assets/boneca/boneca_cor_2048.jpg assets/boneca/boneca_cor_4096.jpg \
+for f in assets/boneca/boneca_nova_cor_1024.jpg assets/boneca/boneca_nova_cor_2048.jpg assets/boneca/boneca_nova_cor_4096.jpg \
          assets/cachoeira/cachoeira_cor_1024.jpg assets/cachoeira/cachoeira_cor_2048.jpg; do cor "$f"; done
-for f in assets/boneca/boneca_rugosidade_1024.jpg assets/boneca/boneca_metal_1024.jpg \
+for f in assets/boneca/boneca_nova_rugosidade_1024.jpg \
          assets/cachoeira/cachoeira_rugosidade_1024.jpg assets/cachoeira/cachoeira_metal_512.jpg; do dado "$f"; done
-for f in assets/boneca/boneca_normal_1024.png assets/boneca/boneca_normal_2048.png \
+for f in assets/boneca/boneca_nova_normal_1024.png assets/boneca/boneca_nova_normal_2048.png \
          assets/cachoeira/cachoeira_normal_1024.png; do normal "$f"; done
 echo ok

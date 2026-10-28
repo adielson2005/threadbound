@@ -1,107 +1,7 @@
 import * as THREE from 'three';
 
-// Repairs for the Meshy auto-rig of the doll (Numi).
-//
-// Root cause of the "disappearing leg": the auto-rigger put both hip joints
-// (LeftUpLeg / RightUpLeg) at exactly the same point, and the mesh models the legs one
-// behind the other (knees only 5.6 cm apart, in depth) instead of side by side. Seen from
-// the front, the right leg was hidden behind the left, and whenever an animation brought
-// the legs together one leg ended up inside the other.
-//
-// Fix (in bind pose, before any animation is prepared):
-//  - hip joints moved apart to a natural hip width;
-//  - each leg (flesh, sock and shoe vertices + knee/ankle/toe joints) moved rigidly so the
-//    legs stand side by side at the same depth; the skirt is left untouched (vertices are
-//    selected by distance to the leg's own bone chain, not only by skin weight, because the
-//    skirt is weighted to the thigh bones too);
-//  - the mesh is re-bound to the corrected skeleton, and the constant position tracks of the
-//    leg bones in the clips are updated (animations only rotate bones, so they stay valid).
-
 const M = n => 'mixamorig' + n;
-const LADOS = ['Left', 'Right'];
-const CADEIA = ['UpLeg', 'Leg', 'Foot', 'ToeBase', 'Toe_End'];
-
-// sizes as a fraction of the model height (the doll is 1.7 m tall in the game)
-const META_LARGURA_JOELHOS = 0.045 / 1.7; // knees at ±4.5 cm from the body axis
-const META_LARGURA_QUADRIL = 0.04 / 1.7;  // hip joints at ±4 cm
-const RAIO_COXA = 0.07 / 1.7, RAIO_CANELA = 0.06 / 1.7, RAIO_PE = 0.085 / 1.7;
-
 const wp = o => o.getWorldPosition(new THREE.Vector3());
-
-function distanciaAoSegmento(p, a, b) {
-  const ab = b.clone().sub(a), t = THREE.MathUtils.clamp(p.clone().sub(a).dot(ab) / ab.lengthSq(), 0, 1);
-  return a.clone().addScaledVector(ab, t).distanceTo(p);
-}
-
-// Returns a map bone name -> new local position (for patching clip tracks), or null if not needed.
-export function corrigirPernas(fbx, malha) {
-  fbx.updateMatrixWorld(true);
-  const osso = n => fbx.getObjectByName(M(n));
-  const quadrilL = osso('LeftUpLeg'), quadrilR = osso('RightUpLeg');
-  if (!quadrilL || !quadrilR) return null;
-  // only needed when the hip joints are (nearly) on top of each other
-  const altura = new THREE.Box3().setFromObject(fbx).getSize(new THREE.Vector3()).y;
-  if (wp(quadrilL).distanceTo(wp(quadrilR)) > altura * 0.02) return null;
-
-  const hips = osso('Hips'), centroX = wp(hips).x;
-  // current joint positions per side (world = FBX space, the root is still at identity here)
-  const juntas = Object.fromEntries(LADOS.map(l => [l, Object.fromEntries(CADEIA.map(c => [c, osso(l + c) && wp(osso(l + c))]))]));
-  const joelhoZ = (juntas.Left.Leg.z + juntas.Right.Leg.z) / 2;
-  const desloc = {
-    Left: new THREE.Vector3(centroX + META_LARGURA_JOELHOS * altura - juntas.Left.Leg.x, 0, joelhoZ - juntas.Left.Leg.z),
-    Right: new THREE.Vector3(centroX - META_LARGURA_JOELHOS * altura - juntas.Right.Leg.x, 0, joelhoZ - juntas.Right.Leg.z),
-  };
-
-  // ---- vertices ----
-  const geo = malha.geometry, pos = geo.attributes.position, si = geo.attributes.skinIndex, sw = geo.attributes.skinWeight;
-  const ossos = malha.skeleton.bones;
-  const lado = new Map(); // bone index -> side, for leg bones
-  ossos.forEach((b, i) => { for (const l of LADOS) if (CADEIA.some(c => b.name === M(l + c))) lado.set(i, l); });
-  const mw = malha.matrixWorld, mwInv = mw.clone().invert();
-  const v = new THREE.Vector3();
-  for (let i = 0; i < pos.count; i++) {
-    const peso = { Left: 0, Right: 0 };
-    for (let k = 0; k < 4; k++) { const l = lado.get(si.getComponent(i, k)); if (l) peso[l] += sw.getComponent(i, k); }
-    const l = peso.Left > peso.Right ? 'Left' : 'Right';
-    if (peso[l] < 0.5) continue;
-    v.fromBufferAttribute(pos, i).applyMatrix4(mw);
-    const j = juntas[l];
-    // part of the leg itself (not the skirt that is also weighted to the thigh)?
-    const d = Math.min(
-      distanciaAoSegmento(v, j.UpLeg, j.Leg) / RAIO_COXA,
-      distanciaAoSegmento(v, j.Leg, j.Foot) / RAIO_CANELA,
-      distanciaAoSegmento(v, j.Foot, j.ToeBase) / RAIO_PE,
-      j.Toe_End ? distanciaAoSegmento(v, j.ToeBase, j.Toe_End) / RAIO_PE : Infinity,
-    ) / altura;
-    if (d > 1) continue;
-    // full move below the knee, fading to zero at the hip (no tearing at the crotch)
-    const fator = THREE.MathUtils.smoothstep(v.y, j.UpLeg.y, j.Leg.y + (j.UpLeg.y - j.Leg.y) * 0.3);
-    v.addScaledVector(desloc[l], fator).applyMatrix4(mwInv);
-    pos.setXYZ(i, v.x, v.y, v.z);
-  }
-  pos.needsUpdate = true;
-  geo.computeBoundingBox(); geo.computeBoundingSphere();
-
-  // ---- joints ----
-  const novas = new Map();
-  for (const l of LADOS) {
-    const alvo = {
-      UpLeg: juntas[l].UpLeg.clone().setX(centroX + (l === 'Left' ? 1 : -1) * META_LARGURA_QUADRIL * altura),
-      ...Object.fromEntries(CADEIA.slice(1).filter(c => juntas[l][c]).map(c => [c, juntas[l][c].clone().add(desloc[l])])),
-    };
-    for (const c of CADEIA) { // parent before child
-      const b = osso(l + c);
-      if (!b || !alvo[c]) continue;
-      b.parent.updateMatrixWorld(true);
-      b.position.copy(b.parent.worldToLocal(alvo[c].clone()));
-      b.updateMatrixWorld(true);
-      novas.set(b.name, b.position.clone());
-    }
-  }
-  fbx.updateMatrixWorld(true);
-  malha.bind(malha.skeleton, malha.matrixWorld);
-  return novas;
-}
 
 // ---------------------------------------------------------------------------------------
 // Animation clip repairs
@@ -226,18 +126,4 @@ export function velocidadeNatural(clipe, fbx, metrosPorUnidade) {
     }
   }
   return n ? (soma / n) * metrosPorUnidade : 0;
-}
-
-// The doll clips carry a (constant) position track for every bone: point the leg bones to the
-// corrected joints, keeping any animated variation relative to the old rest position.
-export function corrigirTrilhasPernas(clipe, novas, antigas) {
-  if (!novas) return;
-  for (const t of clipe.tracks) {
-    const [nome, prop] = t.name.split('.');
-    if (prop !== 'position' || !novas.has(nome)) continue;
-    const n = novas.get(nome), a = antigas.get(nome);
-    for (let i = 0; i < t.values.length; i += 3) {
-      t.values[i] += n.x - a.x; t.values[i + 1] += n.y - a.y; t.values[i + 2] += n.z - a.z;
-    }
-  }
 }

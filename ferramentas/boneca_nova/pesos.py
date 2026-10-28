@@ -22,7 +22,9 @@ P=np.array(P);U=np.array(U);N=np.array(N);I=np.array(I)
 mn=P.min(0);mx=P.max(0);H=mx[1]-mn[1]
 Q=(P-[(mn[0]+mx[0])/2, mn[1], (mn[2]+mx[2])/2])/H
 n=len(Q); x,y,z=Q[:,0],Q[:,1],Q[:,2]
-J={k:np.array(v,float) for k,v in json.load(open(D+'/rig/juntas.json')).items()}
+JJ=json.load(open(D+'/rig/juntas.json')); CAB=JJ.pop('Cabelo')
+CAB['R']=[[-a,b,c] for a,b,c in CAB['L']]
+J={k:np.array(v,float) for k,v in JJ.items()}
 for k in list(J):
     if k.startswith('Left'): J['Right'+k[4:]]=J[k]*[-1,1,1]
 # cor de cada vértice
@@ -35,6 +37,7 @@ escuro = lum<60
 pele = (r>g+12)&(g>b-5)&(lum>45)&(lum<170)&(r-b>25)
 
 ossos=['Hips','Spine','Spine1','Spine2','Neck','Head']+[l+o for l in ('Left','Right') for o in ('Shoulder','Arm','ForeArm','Hand','UpLeg','Leg','Foot','ToeBase')]
+ossos+=[f'Cabelo{c}{i}' for c in 'CLR' for i in (1,2,3)]
 ix={o:i for i,o in enumerate(ossos)}
 W=np.zeros((n,len(ossos)))
 def sstep(a,b,v):
@@ -44,7 +47,8 @@ def seg(p,a,b):
 lado=np.where(x>=0,'Left','Right')
 
 # ---- cabelo (abaixo do queixo): segue cabeça em cima e peito embaixo
-cab = escuro & (y<0.74) & (y>0.2)
+cab = escuro & (y>0.2) & (y<0.80) & ((z<0.03)|(np.abs(x)>0.085))
+cab &= ~((y>0.72)&(z>0.04)&(np.abs(x)<0.085))
 # ---- pernas
 dperna={}
 for L in ('Left','Right'):
@@ -99,10 +103,22 @@ for L in ('Left','Right'):
     d=dperna[L][m]
     k=0.55*sstep(0.44,0.31,y[m])*np.clip(1-d/0.13,0,1)*sstep(0.0,0.035,np.abs(x[m]))
     W[m]*= (1-k)[:,None]; W[m,ix[L+'UpLeg']]+=k
-# cabelo
-hc=cab
-wh=sstep(0.56,0.72,y[hc])
-W[hc,ix['Head']]=wh; W[hc,ix['Spine2']]=1-wh
+# cabelo solto: três cadeias de ossos (centro, esquerda, direita) que balançam no jogo; a parte
+# de cima (couro cabeludo) fica na cabeça. Mistura entre cadeias por x e entre ossos por altura.
+solto = escuro & (y>0.2) & (y<0.80) & ((z<0.03)|(np.abs(x)>0.085))
+solto &= ~((y>0.72)&(z>0.04)&(np.abs(x)<0.085))  # sobrancelhas, cílios, olhos
+cab = solto
+hc=np.where(cab)[0]
+W[hc]=0
+s_=np.clip(x[hc]/0.10,-1,1)
+pc={'C':1-np.abs(s_),'L':np.maximum(s_,0),'R':np.maximum(-s_,0)}
+alt=[(0.80,'Head'),(0.75,1),(0.65,2),(0.52,3),(-1,3)]
+for (y0,o0),(y1,o1) in zip(alt,alt[1:]):
+    m=(y[hc]<=y0)&(y[hc]>y1); t=(y0-y[hc][m])/(y0-y1)
+    for c,wc in pc.items():
+        for o,wo in ((o0,1-t),(o1,t)):
+            nome='Head' if o=='Head' else f'Cabelo{c}{o}'
+            W[hc[m],ix[nome]]+=wc[m]*wo
 
 # ---- mesmo peso para cópias do mesmo ponto (costuras de UV) e suavização pela malha
 chave=np.round(Q*1e5).astype(np.int64)
@@ -127,12 +143,13 @@ print('cabelo',cab.sum(),'pernas',perna.sum(),'braços',braco.sum(),'resto',rest
 Hold=169.52399358089622; off=np.array([0.49950, -1.22612, -2.38153])
 pos=(Q*Hold+off).astype(np.float32)
 jun={('mixamorig'+k):(np.array(v)*Hold+off).round(4).tolist() for k,v in J.items()}
+cabelo={c:(np.array(v)*Hold+off).round(4).tolist() for c,v in CAB.items()}
 idx=I.astype(np.uint16)
 out=D+'/rig/saida'
 import os; os.makedirs(out,exist_ok=True)
 with open(out+'/boneca_nova.bin','wb') as f:
     for arr in (pos, N.astype(np.float32), U.astype(np.float32), ordem.astype(np.uint8), q.astype(np.uint8), idx):
         f.write(np.ascontiguousarray(arr).tobytes())
-json.dump({'vertices':n,'indices':int(idx.size),'ossos':['mixamorig'+o for o in ossos],'juntas':jun},open(out+'/boneca_nova.json','w'),indent=0)
+json.dump({'vertices':n,'indices':int(idx.size),'ossos':[o if o.startswith('Cabelo') else 'mixamorig'+o for o in ossos],'juntas':jun,'cabelo':cabelo},open(out+'/boneca_nova.json','w'),indent=0)
 np.save(out+'/classe.npy',np.select([cab,perna,braco],[1,2,3],0))
 print(os.path.getsize(out+'/boneca_nova.bin'))

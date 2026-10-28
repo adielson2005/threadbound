@@ -1,12 +1,10 @@
 import * as THREE from 'three';
-import { costurarBoneca } from './costura.js';
 import { FBXLoader } from 'three/addons/loaders/FBXLoader.js';
-import { mergeVertices } from 'three/addons/utils/BufferGeometryUtils.js';
-import { corrigirPernas, corrigirTrilhasPernas, removerPicos, fecharCiclo, alinharGolpe, velocidadeNatural } from './reparos.js';
+import { removerPicos, fecharCiclo, alinharGolpe, velocidadeNatural } from './reparos.js';
 import { carregarTextura } from './texturas.js';
 import { simplificar, simplificarIndices } from './simplificar.js';
 import { ESTILO_LIGADO } from './estilo.js';
-import { querBonecaNova, carregarBonecaNova, vestirBonecaNova, adaptarTrilhas } from './bonecaNova.js';
+import { carregarBonecaNova, vestirBonecaNova, adaptarTrilhas, criarCabelo } from './bonecaNova.js';
 
 // animações em ciclo (precisam terminar exatamente onde começam)
 const CICLOS = ['andar', 'correr', 'parada', 'queda', 'guarda'];
@@ -22,7 +20,7 @@ const MEMBROS_GOLPE = {
 // separados por voltas em direção à guarda em 0,80, 1,33, 1,83 e 2,67 s.
 const CORTES_COMBO = [['soco1', 0.15, 0.8], ['soco2', 0.8, 1.33], ['soco3', 1.33, 1.83], ['soco4', 1.83, 2.67], ['soco5', 2.67, 3.27]];
 
-// Personagem: "Little Lavender Doll" (Meshy). Da própria boneca vêm andar, correr, a queda de
+// Personagem: a boneca redesenhada (bonecaNova.js) no esqueleto da "Little Lavender Doll" (Meshy). Do FBX dela vêm andar, correr, a queda de
 // morte e o combate: combo de socos (cortado em 5 golpes), chute giratório, guarda (defesa) e o
 // "Attack", usado para bater com um objeto na mão.
 // Parada, pulo, queda e aterrissagem vêm do Human Basic Motions e são transferidos para este esqueleto.
@@ -229,7 +227,7 @@ function assentarNoChao(clipes, fbx, malha, hips, chao) {
 // Cada osso de destino recebe, no espaço do mundo, a mesma rotação que o osso de origem sofreu
 // a partir da pose de repouso. Como as poses de repouso são diferentes (HBM em T, boneca com os
 // braços para baixo), o repouso da boneca é antes "alinhado" para apontar como o do HBM.
-function prepararRetarget(fonte, destinoRaiz) {
+function prepararRetarget(fonte, destinoRaiz, chao) {
   // o rig HBM fica com Z para cima no mundo; gira para Y para cima, como a boneca
   const suporte = new THREE.Group();
   suporte.rotation.x = -Math.PI / 2;
@@ -255,7 +253,7 @@ function prepararRetarget(fonte, destinoRaiz) {
     });
   }
   const hipsS = src('B-hips'), hipsD = dst(M('Hips'));
-  const escalaQuadril = (wp(hipsD).y - new THREE.Box3().setFromObject(destinoRaiz).min.y) / wp(hipsS).y;
+  const escalaQuadril = (wp(hipsD).y - chao) / wp(hipsS).y;
   return { suporte, info, hipsS, hipsD, repousoHipsS: wp(hipsS), escalaQuadril };
 }
 
@@ -310,35 +308,6 @@ function retargetar(clipe, prep, fonte, destinoRaiz, fps = 30) {
   return new THREE.AnimationClip(clipe.name, clipe.duration, trilhas);
 }
 
-// ---------- normais ----------
-// mergeVertices só une vértices iguais em tudo (posição, uv, pesos): numa borda de ilha de UV o
-// mesmo ponto fica duplicado, e computeVertexNormals dá a cada cópia uma normal diferente — uma
-// linha de luz/sombra marcando cada costura da textura. Aqui a normal é calculada por posição
-// (todas as cópias de um ponto somam as faces em volta) e a mesma vai para todas elas.
-function normaisSuaves(geo) {
-  geo.computeVertexNormals();
-  const pos = geo.attributes.position, nor = geo.attributes.normal;
-  const chave = i => `${Math.round(pos.getX(i) * 1e4)},${Math.round(pos.getY(i) * 1e4)},${Math.round(pos.getZ(i) * 1e4)}`;
-  const soma = new Map();
-  // computeVertexNormals devolve normais normalizadas por vértice: reconstrói a soma ponderada
-  // pela área das faces para cada ponto e reparte
-  const ind = geo.index.array, a = new THREE.Vector3(), b = new THREE.Vector3(), c = new THREE.Vector3(), n = new THREE.Vector3();
-  for (let t = 0; t < ind.length; t += 3) {
-    a.fromBufferAttribute(pos, ind[t]); b.fromBufferAttribute(pos, ind[t + 1]); c.fromBufferAttribute(pos, ind[t + 2]);
-    n.subVectors(c, b).cross(a.clone().sub(b)); // tamanho proporcional à área
-    for (let k = 0; k < 3; k++) {
-      const ch = chave(ind[t + k]);
-      const s = soma.get(ch);
-      if (s) s.add(n); else soma.set(ch, n.clone());
-    }
-  }
-  for (let i = 0; i < pos.count; i++) {
-    const s = soma.get(chave(i));
-    if (s && s.lengthSq() > 0) { n.copy(s).normalize(); nor.setXYZ(i, n.x, n.y, n.z); }
-  }
-  nor.needsUpdate = true;
-}
-
 // ---------- texturas / material ----------
 // Luz de contorno (rim): a borda da silhueta, vista de lado, acende um pouco — destaca a boneca
 // do cenário e dá o ar de personagem "de animação". Vale para o Lambert (Low) e o PBR.
@@ -368,15 +337,7 @@ function textura(renderer, nome, cor) {
 }
 
 export async function aplicarQualidadeBoneca(boneca, renderer, nivel) {
-  // Brisa costurada por código (costura.js): tecidos pintados, mesma luz de contorno
-  if (boneca.costura) {
-    boneca.costura.aplicarNivel(nivel, m => contorno(m, nivel.materialSimples ? 0.22 : nivel.nome === 'High' ? 0.3 : 0.24));
-    return;
-  }
-  // a boneca nova tem as mesmas texturas em boneca_nova_*, sem a de metal (vazia no modelo dela)
-  const t = boneca.nova
-    ? Object.fromEntries(Object.entries(nivel.texturaBoneca).filter(([k]) => k !== 'metal').map(([k, v]) => [k, v.replace('boneca_', 'boneca_nova_')]))
-    : nivel.texturaBoneca;
+  const t = nivel.texturaBoneca;
   const [cor, normal, rugosidade, metal] = await Promise.all([
     textura(renderer, t.cor, true), textura(renderer, t.normal), textura(renderer, t.rugosidade), textura(renderer, t.metal),
   ]);
@@ -403,37 +364,26 @@ export async function criarBoneca(renderer, nivel, aoProgredir) {
   const gerente = new THREE.LoadingManager();
   gerente.setURLModifier(u => (/\.(png|jpe?g|tga)$/i.test(u) ? PIXEL : u)); // texturas vêm à parte, no tamanho do nível gráfico
   const loader = new FBXLoader(gerente);
-  const nova = querBonecaNova();
   const [fbx, ref, dadosNova, ...hbm] = await Promise.all([
     loader.loadAsync(PASTA + 'boneca.fbx', aoProgredir),
     loader.loadAsync(PASTA_HBM + 'HumanF_Model.fbx'),
-    nova ? carregarBonecaNova() : null,
+    carregarBonecaNova(),
     ...Object.values(EMPRESTADAS).map(a => loader.loadAsync(PASTA_HBM + a)),
   ]);
 
-  let malha;
-  fbx.traverse(o => { if (o.isSkinnedMesh && !malha) malha = o; });
-  // boneca redesenhada (padrão): a malha nova no esqueleto antigo, ajustado ao corpo dela (bonecaNova.js)
-  const ajuste = nova ? vestirBonecaNova(fbx, malha, dadosNova) : null;
-  if (ajuste) {
-    malha = ajuste.malha;
-    for (const c of fbx.animations) adaptarTrilhas(c, ajuste);
-  } else {
-    // a malha vem com cada triângulo separado: unir vértices deixa a deformação bem mais leve
-    const geo = mergeVertices(malha.geometry);
-    malha.geometry.dispose();
-    normaisSuaves(geo); // sem costuras de iluminação, nem entre triângulos nem nas bordas das ilhas de UV
-    malha.geometry = geo;
-  }
+  // o FBX traz só o esqueleto e as animações (ferramentas/fbx-so-esqueleto.py); a malha é a da
+  // boneca redesenhada, no esqueleto ajustado ao corpo dela (bonecaNova.js)
+  const ajuste = vestirBonecaNova(fbx, dadosNova);
+  const malha = ajuste.malha;
+  for (const c of fbx.animations) adaptarTrilhas(c, ajuste);
   malha.frustumCulled = false; // a caixa da malha não acompanha a animação
   malha.castShadow = false;    // usa sombra-mancha (a sombra do mapa é fixa)
 
   fbx.updateMatrixWorld(true);
-  // pernas: o auto-rig pôs os dois quadris no mesmo ponto (ver reparos.js)
-  const posicoesAntigas = new Map(ossosEmOrdem(fbx).map(o => [o.name, o.position.clone()]));
-  const posicoesNovas = corrigirPernas(fbx, malha);
   const hips = fbx.getObjectByName(M('Hips'));
-  const caixa = new THREE.Box3().setFromObject(fbx);
+  // caixa da boneca em repouso (a malha está na origem do FBX, sem transformação)
+  malha.geometry.computeBoundingBox();
+  const caixa = malha.geometry.boundingBox.clone();
 
   // pose de repouso no espaço da boneca
   const ossos = ossosEmOrdem(fbx);
@@ -446,7 +396,6 @@ export async function criarBoneca(renderer, nivel, aoProgredir) {
     const nome = PROPRIAS[c.name];
     if (nome) {
       clipes[nome] = limparClipe(c, hips, nome === 'guarda');
-      corrigirTrilhasPernas(clipes[nome], posicoesNovas, posicoesAntigas);
     }
   }
   // o combo de socos vira 5 golpes separados
@@ -454,7 +403,7 @@ export async function criarBoneca(renderer, nivel, aoProgredir) {
     for (const [nome, t0, t1] of CORTES_COMBO) clipes[nome] = recortar(clipes.soco, nome, t0, t1, hips);
     delete clipes.soco;
   }
-  const prep = prepararRetarget(ref, fbx);
+  const prep = prepararRetarget(ref, fbx, caixa.min.y);
   Object.keys(EMPRESTADAS).forEach((nome, i) => { clipes[nome] = retargetar(hbm[i].animations[0], prep, ref, fbx); });
 
   // reparos nos clipes (diagnóstico e causas em reparos.js)
@@ -473,14 +422,6 @@ export async function criarBoneca(renderer, nivel, aoProgredir) {
   };
   // volta a boneca ao repouso (o retarget só lê a pose dela)
   for (const o of ossos) { const l = ligacao.get(o.name); o.quaternion.copy(l.q); o.position.copy(l.p); }
-
-  // corpo alternativo costurado por código (costura.js), só em ?boneca=costurada; o padrão é a boneca original
-  let costura = null, malhaVisivel = malha;
-  if (new URLSearchParams(location.search).get('boneca') === 'costurada') {
-    costura = costurarBoneca(fbx, 1 / metrosPorUnidade);
-    malha.visible = false; malha.parent?.remove(malha); malha.geometry.dispose();
-    malhaVisivel = costura.grupo;
-  }
 
   // hierarquia: raiz (posição e direção) -> corpo (pivô) -> modelo
   const escala = ALTURA / (caixa.max.y - caixa.min.y);
@@ -504,7 +445,7 @@ export async function criarBoneca(renderer, nivel, aoProgredir) {
   // A malha do contorno é uma versão simplificada (~25% dos triângulos, com os mesmos pesos dos
   // ossos): de longe ninguém vê a diferença na borda, e a GPU anima 4× menos vértices.
   let linha = null;
-  if (!costura && ESTILO_LIGADO) {
+  if (ESTILO_LIGADO) {
     malha.geometry.computeBoundingBox();
     const bb = malha.geometry.boundingBox, espessura = (bb.max.y - bb.min.y) * 0.016;
     const mat = new THREE.MeshBasicMaterial({ color: '#2b1a14', side: THREE.BackSide });
@@ -523,7 +464,7 @@ export async function criarBoneca(renderer, nivel, aoProgredir) {
   // triângulos. São só outros índices sobre os mesmos vértices e pesos dos ossos: a animação é a
   // mesma e trocar não envia nada de novo para a GPU (os dois índices ficam lá)
   let ajustarDetalhe = () => {};
-  if (!costura && malha.geometry.index) {
+  if (malha.geometry.index) {
     const g = malha.geometry, completo = g.index;
     const leve = new THREE.BufferAttribute(await simplificarIndices(g, 0.5, 0.004), 1);
     let usandoLeve = false;
@@ -532,7 +473,10 @@ export async function criarBoneca(renderer, nivel, aoProgredir) {
       if (querLeve !== usandoLeve) { usandoLeve = querLeve; g.setIndex(querLeve ? leve : completo); }
     };
   }
-  const boneca = { nova: !!ajuste, raiz, corpo, malha: malhaVisivel, linha, costura, mixer, acoes, velocidades, diagnostico, ajustarDetalhe, pernas: [perna('Left'), perna('Right')], rig: { ossos: Object.fromEntries(ossos.map(o => [o.name, o])), lista: ossos, ligacao, papeis: PAPEIS } };
+  const rigOssos = Object.fromEntries(ossos.map(o => [o.name, o]));
+  // cabelo solto balançando por cima da animação (chamado por jogo.js depois da postura)
+  const cabelo = criarCabelo(ajuste.cadeias, rigOssos);
+  const boneca = { raiz, corpo, malha, linha, cabelo, mixer, acoes, velocidades, diagnostico, ajustarDetalhe, pernas: [perna('Left'), perna('Right')], rig: { ossos: rigOssos, lista: ossos, ligacao, papeis: PAPEIS } };
   await aplicarQualidadeBoneca(boneca, renderer, nivel);
   return boneca;
 }

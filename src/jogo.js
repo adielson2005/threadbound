@@ -1097,6 +1097,9 @@ function animarPersonagem(dt) {
   // atingida: o corpo recua um instante (por cima da animação)
   const recuo = Math.min(1, (j.machucado || 0) / 0.45);
   if (recuo > 0) corpo.rotation.x -= 0.35 * Math.sin(recuo * Math.PI);
+  // cabelo solto: balança por cima de tudo o que mexeu no corpo neste quadro
+  personagem.raiz.updateMatrixWorld(true);
+  personagem.cabelo.atualizar(dt);
   // afundou no mar: some sob a espuma; logo depois de atingida, pisca (invulnerável)
   const piscando = (combate?.invulneravel ?? 0) > 0.4 && Math.floor(tempoCena * 14) % 2 === 0;
   personagem.malha.visible = !(j.noVazio && agua && j.pos.y < agua.nivel - 0.6) && !piscando;
