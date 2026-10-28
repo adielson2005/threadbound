@@ -8,3 +8,4 @@ desktop.ini
 .DS_Store
 /build/
 *.apk
+__pycache__/

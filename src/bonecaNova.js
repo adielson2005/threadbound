@@ -26,8 +26,6 @@ const APONTA = {
   ])),
 };
 
-export const querBonecaNova = () => !['antiga', 'costurada'].includes(new URLSearchParams(location.search).get('boneca'));
-
 export async function carregarBonecaNova(aoProgredir) {
   const [info, bin] = await Promise.all([
     fetch(PASTA + 'boneca_nova.json').then(r => r.json()),
@@ -47,9 +45,9 @@ export async function carregarBonecaNova(aoProgredir) {
   return { info, geo };
 }
 
-// Troca a malha antiga pela nova no FBX (ainda na origem, sem pai). Devolve as posições locais dos
+// Veste a malha nova no esqueleto do FBX (ainda na origem, sem pai). Devolve as posições locais dos
 // ossos antes e depois do ajuste e a razão entre as alturas do quadril.
-export function vestirBonecaNova(fbx, malhaAntiga, { info, geo }) {
+export function vestirBonecaNova(fbx, { info, geo }) {
   fbx.updateMatrixWorld(true);
   const ossos = [];
   fbx.traverse(b => { if (b.isBone) ossos.push(b); });
@@ -57,7 +55,6 @@ export function vestirBonecaNova(fbx, malhaAntiga, { info, geo }) {
   const mundoAntigo = new Map(ossos.map(b => [b.name, b.getWorldPosition(new THREE.Vector3())]));
   const giroAntigo = new Map(ossos.map(b => [b.name, b.getWorldQuaternion(new THREE.Quaternion())]));
   const juntas = new Map(Object.entries(info.juntas).map(([k, v]) => [k, new THREE.Vector3(...v)]));
-  const caixaAntiga = new THREE.Box3().setFromObject(fbx);
 
   // ossos sem junta própria (dedos, mechas da boneca antiga) encolhem junto com o pai
   const proporcao = (a, b) => juntas.get(M(b)).distanceTo(juntas.get(M(a))) / mundoAntigo.get(M(b)).distanceTo(mundoAntigo.get(M(a)));
@@ -83,21 +80,44 @@ export function vestirBonecaNova(fbx, malhaAntiga, { info, geo }) {
   }
   fbx.updateMatrixWorld(true);
 
+  // cabelo solto: três cadeias de ossos novos presas à cabeça (centro, esquerda, direita), que
+  // balançam com a física de criarCabelo; no repouso têm a mesma orientação da cabeça
+  const cabeca = ossos.find(b => b.name === M('Head'));
+  const cadeias = Object.entries(info.cabelo).map(([lado, pontos]) => {
+    let pai = cabeca;
+    const cadeia = [];
+    for (let i = 0; i < pontos.length - 1; i++) {
+      const b = new THREE.Bone();
+      b.name = `Cabelo${lado}${i + 1}`;
+      pai.add(b);
+      pai.updateMatrixWorld(true);
+      b.position.copy(pai.worldToLocal(new THREE.Vector3(...pontos[i])));
+      b.updateMatrixWorld(true);
+      ossos.push(b); cadeia.push(b); pai = b;
+    }
+    const ponta = new THREE.Object3D(); // só marca onde termina o último osso
+    pai.add(ponta);
+    ponta.position.copy(pai.worldToLocal(new THREE.Vector3(...pontos.at(-1))));
+    return { ossos: cadeia, ponta };
+  });
+
   const porNome = new Map(ossos.map(b => [b.name, b]));
   const esqueleto = new THREE.Skeleton(info.ossos.map(nome => porNome.get(nome)));
-  const malha = new THREE.SkinnedMesh(geo, malhaAntiga.material);
+  const malha = new THREE.SkinnedMesh(geo, new THREE.MeshBasicMaterial()); // material: aplicarQualidadeBoneca
   malha.name = 'boneca_nova';
+  // as posições da malha (e as juntas) estão no espaço do mundo com o FBX na origem; a raiz do FBX
+  // pode ter escala própria, então a malha leva a transformação inversa da raiz
   fbx.add(malha);
+  fbx.matrixWorld.clone().invert().decompose(malha.position, malha.quaternion, malha.scale);
   malha.updateMatrixWorld(true);
   malha.bind(esqueleto, malha.matrixWorld);
-  malhaAntiga.parent.remove(malhaAntiga);
-  malhaAntiga.geometry.dispose();
 
   const hips = porNome.get(M('Hips'));
-  const caixaNova = new THREE.Box3().setFromObject(fbx);
-  const razaoQuadril = (hips.getWorldPosition(new THREE.Vector3()).y - caixaNova.min.y) / (mundoAntigo.get(hips.name).y - caixaAntiga.min.y);
+  // altura do quadril acima da ponta do pé, no esqueleto novo e no antigo
+  const pe = M('LeftToe_End');
+  const razaoQuadril = (hips.getWorldPosition(new THREE.Vector3()).y - juntas.get(pe).y) / (mundoAntigo.get(hips.name).y - mundoAntigo.get(pe).y);
   const novas = new Map(ossos.map(b => [b.name, b.position.clone()]));
-  return { malha, antigas, novas, razaoQuadril, hips: hips.name };
+  return { malha, antigas, novas, razaoQuadril, hips: hips.name, cadeias };
 }
 
 // Trilhas de posição das animações da boneca antiga -> juntas novas. Nos ossos comuns a posição é
@@ -114,4 +134,85 @@ export function adaptarTrilhas(clipe, { antigas, novas, razaoQuadril, hips }) {
       t.values[i + 2] = n.z + (t.values[i + 2] - a.z) * k;
     }
   }
+}
+
+// ---------- cabelo que balança ----------
+// Cada junta das cadeias de cabelo é uma partícula (Verlet) no mundo: tem inércia (fica para trás
+// quando a Brisa corre ou vira, e balança depois), é puxada de volta à pose de repouso (a que a
+// cabeça leva) por uma mola e cai um pouco com a gravidade. O comprimento de cada osso é mantido,
+// e as partículas não entram no tronco (uma cápsula do quadril ao pescoço). No fim cada osso gira
+// para apontar para a partícula seguinte. Roda depois da animação e dos ajustes de postura.
+export function criarCabelo(cadeias, ossos, opcoes = {}) {
+  const { mola = 0.12, amortecimento = 0.86, gravidade = 2.5, raioTronco = 0.155, anguloMax = 1.1 } = opcoes;
+  const quadril = ossos[M('Hips')], pescoco = ossos[M('Neck')];
+  const repouso = cadeias.map(c => c.ossos.map(b => b.quaternion.clone()));
+  const pontos = c => [...c.ossos.slice(1), c.ponta];
+  let estado = null;
+  const v = new THREE.Vector3(), a = new THREE.Vector3(), b = new THREE.Vector3(), d = new THREE.Vector3();
+  const qMundo = new THREE.Quaternion(), qPai = new THREE.Quaternion(), giro = new THREE.Quaternion();
+
+  function poseRepouso(ci) {
+    cadeias[ci].ossos.forEach((o, k) => o.quaternion.copy(repouso[ci][k]));
+    cadeias[ci].ossos[0].updateMatrixWorld(true);
+    return pontos(cadeias[ci]).map(p => p.getWorldPosition(new THREE.Vector3()));
+  }
+  function foraDoTronco(p) {
+    quadril.getWorldPosition(a); pescoco.getWorldPosition(b);
+    d.subVectors(b, a);
+    const t = THREE.MathUtils.clamp(v.subVectors(p, a).dot(d) / d.lengthSq(), 0, 1);
+    const c = a.clone().addScaledVector(d, t), dist = p.distanceTo(c);
+    if (dist < raioTronco && dist > 1e-6) p.sub(c).multiplyScalar(raioTronco / dist).add(c);
+  }
+  return {
+    reiniciar() { estado = null; },
+    atualizar(dt) {
+      if (!(dt > 0)) return;
+      const passo = Math.min(dt, 1 / 30) * 60; // mesma resposta em 30 ou 60 quadros por segundo
+      const novo = !estado;
+      if (novo) estado = cadeias.map(() => null);
+      cadeias.forEach((cadeia, ci) => {
+        const alvo = poseRepouso(ci);
+        const raiz = cadeia.ossos[0].getWorldPosition(new THREE.Vector3());
+        const comprimentos = alvo.map((p, k) => p.distanceTo(k ? alvo[k - 1] : raiz));
+        let e = estado[ci];
+        // primeira vez, ou um salto grande (teleporte, renascer): começa em repouso
+        if (!e || e.atual[0].distanceTo(alvo[0]) > 1.5) e = estado[ci] = { atual: alvo.map(p => p.clone()), antes: alvo.map(p => p.clone()) };
+        for (let k = 0; k < alvo.length; k++) {
+          const p = e.atual[k], ant = e.antes[k];
+          v.subVectors(p, ant).multiplyScalar(Math.pow(amortecimento, passo));
+          ant.copy(p);
+          p.add(v).addScaledVector(d.subVectors(alvo[k], p), 1 - Math.pow(1 - mola, passo));
+          p.y -= gravidade * (dt * dt);
+        }
+        // comprimentos, ângulo máximo em relação ao repouso e o tronco
+        let anterior = raiz, alvoAnterior = raiz;
+        for (let k = 0; k < alvo.length; k++) {
+          const p = e.atual[k];
+          const dirRepouso = a.subVectors(alvo[k], alvoAnterior).normalize();
+          const dir = b.subVectors(p, anterior).normalize();
+          const ang = dir.angleTo(dirRepouso);
+          if (ang > anguloMax) {
+            const eixo = d.crossVectors(dirRepouso, dir).normalize();
+            if (eixo.lengthSq() > 0) dir.copy(dirRepouso).applyAxisAngle(eixo, anguloMax);
+          }
+          p.copy(anterior).addScaledVector(dir, comprimentos[k]);
+          foraDoTronco(p);
+          p.sub(anterior).setLength(comprimentos[k]).add(anterior);
+          anterior = p; alvoAnterior = alvo[k];
+        }
+        // ossos apontando para as partículas (do primeiro ao último)
+        let base = raiz;
+        cadeia.ossos.forEach((o, k) => {
+          const pontaRepouso = pontos(cadeia)[k].getWorldPosition(a);
+          const origem = o.getWorldPosition(b);
+          giro.setFromUnitVectors(d.subVectors(pontaRepouso, origem).normalize(), v.subVectors(e.atual[k], base).normalize());
+          o.getWorldQuaternion(qMundo).premultiply(giro);
+          o.parent.getWorldQuaternion(qPai);
+          o.quaternion.copy(qPai.invert().multiply(qMundo));
+          o.updateMatrixWorld(true);
+          base = e.atual[k];
+        });
+      });
+    },
+  };
 }

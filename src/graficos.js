@@ -10,7 +10,7 @@ export const NIVEIS = {
     sombra: 0,                   // sem sombra do mapa
     materialSimples: true,       // Lambert: bem mais barato por pixel que o material PBR
     texturaMapa: { cor: 'mapa_cor_1024.jpg' },
-    texturaBoneca: { cor: 'boneca_cor_1024.jpg' },
+    texturaBoneca: { cor: 'boneca_nova_cor_1024.jpg' },
     // distância (m) em que cada bloco troca para o nível de detalhe seguinte. Perto da personagem
     // sempre a malha completa: é a mesma da colisão, então o chão visto é o chão em que ela pisa.
     // (os blocos têm 20 m: a 24 m do centro de um bloco a personagem já está fora dele)
@@ -28,7 +28,7 @@ export const NIVEIS = {
     sombra: 2048,
     materialSimples: false,
     texturaMapa: { cor: 'mapa_cor_2048.jpg', normal: 'mapa_normal_1024.png', rugosidade: 'mapa_rugosidade_1024.jpg' },
-    texturaBoneca: { cor: 'boneca_cor_2048.jpg', normal: 'boneca_normal_1024.png', rugosidade: 'boneca_rugosidade_1024.jpg', metal: 'boneca_metal_1024.jpg' },
+    texturaBoneca: { cor: 'boneca_nova_cor_2048.jpg', normal: 'boneca_nova_normal_1024.png', rugosidade: 'boneca_nova_rugosidade_1024.jpg' },
     lod: [0, 35, 70],
     lodInicial: 0,
     distancia: 320, neblina: [80, 240],
@@ -45,7 +45,7 @@ export const NIVEIS = {
     sombra: 4096,
     materialSimples: false,
     texturaMapa: { cor: 'mapa_cor.png', normal: 'mapa_normal.png', rugosidade: 'mapa_rugosidade.png', metal: 'mapa_metal.png' },
-    texturaBoneca: { cor: 'boneca_cor_4096.jpg', normal: 'boneca_normal_2048.png', rugosidade: 'boneca_rugosidade_1024.jpg', metal: 'boneca_metal_1024.jpg' },
+    texturaBoneca: { cor: 'boneca_nova_cor_4096.jpg', normal: 'boneca_nova_normal_2048.png', rugosidade: 'boneca_nova_rugosidade_1024.jpg' },
     lod: [0, 55, 110],
     lodInicial: 0,
     distancia: 600, neblina: [110, 380],

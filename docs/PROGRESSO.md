@@ -351,9 +351,21 @@ modelo veio sem esqueleto e com 1,13 milhão de triângulos (FBX de 65 MB):
   pela malha e iguais nas cópias do mesmo ponto (costuras de UV não abrem).
 - Dados: assets/boneca/boneca_nova.bin (2,1 MB) e .json. O FBX antigo continua sendo carregado
   pelo esqueleto e pelas animações; a malha dele é descartada.
-- `?boneca=antiga` volta à boneca anterior (comparação).
 
 Limitações: os pesos são automáticos, não pintados à mão. Em movimentos amplos (chute giratório,
-corrida) a saia e as mechas de cabelo da frente podem atravessar as pernas e os braços, e o cabelo
-não balança (é rígido com a cabeça e o peito). Um rig feito no Mixamo/Meshy pode substituir os
-pesos depois sem mudar o resto.
+corrida) a saia e as mechas de cabelo da frente podem atravessar as pernas e os braços. Um rig feito
+no Mixamo/Meshy pode substituir os pesos depois sem mudar o resto.
+
+### Boneca antiga removida e cabelo que balança
+
+- A boneca antiga saiu do jogo: as texturas dela (~50 MB), o corpo costurado por código
+  (costura.js, `?boneca=costurada`), o conserto das pernas do auto-rig antigo (reparos.js) e
+  `?boneca=antiga`. Do FBX ficam só o esqueleto e as animações
+  (ferramentas/fbx-so-esqueleto.py: 6,4 → 4,0 MB; ossos e animações conferidos iguais ao original).
+- Cabelo: três cadeias de três ossos novos presas à cabeça (centro e lados), com os pesos do cabelo
+  solto passados para elas (pesos.py). No jogo cada junta é uma partícula com inércia, mola de
+  volta à pose de repouso, um pouco de gravidade, comprimento fixo, ângulo máximo de ~63° e sem
+  entrar no tronco (bonecaNova.js, criarCabelo), atualizada depois da animação e da postura.
+  Medido na ponta da mecha do meio: parada fica no lugar; correndo vai ~30 cm para trás e sobe;
+  ao parar balança e volta em ~1 s.
+- Limitação: a colisão é só com o tronco (cápsula); as mechas do lado podem passar pelos braços.
