@@ -400,3 +400,24 @@ Medido com testes automáticos no navegador (SwiftShader, sem placa de vídeo; n
   0,25 m. Encostada numa parede com a câmera do lado dela, o obstáculo fica a ~35 cm e a câmera
   parava dentro da parede; perto assim agora a boneca some (a câmera estaria dentro da cabeça).
   Em 120 posições/direções aleatórias na vila: câmera dentro de algo 3 → 0.
+
+## Manchas brancas nas folhas: causa e correção (28/10/2026)
+
+- Causa (medida, não suposta): o brilho especular do material PBR da vegetação (Medium e High).
+  As normais dos cartões de folha são "de volume" (apontam para fora da copa, para a luz tratar a
+  copa como um volume) e os cartões têm as duas faces; vistos de lado ou pelo verso, o ângulo entre
+  a normal e o olhar chega a 90° e o especular (Fresnel e o termo de visibilidade do GGX) estoura em
+  branco. Teste na vista da floresta, trocando só o material das folhas: aspereza no máximo 16% de
+  pixels brancos, só a face da frente 11%, sem tone mapping 22%, sem especular 0,00%. No Low/celular
+  o material é Lambert (sem especular) e não havia mancha (0% nas 6 vistas). Não era a
+  transparência: sem textura nenhuma os cartões continuavam brancos.
+- Correção (ilha.js): o especular das folhas e da casca fica, mas com teto por canal (0,25) e na
+  cor da própria folha. Zerar de todo também apagava o brilho normal das copas (floresta e morro
+  ficavam 3–6% mais escuros).
+- Pixels brancos (>= 245 nos três canais), mesmas 6 vistas, versão atual antes → depois:
+  Medium floresta 1,42% → 0,00%, morro 2,16% → 0,09%, horizonte 1,88% → 0,05%, aérea 0,29% → 0,00%;
+  High floresta 2,80% → 0,26%, morro 4,01% → 0,68%, horizonte 1,94% → 0,27%, aérea 0,70% → 0,00%.
+  O branco que sobra no High não é folha: o brilho da agulha na vila, as colunas de mármore, a
+  beira de algumas pedras e a roupa da boneca.
+- Brilho médio no Medium quase igual (floresta 111 → 106, morro 157 → 155, aérea 130 → 131); parte
+  da queda é o próprio branco que saiu.

@@ -629,6 +629,7 @@ const MODELOS = {
 };
 
 // ---------------- material da vegetação (atlas + vento no shader) ----------------
+const ESPEC_VEG = 0.25; // teto do brilho especular das folhas (luz linear, por canal)
 function materialVegetacao(simples, tempo, foco) {
   const comum = { vertexColors: true, map: atlasVegetacao(), alphaTest: 0.42, side: THREE.DoubleSide };
   const m = simples
@@ -687,11 +688,24 @@ function materialVegetacao(simples, tempo, foco) {
       }
       #endif
       `;
+    // Brilho especular com teto. As normais dos cartões são "de volume" (para fora da copa, não a
+    // do plano do cartão) e os cartões têm as duas faces: visto de lado ou pelo verso, o ângulo entre
+    // a normal e o olhar chega a 90° e o especular (Fresnel e o termo de visibilidade do GGX)
+    // estourava em branco. Eram as manchas brancas em forma de folha nas copas e no capim perto da
+    // câmera, no Medium e no High (no Low/celular o material é Lambert, sem especular, e não havia).
+    // Tirar o especular de todo apagava também o brilho normal das folhas (a mata ficava mais escura):
+    // ele fica, mas cada canal no máximo ESPEC_VEG, na cor da própria folha (não em branco)
+    if (!simples) sh.fragmentShader = sh.fragmentShader.replace('#include <lights_fragment_end>', `#include <lights_fragment_end>
+      {
+        vec3 tintaVeg = 0.35 + 0.65 * diffuseColor.rgb / max(max(diffuseColor.r, diffuseColor.g), max(diffuseColor.b, 1e-3));
+        reflectedLight.directSpecular = min(reflectedLight.directSpecular, vec3(${ESPEC_VEG.toFixed(2)})) * tintaVeg;
+        reflectedLight.indirectSpecular = min(reflectedLight.indirectSpecular, vec3(${ESPEC_VEG.toFixed(2)})) * tintaVeg;
+      }`);
     sh.fragmentShader = sh.fragmentShader.includes('float lumEstilo')
       ? sh.fragmentShader.replace('float lumEstilo', translucida + 'float lumEstilo')
       : sh.fragmentShader.replace('#include <opaque_fragment>', translucida + '#include <opaque_fragment>');
   };
-  m.customProgramCacheKey = () => 'vegetacao7-' + (simples ? 's' : 'p') + (CORTE_SECO ? '-seco' : '');
+  m.customProgramCacheKey = () => 'vegetacao9-' + (simples ? 's' : 'p') + (CORTE_SECO ? '-seco' : '');
   return m;
 }
 // ---------------- geração ----------------
