@@ -369,3 +369,34 @@ no Mixamo/Meshy pode substituir os pesos depois sem mudar o resto.
   Medido na ponta da mecha do meio: parada fica no lugar; correndo vai ~30 cm para trás e sobe;
   ao parar balança e volta em ~1 s.
 - Limitação: a colisão é só com o tronco (cápsula); as mechas do lado podem passar pelos braços.
+
+## Cabelo sem atravessar os braços; física e colisões revisadas (28/10/2026)
+
+Medido com testes automáticos no navegador (SwiftShader, sem placa de vídeo; não num celular).
+
+- Cabelo × braços (bonecaNova.js): além do tronco, o corpo virou cápsulas presas aos ossos
+  (cabeça, braços, antebraços, mãos). A colisão é pelo segmento inteiro de cada mecha (não só pelas
+  juntas), com a espessura da mecha (4 cm), 3 iterações, e o lado certo vem da pose de repouso:
+  um soco rápido que pula a mecha de um quadro para o outro faz a mecha voltar por cima do braço,
+  não para dentro dele. Vértices do cabelo dentro de braço/antebraço (amostra de 5.443, média por
+  quadro): andar 133–219 → 0–20, correr 62–110 → 0–47, soco 121–140 → 0, chute 208–254 → 0–4.
+  Parada continua em ~110–200: é o cabelo encostado na manga logo abaixo do ombro (a medida conta
+  até 6 cm do osso; nas imagens não atravessa).
+- Personagem (fisica.js), num robô que anda 224 trajetos retos de 4 s pelo mapa com a própria
+  moverComColisao (53 mil quadros):
+  - Causa da maior penetração: o "grudar no chão" (descendo rampas, um raio puxa a personagem para
+    o chão) não conferia colisão e encaixava a cápsula dentro de pedras e quinas no morro. Agora
+    ela é colada e empurrada para fora; se ainda ficar dentro, não cola. Mais iterações (3 → 6) e,
+    se mesmo assim a cápsula não sair de dentro, o passo é desfeito. Penetração máxima 23,4 cm →
+    0,3 cm; quadros com mais de 5 cm 915 → 0; média 2,4 mm → 0,01 mm. Pisca chão/ar igual (260 →
+    284 em 53 mil quadros).
+  - Degraus: a cápsula parava em qualquer quina acima de ~13 cm (a beira de plataformas, a base
+    das casas). Agora sobe degraus de até 36 cm andando no chão, terminando apoiada em cima (se do
+    outro lado não há espaço, como a base de uma casa colada na parede, não sobe nem fica
+    sobe-desce). 66 subidas no robô, até 17 cm (são os degraus que o mapa tem).
+  - Nenhuma queda através do chão (o teste antigo acusava 28, mas comparava com a altura calculada
+    do terreno, que nas encostas íngremes fica até 1 m acima da malha de colisão).
+- Câmera (jogo.js): cinco raios (meio e quatro cantos) em vez de um, e distância mínima 0,8 →
+  0,25 m. Encostada numa parede com a câmera do lado dela, o obstáculo fica a ~35 cm e a câmera
+  parava dentro da parede; perto assim agora a boneca some (a câmera estaria dentro da cabeça).
+  Em 120 posições/direções aleatórias na vila: câmera dentro de algo 3 → 0.
