@@ -1,0 +1,165 @@
+{
+"vertices": 44792,
+"indices": 149994,
+"ossos": [
+"mixamorigHips",
+"mixamorigSpine",
+"mixamorigSpine1",
+"mixamorigSpine2",
+"mixamorigNeck",
+"mixamorigHead",
+"mixamorigLeftShoulder",
+"mixamorigLeftArm",
+"mixamorigLeftForeArm",
+"mixamorigLeftHand",
+"mixamorigLeftUpLeg",
+"mixamorigLeftLeg",
+"mixamorigLeftFoot",
+"mixamorigLeftToeBase",
+"mixamorigRightShoulder",
+"mixamorigRightArm",
+"mixamorigRightForeArm",
+"mixamorigRightHand",
+"mixamorigRightUpLeg",
+"mixamorigRightLeg",
+"mixamorigRightFoot",
+"mixamorigRightToeBase"
+],
+"juntas": {
+"mixamorigHips": [
+0.4995,
+76.7549,
+-0.6863
+],
+"mixamorigSpine": [
+0.4995,
+85.2311,
+-0.6863
+],
+"mixamorigSpine1": [
+0.4995,
+94.5549,
+-0.6863
+],
+"mixamorigSpine2": [
+0.4995,
+103.8788,
+-1.5339
+],
+"mixamorigNeck": [
+0.4995,
+116.5931,
+-0.3472
+],
+"mixamorigHead": [
+0.4995,
+124.2216,
+0.1613
+],
+"mixamorigHeadTop_End": [
+0.4995,
+168.2979,
+1.0089
+],
+"mixamorigLeftShoulder": [
+4.7376,
+111.5073,
+-2.3815
+],
+"mixamorigLeftArm": [
+17.4519,
+113.2026,
+-2.3815
+],
+"mixamorigLeftForeArm": [
+24.5719,
+95.4026,
+-1.0253
+],
+"mixamorigLeftHand": [
+36.9472,
+77.094,
+2.3651
+],
+"mixamorigLeftHandMiddle1": [
+41.1853,
+69.1263,
+5.247
+],
+"mixamorigLeftUpLeg": [
+8.9757,
+71.6692,
+-0.6863
+],
+"mixamorigLeftLeg": [
+8.9757,
+38.612,
+-2.3815
+],
+"mixamorigLeftFoot": [
+8.9757,
+9.7929,
+-4.0768
+],
+"mixamorigLeftToeBase": [
+8.9757,
+2.1644,
+7.7899
+],
+"mixamorigLeftToe_End": [
+8.9757,
+1.3167,
+15.4185
+],
+"mixamorigRightShoulder": [
+-3.7386,
+111.5073,
+-2.3815
+],
+"mixamorigRightArm": [
+-16.4529,
+113.2026,
+-2.3815
+],
+"mixamorigRightForeArm": [
+-23.5729,
+95.4026,
+-1.0253
+],
+"mixamorigRightHand": [
+-35.9482,
+77.094,
+2.3651
+],
+"mixamorigRightHandMiddle1": [
+-40.1863,
+69.1263,
+5.247
+],
+"mixamorigRightUpLeg": [
+-7.9767,
+71.6692,
+-0.6863
+],
+"mixamorigRightLeg": [
+-7.9767,
+38.612,
+-2.3815
+],
+"mixamorigRightFoot": [
+-7.9767,
+9.7929,
+-4.0768
+],
+"mixamorigRightToeBase": [
+-7.9767,
+2.1644,
+7.7899
+],
+"mixamorigRightToe_End": [
+-7.9767,
+1.3167,
+15.4185
+]
+}
+}

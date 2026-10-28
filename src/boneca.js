@@ -6,6 +6,7 @@ import { corrigirPernas, corrigirTrilhasPernas, removerPicos, fecharCiclo, alinh
 import { carregarTextura } from './texturas.js';
 import { simplificar, simplificarIndices } from './simplificar.js';
 import { ESTILO_LIGADO } from './estilo.js';
+import { querBonecaNova, carregarBonecaNova, vestirBonecaNova, adaptarTrilhas } from './bonecaNova.js';
 
 // animações em ciclo (precisam terminar exatamente onde começam)
 const CICLOS = ['andar', 'correr', 'parada', 'queda', 'guarda'];
@@ -372,7 +373,10 @@ export async function aplicarQualidadeBoneca(boneca, renderer, nivel) {
     boneca.costura.aplicarNivel(nivel, m => contorno(m, nivel.materialSimples ? 0.22 : nivel.nome === 'High' ? 0.3 : 0.24));
     return;
   }
-  const t = nivel.texturaBoneca;
+  // a boneca nova tem as mesmas texturas em boneca_nova_*, sem a de metal (vazia no modelo dela)
+  const t = boneca.nova
+    ? Object.fromEntries(Object.entries(nivel.texturaBoneca).filter(([k]) => k !== 'metal').map(([k, v]) => [k, v.replace('boneca_', 'boneca_nova_')]))
+    : nivel.texturaBoneca;
   const [cor, normal, rugosidade, metal] = await Promise.all([
     textura(renderer, t.cor, true), textura(renderer, t.normal), textura(renderer, t.rugosidade), textura(renderer, t.metal),
   ]);
@@ -399,19 +403,28 @@ export async function criarBoneca(renderer, nivel, aoProgredir) {
   const gerente = new THREE.LoadingManager();
   gerente.setURLModifier(u => (/\.(png|jpe?g|tga)$/i.test(u) ? PIXEL : u)); // texturas vêm à parte, no tamanho do nível gráfico
   const loader = new FBXLoader(gerente);
-  const [fbx, ref, ...hbm] = await Promise.all([
+  const nova = querBonecaNova();
+  const [fbx, ref, dadosNova, ...hbm] = await Promise.all([
     loader.loadAsync(PASTA + 'boneca.fbx', aoProgredir),
     loader.loadAsync(PASTA_HBM + 'HumanF_Model.fbx'),
+    nova ? carregarBonecaNova() : null,
     ...Object.values(EMPRESTADAS).map(a => loader.loadAsync(PASTA_HBM + a)),
   ]);
 
   let malha;
   fbx.traverse(o => { if (o.isSkinnedMesh && !malha) malha = o; });
-  // a malha vem com cada triângulo separado: unir vértices deixa a deformação bem mais leve
-  const geo = mergeVertices(malha.geometry);
-  malha.geometry.dispose();
-  normaisSuaves(geo); // sem costuras de iluminação, nem entre triângulos nem nas bordas das ilhas de UV
-  malha.geometry = geo;
+  // boneca redesenhada (padrão): a malha nova no esqueleto antigo, ajustado ao corpo dela (bonecaNova.js)
+  const ajuste = nova ? vestirBonecaNova(fbx, malha, dadosNova) : null;
+  if (ajuste) {
+    malha = ajuste.malha;
+    for (const c of fbx.animations) adaptarTrilhas(c, ajuste);
+  } else {
+    // a malha vem com cada triângulo separado: unir vértices deixa a deformação bem mais leve
+    const geo = mergeVertices(malha.geometry);
+    malha.geometry.dispose();
+    normaisSuaves(geo); // sem costuras de iluminação, nem entre triângulos nem nas bordas das ilhas de UV
+    malha.geometry = geo;
+  }
   malha.frustumCulled = false; // a caixa da malha não acompanha a animação
   malha.castShadow = false;    // usa sombra-mancha (a sombra do mapa é fixa)
 
@@ -519,7 +532,7 @@ export async function criarBoneca(renderer, nivel, aoProgredir) {
       if (querLeve !== usandoLeve) { usandoLeve = querLeve; g.setIndex(querLeve ? leve : completo); }
     };
   }
-  const boneca = { raiz, corpo, malha: malhaVisivel, linha, costura, mixer, acoes, velocidades, diagnostico, ajustarDetalhe, pernas: [perna('Left'), perna('Right')], rig: { ossos: Object.fromEntries(ossos.map(o => [o.name, o])), lista: ossos, ligacao, papeis: PAPEIS } };
+  const boneca = { nova: !!ajuste, raiz, corpo, malha: malhaVisivel, linha, costura, mixer, acoes, velocidades, diagnostico, ajustarDetalhe, pernas: [perna('Left'), perna('Right')], rig: { ossos: Object.fromEntries(ossos.map(o => [o.name, o])), lista: ossos, ligacao, papeis: PAPEIS } };
   await aplicarQualidadeBoneca(boneca, renderer, nivel);
   return boneca;
 }

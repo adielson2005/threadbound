@@ -331,3 +331,29 @@ não é vazamento, mas num celular com pouca memória vale observar.
    PR na `main`), anotar FPS em cada capítulo e ajustar o perfil `fraco` (resolução, sombra, alcance).
 2. Jogar cada capítulo à mão do começo ao fim e ajustar a dificuldade (luz necessária, guardiões).
 3. Ideias para depois: mais segredos nos Capítulos 2–4, uma cena final animada no Capítulo 4.
+
+## Boneca redesenhada no jogo (28/10/2026)
+
+A Brisa agora usa o modelo novo do Meshy (vestido lilás de bolinhas, laço rosa, cabelo longo). O
+modelo veio sem esqueleto e com 1,13 milhão de triângulos (FBX de 65 MB):
+
+- Malha reduzida para 50 mil triângulos, com orçamento por região (rosto 12 mil, cabeça e cabelo
+  14 mil, corpo 24 mil), e texturas em 4096/2048/1024 (JPG/PNG e KTX2). O mapa de metal era vazio
+  e não é usado (metal 0).
+- Esqueleto: o mesmo Mixamo da boneca antiga, com as juntas levadas às posições do corpo novo
+  (ferramentas/boneca_nova/juntas.json) e cada osso girado o mínimo para apontar ao longo dele
+  (src/bonecaNova.js). Assim todas as animações (andar, correr, combate, pulo, parada, morte)
+  continuam valendo; as trilhas de posição seguem as juntas novas e o balanço do quadril cresce na
+  proporção das pernas, que na boneca nova são mais longas.
+- Pesos dos ossos calculados por região (ferramentas/boneca_nova/pesos.py): cabelo pela cor escura
+  (cabeça em cima, peito embaixo), pernas e braços pela distância aos ossos, tronco, pescoço e
+  cabeça pela altura na coluna, saia no quadril com as coxas puxando a barra; depois suavizados
+  pela malha e iguais nas cópias do mesmo ponto (costuras de UV não abrem).
+- Dados: assets/boneca/boneca_nova.bin (2,1 MB) e .json. O FBX antigo continua sendo carregado
+  pelo esqueleto e pelas animações; a malha dele é descartada.
+- `?boneca=antiga` volta à boneca anterior (comparação).
+
+Limitações: os pesos são automáticos, não pintados à mão. Em movimentos amplos (chute giratório,
+corrida) a saia e as mechas de cabelo da frente podem atravessar as pernas e os braços, e o cabelo
+não balança (é rígido com a cabeça e o peito). Um rig feito no Mixamo/Meshy pode substituir os
+pesos depois sem mudar o resto.
