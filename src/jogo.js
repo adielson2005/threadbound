@@ -1102,7 +1102,7 @@ function animarPersonagem(dt) {
   personagem.cabelo.atualizar(dt);
   // afundou no mar: some sob a espuma; logo depois de atingida, pisca (invulnerável)
   const piscando = (combate?.invulneravel ?? 0) > 0.4 && Math.floor(tempoCena * 14) % 2 === 0;
-  personagem.malha.visible = !(j.noVazio && agua && j.pos.y < agua.nivel - 0.6) && !piscando;
+  personagem.malha.visible = !(j.noVazio && agua && j.pos.y < agua.nivel - 0.6) && !piscando && camera3p.distAtual > DIST_ESCONDE_BONECA;
   if (personagem.linha) personagem.linha.visible = personagem.malha.visible;
   personagem.ajustarDetalhe(camera.position.distanceTo(j.pos));
 }
@@ -1238,6 +1238,12 @@ function posturaViva(dt, v) {
 // ---------- Câmera em terceira pessoa ----------
 const rcCamera = new THREE.Raycaster(); rcCamera.firstHitOnly = true; rcCamera.layers.enableAll();
 const dirCamera = new THREE.Vector3(), alvoCamera = new THREE.Vector3();
+const _ladoCam = new THREE.Vector3(), _cimaCam = new THREE.Vector3(), _origemCam = new THREE.Vector3();
+const CANTOS_CAMERA = [[0, 0], [1, 1], [-1, 1], [1, -1], [-1, -1]];
+// encostada numa parede com a câmera do lado dela, o obstáculo fica a ~35 cm: com o mínimo antigo
+// (0,8 m) a câmera parava dentro da parede. Agora ela chega até 0,25 m e, perto assim, a boneca
+// some (a câmera estaria dentro da cabeça dela)
+const DIST_MIN_CAMERA = 0.25, DIST_ESCONDE_BONECA = 0.55;
 function atualizarCamera(dt) {
   const giro = (algumaTecla(T.camDir) ? 1 : 0) - (algumaTecla(T.camEsq) ? 1 : 0);
   camera3p.yaw -= (giro * 2.2 + analogico.camX * 3) * dt;
@@ -1256,12 +1262,21 @@ function atualizarCamera(dt) {
   const cp = Math.cos(camera3p.pitch);
   dirCamera.set(Math.sin(camera3p.yaw) * cp, Math.sin(camera3p.pitch), Math.cos(camera3p.yaw) * cp);
 
-  // não deixa a câmera entrar nos penhascos: aproxima até o primeiro obstáculo
+  // não deixa a câmera entrar nos penhascos: aproxima até o primeiro obstáculo. Um raio só (o do
+  // meio) deixava a borda da imagem atravessar paredes e encostas ao lado da câmera (meia tela
+  // dentro da rocha): agora são cinco, o do meio e quatro deslocados para os cantos da imagem perto
+  // da câmera, e vale o mais curto
   let dist = camera3p.dist;
   if (mapa) {
-    rcCamera.set(alvo, dirCamera); rcCamera.far = dist + 0.3;
-    const h = rcCamera.intersectObject(mapa.malha)[0];
-    if (h) dist = Math.max(0.8, h.distance - 0.3);
+    const lado = _ladoCam.crossVectors(dirCamera, camera.up).normalize(), cima = _cimaCam.crossVectors(lado, dirCamera).normalize();
+    for (const [sx, sy] of CANTOS_CAMERA) {
+      _origemCam.copy(alvo).addScaledVector(lado, sx * 0.22).addScaledVector(cima, sy * 0.14);
+      rcCamera.set(_origemCam, dirCamera); rcCamera.far = dist + 0.3;
+      const h = rcCamera.intersectObject(mapa.malha)[0];
+      // (um raio de canto que nasce colado numa parede ao lado dela bate logo de cara: esse não
+      // conta, senão a câmera pularia para perto sempre que ela encostasse num muro)
+      if (h && (sx === 0 || h.distance > 0.6)) dist = Math.min(dist, Math.max(DIST_MIN_CAMERA, h.distance - 0.3));
+    }
   }
   camera3p.distAtual = dist < camera3p.distAtual ? dist : THREE.MathUtils.lerp(camera3p.distAtual, dist, Math.min(1, dt * 4));
   camera.position.copy(alvo).addScaledVector(dirCamera, camera3p.distAtual);
