@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { texturaDeCanvas } from './canvasTextura.js';
 import { detectarHardware } from './graficos.js';
 
 // Mar em volta das ilhas (logo abaixo da borda delas).
@@ -413,7 +414,7 @@ export function criarAgua({ cena, mapa, renderer }) {
       const g = c.getContext('2d'), gr = g.createRadialGradient(16, 16, 0, 16, 16, 16);
       gr.addColorStop(0, 'rgba(255,255,255,1)'); gr.addColorStop(1, 'rgba(255,255,255,0)');
       g.fillStyle = gr; g.fillRect(0, 0, 32, 32);
-      return new THREE.CanvasTexture(c);
+      return texturaDeCanvas(c);
     })(),
     transparent: true, depthWrite: false, color: '#e8f8ff',
   });
@@ -430,7 +431,7 @@ export function criarAgua({ cena, mapa, renderer }) {
       gr.addColorStop(0, 'rgba(255,255,255,0.95)'); gr.addColorStop(topo * 0.7, 'rgba(255,255,255,0.8)'); gr.addColorStop(topo, 'rgba(255,255,255,0)');
       g.fillStyle = gr; g.fillRect(x, 0, 1, 64);
     }
-    const t = new THREE.CanvasTexture(c); t.wrapS = THREE.RepeatWrapping;
+    const t = texturaDeCanvas(c); t.wrapS = THREE.RepeatWrapping;
     return t;
   })();
   const matSpray = new THREE.MeshStandardMaterial({

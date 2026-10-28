@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { texturaDeCanvas } from './canvasTextura.js';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { RAIO, ALTURA } from './fisica.js';
 import { linhaLivre } from './colisao.js';
@@ -72,7 +73,7 @@ function texturaRetalho() {
   // stitches
   g.strokeStyle = '#b58cff'; g.lineWidth = 2; g.setLineDash([4, 4]);
   for (let i = 1; i < 4; i++) { g.beginPath(); g.moveTo(i * 32, 0); g.lineTo(i * 32, 128); g.stroke(); g.beginPath(); g.moveTo(0, i * 32); g.lineTo(128, i * 32); g.stroke(); }
-  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace;
+  const t = texturaDeCanvas(c); t.colorSpace = THREE.SRGBColorSpace;
   return t;
 }
 
@@ -89,7 +90,7 @@ function materiais() {
       const g = c.getContext('2d'), gr = g.createRadialGradient(32, 32, 0, 32, 32, 32);
       gr.addColorStop(0, 'rgba(255,240,190,1)'); gr.addColorStop(1, 'rgba(255,240,190,0)');
       g.fillStyle = gr; g.fillRect(0, 0, 64, 64);
-      return new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(c), transparent: true, blending: THREE.AdditiveBlending, depthWrite: false });
+      return new THREE.SpriteMaterial({ map: texturaDeCanvas(c), transparent: true, blending: THREE.AdditiveBlending, depthWrite: false });
     })(),
   };
   MATS.fiosAnimados = materialFios(MATS.fio);

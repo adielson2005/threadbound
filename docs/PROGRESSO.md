@@ -106,6 +106,56 @@ O efeito de pontilhado aparece como uma trama fina nas folhas que estão saindo 
 - Testes: Capítulos 1 e 2 do começo ao fim no perfil celular (25/25), 66 programas de shader todos
   compilados no carregamento, chamadas e triângulos iguais aos do ciclo anterior, console sem erros.
 
+## Correção de bugs gráficos: manchas brancas, exposição e sombras (28/10/2026)
+
+Evidência: captura do jogo num celular (40 fps) com manchas brancas nas copas, grama ao sol quase
+estourada e pontilhado escuro perto da câmera; o pedido citava também uma floresta escura (essa
+segunda captura não chegou, então foi reproduzida aqui: a vista "horizonte", fim de tarde na mata).
+
+Causas confirmadas e correções:
+
+- Manchas brancas: ampliando a captura, o branco fica nos cantos dos cartões de folha (quadrados
+  recortados pela transparência da textura) e não nas folhas: a textura chegou à GPU sem a
+  transparência, com os pixels transparentes brancos. Ela era desenhada num canvas e enviada como
+  canvas, caminho em que alguns celulares perdem o alfa (aqui, no PC, o canvas chega certo, por isso
+  não aparecia nos testes). Agora todo canvas com transparência vai como pixels crus (DataTexture),
+  com o alfa exatamente como desenhado e a cor vazando para os pixels transparentes em volta
+  (src/canvasTextura.js). Vale para o atlas da vegetação e para as outras 11 texturas transparentes
+  feitas em canvas (brilhos, espuma, respingos, sombra redonda dos personagens, reflexos de lente,
+  pólen), que no mesmo aparelho virariam quadrados. Canvas opaco continua como antes.
+- Pontilhado escuro perto da câmera (corrigido na rodada anterior): no celular e no PC fraco a
+  folhagem colada na câmera e a "janela" até a Brisa somem com corte seco.
+- Exposição: o Low e o Medium não tinham tone mapping. Com o sol a 3,1, a grama clara ao sol passava
+  do branco e era cortada. Medido nas 6 vistas de referência (perfil celular), pixels estourados:
+  praia 62,9%, morro 21,2%, vila 7,2%, aérea 5,0%. Agora: tone mapping Neutral (Khronos) sem a curva
+  de pé (o original também afunda os escuros e deixava a mata mais preta: 24% de quase preto no
+  horizonte em vez de 15%), que só comprime acima de ~76% do branco. Resultado: 0% estourado em todas
+  as vistas, com o brilho médio igual (vila 160 → 159, floresta 100 → 105).
+- Mata escura: na sombra das copas sobrava só a luz do céu, ~1/3 da luz cheia. Luz do céu
+  1,55 → 1,8 e sol 3,1 → 3,0 (Low/Medium): quase preto no horizonte (fim de tarde) 15,1% → 12,8%,
+  floresta 0,6% → 0,3%; o que continua escuro ali é o miolo dos pinheiros e troncos contra o sol do fim
+  da tarde, não manchas no chão.
+- Brilho do sol: sem o corte no branco a mancha larga em volta do sol (que era o próprio estouro)
+  diminuiu; o reflexo de lente ficou mais forte no Low/Medium (1,2 → 2,2) para compensar.
+- Sombras: a área do mapa de sombra (calculado uma vez para o arquipélago) agora cobre só as ilhas,
+  do mar ao alto das árvores, projetadas na direção da luz; antes era uma esfera em volta da caixa do
+  mapa inteiro, com a base de rocha embaixo d'água. A faixa de profundidade caiu de 1–710 m para
+  128–476 m (mais precisão, menos risco de acne). O tamanho do pixel de sombra quase não mudou
+  (~22 cm: a largura do arquipélago manda), então a borda da sombra no chão continua com degraus
+  suaves. Melhorar isso pede um mapa maior (4× a memória de vídeo) ou recalcular a sombra em volta
+  da Brisa ao andar (trancos): não feito sem poder medir num celular.
+
+Medido (tempo de quadro por vista, desenho direto na tela, perfil celular, antes → depois): vila
+797 → 808 ms, aérea 604 → 641, floresta 841 → 907, horizonte 1240 → 1262 (+1 a +8%, o ruído aqui é
+de ±5%): o tone mapping custa umas poucas contas por pixel em cada material. No celular de verdade a
+imagem passa pelo FXAA e o tone mapping roda uma vez só, na imagem pronta (OutputPass).
+
+Testes: as 6 vistas de referência e 2 contra o sol comparadas antes/depois (mesma posição, hora e
+perfil); texturas transparentes convertidas comparadas sem o tone mapping (iguais às originais);
+nenhum shader compilado durante o jogo; Capítulo 1 do começo ao fim (2 execuções: uma parou num
+guardião que o teste não acalmou a tempo, a outra concluiu 25/25); console sem erros. Não foi
+possível testar num celular: a perda da transparência no envio de canvas não acontece aqui.
+
 ## Site: three.js dava 404 no GitHub Pages (28/10/2026)
 
 O console do site mostrou a causa real: `vendor/three/build/three.module.js` dava 404. A regra

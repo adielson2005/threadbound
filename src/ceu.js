@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { texturaDeCanvas } from './canvasTextura.js';
 
 // Céu do jogo, com ciclo de dia e noite:
 //  - DIA ensolarado: azul vivo no alto, horizonte claro na cor da neblina, e o lado do sol
@@ -189,7 +190,7 @@ const NUVENS_FRAG = (oitavas) => /* glsl */`
 function texturaBrilho(fn, tam = 128) {
   const c = document.createElement('canvas'); c.width = c.height = tam;
   fn(c.getContext('2d'), tam);
-  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace;
+  const t = texturaDeCanvas(c); t.colorSpace = THREE.SRGBColorSpace;
   return t;
 }
 const halo = texturaBrilho((g, t) => {
@@ -388,7 +389,9 @@ export function criarCeu({ cena, camera, corHorizonte }) {
   function aplicarNivel(nivel) {
     uniCupula.uBrilho.value = nivel.efeitos ? 1.2 : 1;
     uniNuvens.uBrilho.value = nivel.efeitos ? 1.9 : 1;
-    brilhoLente = nivel.efeitos ? 1.6 : 1.2;
+    // (com o tone mapping Neutral do Low/Medium o brilho em volta do sol deixou de ser cortado no
+    // branco, e o corte era o que fazia a mancha larga: o reflexo fica mais forte para compensar)
+    brilhoLente = nivel.efeitos ? 1.6 : 2.2;
     const oitavas = nivel.materialSimples ? 3 : 5;
     if (nuvens.userData.oitavas !== oitavas) { nuvens.material.dispose(); nuvens.material = materialNuvens(oitavas); nuvens.userData.oitavas = oitavas; }
   }

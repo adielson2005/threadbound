@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { texturaDeCanvas } from './canvasTextura.js';
 import { aplicarEstilo, atualizarNevoaSol } from './estilo.js';
 aplicarEstilo(); // estilo de jogo mobile em todos os materiais (antes de qualquer um compilar)
 import { criarBoneca, aplicarQualidadeBoneca } from './boneca.js';
@@ -98,6 +99,11 @@ renderer.domElement.addEventListener('webglcontextrestored', () => location.relo
 const RESOLUCAO = { atual: THREE.MathUtils.clamp(devicePixelRatio, ...nivel.resolucao) };
 renderer.setPixelRatio(RESOLUCAO.atual);
 renderer.setSize(innerWidth, innerHeight);
+// tone mapping Neutral (Khronos) no Low e no Medium: até ~80% do branco as cores ficam como estão;
+// acima disso o brilho é comprimido em vez de cortado. Sem ele, a grama e as folhas ao sol passavam
+// do branco e estouravam (o High usa ACES, altos.js)
+renderer.toneMapping = THREE.NeutralToneMapping;
+renderer.toneMappingExposure = 1.0;
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFShadowMap;
 renderer.shadowMap.autoUpdate = false; // a sombra do mapa é calculada uma vez (o mapa não se mexe)
@@ -158,7 +164,19 @@ function configurarSombra() {
   const centro = caixa.getCenter(new THREE.Vector3()), raio = caixa.getSize(new THREE.Vector3()).length() / 2;
   sol.target.position.copy(centro);
   sol.position.copy(centro).add(new THREE.Vector3(0.55, 0.75, 0.4).normalize().multiplyScalar(raio * 1.5));
-  Object.assign(sol.shadow.camera, { left: -raio, right: raio, top: raio, bottom: -raio, near: 1, far: raio * 3.2 });
+  // A sombra (calculada uma vez para o mapa todo) cobre só o que aparece: as ilhas, do nível do mar
+  // até o alto das árvores, projetadas na direção da luz. Antes era uma esfera em volta da caixa do
+  // mapa inteiro, com a base de rocha embaixo d'água: o mesmo mapa de sombra se espalhava por uma área
+  // bem maior e a borda das sombras saía em degraus grandes no chão
+  const vol = new THREE.Box3();
+  if (mapa.mar?.ilhas) {
+    for (const il of mapa.mar.ilhas) vol.expandByPoint(new THREE.Vector3(il.cx - il.R * 1.3, mapa.mar.nivel - 1, il.cz - il.R * 1.3)).expandByPoint(new THREE.Vector3(il.cx + il.R * 1.3, caixa.max.y + 18, il.cz + il.R * 1.3));
+  } else vol.copy(caixa);
+  const olho = new THREE.OrthographicCamera(); olho.position.copy(sol.position); olho.lookAt(centro); olho.updateMatrixWorld();
+  const paraLuz = olho.matrixWorld.clone().invert(), lim = new THREE.Box3(), q = new THREE.Vector3();
+  for (let k = 0; k < 8; k++) lim.expandByPoint(q.set(k & 1 ? vol.max.x : vol.min.x, k & 2 ? vol.max.y : vol.min.y, k & 4 ? vol.max.z : vol.min.z).applyMatrix4(paraLuz));
+  // (a câmera olha para -z: a profundidade é -z)
+  Object.assign(sol.shadow.camera, { left: lim.min.x, right: lim.max.x, top: lim.max.y, bottom: lim.min.y, near: Math.max(0.5, -lim.max.z - 2), far: -lim.min.z + 2 });
   sol.shadow.camera.updateProjectionMatrix();
   sol.updateMatrixWorld(); sol.target.updateMatrixWorld();
   assarSombra = true;
@@ -170,7 +188,7 @@ const manchaTex = (() => {
   const g = c.getContext('2d'), gr = g.createRadialGradient(32, 32, 0, 32, 32, 32);
   gr.addColorStop(0, 'rgba(0,0,0,0.55)'); gr.addColorStop(0.6, 'rgba(0,0,0,0.3)'); gr.addColorStop(1, 'rgba(0,0,0,0)');
   g.fillStyle = gr; g.fillRect(0, 0, 64, 64);
-  return new THREE.CanvasTexture(c);
+  return texturaDeCanvas(c);
 })();
 const mancha = new THREE.Mesh(new THREE.PlaneGeometry(1.1, 1.1), new THREE.MeshBasicMaterial({ map: manchaTex, transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -4 }));
 mancha.renderOrder = 1;
@@ -250,13 +268,15 @@ async function aplicarNivel(nome) {
 // o céu físico do High ilumina por reflexo (IBL) só os materiais PBR; com material simples
 // (PC sem placa de vídeo) a luz de céu comum precisa voltar a preencher as sombras
 // (um pouco mais forte que no Low: o tone mapping do High escurece)
-const luzCeuBase = () => (!nivel.efeitos ? 1.55 : nivel.materialSimples ? 1.9 : 0.65);
+// (Low/Medium: 1,8 com o sol a 3,0. Antes 1,55 com o sol a 3,1: na sombra das copas sobrava só um terço
+// da luz do sol e a floresta ficava quase preta; agora a sombra fica em ~0,6 da luz cheia)
+const luzCeuBase = () => (!nivel.efeitos ? 1.8 : nivel.materialSimples ? 1.9 : 0.65);
 function aplicarEfeitos() {
   renderer.shadowMap.type = nivel.sombraBasica ? THREE.BasicShadowMap : nivel.sombraSuave ? THREE.PCFSoftShadowMap : THREE.PCFShadowMap;
   // com o céu físico iluminando, a luz de céu simples fica mais fraca (senão tudo lava)
   // dia bem ensolarado: sol forte e céu claro preenchendo as sombras
   luzCeu.intensity = luzCeuBase();
-  sol.intensity = nivel.efeitos ? 4.0 : 3.1;
+  sol.intensity = nivel.efeitos ? 4.0 : 3.0;
   aplicarOrcamento(); // antes de ativar o High: sem placa de vídeo ele nem monta o pós-processamento
   altos?.ativar(!!nivel.efeitos);
   agua?.aplicarNivel(nivel);
@@ -290,7 +310,7 @@ let horaMostrada = '';
 function aplicarHora() {
   const e = ceuJogo.estado;
   sol.color.copy(e.corLuz);
-  sol.intensity = (nivel.efeitos ? 4.0 : 3.1) * e.forcaLuz;
+  sol.intensity = (nivel.efeitos ? 4.0 : 3.0) * e.forcaLuz;
   luzCeu.color.copy(e.corCeuLuz); luzCeu.groundColor.copy(e.corChaoLuz);
   luzCeu.intensity = luzCeuBase() * e.forcaCeuLuz + chuva.relampago * 2.5; // relâmpago clareia tudo por um instante
   cena.fog.color.copy(e.neblina);
@@ -685,7 +705,7 @@ const texPoeira = (() => {
   const g = c.getContext('2d'), gr = g.createRadialGradient(32, 32, 0, 32, 32, 32);
   gr.addColorStop(0, 'rgba(214,200,172,0.9)'); gr.addColorStop(0.5, 'rgba(190,176,150,0.45)'); gr.addColorStop(1, 'rgba(180,170,150,0)');
   g.fillStyle = gr; g.fillRect(0, 0, 64, 64);
-  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace;
+  const t = texturaDeCanvas(c); t.colorSpace = THREE.SRGBColorSpace;
   return t;
 })();
 const poeiras = [];

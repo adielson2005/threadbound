@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { texturaDeCanvas } from './canvasTextura.js';
 import { FBXLoader } from 'three/addons/loaders/FBXLoader.js';
 import { mergeVertices } from 'three/addons/utils/BufferGeometryUtils.js';
 import { MeshBVH, acceleratedRaycast } from 'three-mesh-bvh';
@@ -329,7 +330,7 @@ function texturaGrama() {
   const pr = r.getImageData(0, 0, N, N).data, final = g.getImageData(0, 0, N, N);
   for (let i = 0; i < N * N; i++) final.data[i * 4] = pr[i * 4];
   g.putImageData(final, 0, 0);
-  const tex = new THREE.CanvasTexture(c);
+  const tex = texturaDeCanvas(c);
   tex.wrapS = tex.wrapT = THREE.RepeatWrapping; tex.colorSpace = THREE.NoColorSpace;
   return tex;
 }

@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { texturaDeCanvas } from './canvasTextura.js';
 import { mergeVertices, mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { fundirEstaticos } from './lotes.js';
 
@@ -66,7 +67,7 @@ function texturaTelhas() {
     g.fillStyle = gr; g.beginPath(); g.moveTo(x + 2, y); g.lineTo(x + 30, y); g.lineTo(x + 30, y + 40); g.quadraticCurveTo(x + 16, y + 47, x + 2, y + 40); g.closePath(); g.fill();
     g.fillStyle = 'rgba(0,0,0,' + (0.05 + Math.random() * 0.12) + ')'; g.fillRect(x + 2, y, 28, 40);
   }
-  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.wrapS = t.wrapT = THREE.RepeatWrapping; t.anisotropy = 8;
+  const t = texturaDeCanvas(c); t.colorSpace = THREE.SRGBColorSpace; t.wrapS = t.wrapT = THREE.RepeatWrapping; t.anisotropy = 8;
   t.repeat.set(0.9, 0.9); t.rotation = Math.PI / 2;
   return t;
 }
@@ -109,7 +110,7 @@ function texturaReboco() {
       g.strokeStyle = 'rgba(120,95,70,0.35)'; g.lineWidth = 1.5; g.stroke();
     });
   }
-  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.wrapS = t.wrapT = THREE.RepeatWrapping; t.anisotropy = 8;
+  const t = texturaDeCanvas(c); t.colorSpace = THREE.SRGBColorSpace; t.wrapS = t.wrapT = THREE.RepeatWrapping; t.anisotropy = 8;
   t.repeat.set(0.5, 0.5);
   return t;
 }

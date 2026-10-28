@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { texturaDeCanvas } from './canvasTextura.js';
 import { fundirEstaticos } from './lotes.js';
 
 // First map, "A Oficina Esquecida": story landmarks and props built on top of the terrain
@@ -36,7 +37,7 @@ function texturaFio() {
     g.fillStyle = `rgba(255,${200 + 40 * pulso | 0},${120 + 80 * pulso | 0},${pulso})`;
     g.fillRect(0, y, 16, 1);
   }
-  const t = new THREE.CanvasTexture(c); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.colorSpace = THREE.SRGBColorSpace;
+  const t = texturaDeCanvas(c); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.colorSpace = THREE.SRGBColorSpace;
   return t;
 }
 function texturaBrilho(cor) {
@@ -44,7 +45,7 @@ function texturaBrilho(cor) {
   const g = c.getContext('2d'), gr = g.createRadialGradient(32, 32, 0, 32, 32, 32);
   gr.addColorStop(0, cor); gr.addColorStop(0.35, cor.replace(/[\d.]+\)$/, '0.45)')); gr.addColorStop(1, 'rgba(0,0,0,0)');
   g.fillStyle = gr; g.fillRect(0, 0, 64, 64);
-  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace;
+  const t = texturaDeCanvas(c); t.colorSpace = THREE.SRGBColorSpace;
   return t;
 }
 
