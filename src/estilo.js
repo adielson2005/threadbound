@@ -73,7 +73,20 @@ export function atualizarNevoaSol(e, chuva) {
   NEVOA_BRILHO[3] = (0.18 + 0.35 * e.por) * acima * Math.max(e.dia, e.por) * 0.6;
 }
 
+// Tone mapping do Low e do Medium (jogo.js): o Neutral (Khronos) sem a "curva de pé". O original
+// também puxa os tons escuros para baixo (tira até 0,04 de cada canal) e isso escurecia a floresta na
+// sombra; aqui fica só a compressão dos claros (acima de ~76% do branco), que é o que impede a grama e
+// as folhas ao sol de estourarem. Vale para o desenho direto e para o OutputPass do FXAA (os dois usam
+// este mesmo trecho de shader).
+const PE_NEUTRO = '\tfloat x = min( color.r, min( color.g, color.b ) );\n\tfloat offset = x < 0.08 ? x - 6.25 * x * x : 0.04;\n\tcolor -= offset;\n';
+function ajustarToneMapping() {
+  const C = THREE.ShaderChunk;
+  if (C.tonemapping_pars_fragment.includes(PE_NEUTRO)) C.tonemapping_pars_fragment = C.tonemapping_pars_fragment.replace(PE_NEUTRO, '');
+  else console.warn('estilo: tone mapping Neutral mudou');
+}
+
 export function aplicarEstilo() {
+  ajustarToneMapping();
   if (!ESTILO_LIGADO) return;
   const C = THREE.ShaderChunk;
   C.fog_pars_vertex = C.fog_pars_vertex.replace('varying float vFogDepth;', 'varying float vFogDepth;\n\tvarying vec3 vFogMundo;');

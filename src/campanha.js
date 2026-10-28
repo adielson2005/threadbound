@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { texturaDeCanvas } from './canvasTextura.js';
 import { linhaLivre } from './colisao.js';
 import { DICAS_TOQUE, paraToque } from './historia.js';
 import { FALAS, DICAS, OBJETIVOS, MEMORIAS, AVISOS, BILHETE, CAPITULO, CARTAS, INTERACOES } from './historia.js';
@@ -29,7 +30,7 @@ export function criarCampanha({ cena, mapa, mundo, inimigos, jogador, respawn, c
     const c = document.createElement('canvas'); c.width = c.height = 64;
     const g = c.getContext('2d'), gr = g.createRadialGradient(32, 32, 0, 32, 32, 32);
     gr.addColorStop(0, cor); gr.addColorStop(1, 'rgba(0,0,0,0)'); g.fillStyle = gr; g.fillRect(0, 0, 64, 64);
-    return new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(c), transparent: true, blending: THREE.AdditiveBlending, depthWrite: false });
+    return new THREE.SpriteMaterial({ map: texturaDeCanvas(c), transparent: true, blending: THREE.AdditiveBlending, depthWrite: false });
   };
   const haloFrag = halo('rgba(255,225,140,0.9)'), haloMem = halo('rgba(200,160,255,0.9)');
   const fragmentos = mundo.fragmentos.map((f, i) => {

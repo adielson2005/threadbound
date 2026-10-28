@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { texturaDeCanvas } from './canvasTextura.js';
 import { Sky } from 'three/addons/objects/Sky.js';
 import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
@@ -145,7 +146,7 @@ function texturaNuvem() {
     gr.addColorStop(0, 'rgba(255,255,255,0.55)'); gr.addColorStop(1, 'rgba(255,255,255,0)');
     g.fillStyle = gr; g.fillRect(0, 0, 256, 256);
   }
-  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace;
+  const t = texturaDeCanvas(c); t.colorSpace = THREE.SRGBColorSpace;
   return t;
 }
 function criarNuvens(caixa, nivelMar = null) {
@@ -183,7 +184,7 @@ function criarPolen() {
   const cx = c.getContext('2d'), gr = cx.createRadialGradient(16, 16, 0, 16, 16, 16);
   gr.addColorStop(0, 'rgba(255,250,210,1)'); gr.addColorStop(1, 'rgba(255,250,210,0)');
   cx.fillStyle = gr; cx.fillRect(0, 0, 32, 32);
-  const mat = new THREE.PointsMaterial({ size: 0.09, map: new THREE.CanvasTexture(c), transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, color: '#fff6c8' });
+  const mat = new THREE.PointsMaterial({ size: 0.09, map: texturaDeCanvas(c), transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, color: '#fff6c8' });
   const pts = new THREE.Points(g, mat);
   pts.frustumCulled = false;
   return { pts, base: pos.slice(), fase };

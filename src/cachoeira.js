@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { texturaDeCanvas } from './canvasTextura.js';
 import { carregarTextura } from './texturas.js';
 import { FBXLoader } from 'three/addons/loaders/FBXLoader.js';
 import { mergeVertices } from 'three/addons/utils/BufferGeometryUtils.js';
@@ -273,7 +274,7 @@ export function posicionarCachoeiras({ cena, mapa, terreno, mundo, agua, nevoa, 
       gr.addColorStop(0, 'rgba(255,255,255,1)'); gr.addColorStop(0.25, 'rgba(225,248,250,0.9)'); gr.addColorStop(0.45, 'rgba(90,205,215,0.85)');
       gr.addColorStop(0.9, 'rgba(60,170,190,0.8)'); gr.addColorStop(1, 'rgba(60,170,190,0)');
       g.fillStyle = gr; g.fillRect(0, 0, 128, 128);
-      return new THREE.CanvasTexture(cv);
+      return texturaDeCanvas(cv);
     })();
     textura.colorSpace = THREE.SRGBColorSpace;
     const m = new THREE.Mesh(new THREE.CircleGeometry(raio, 40).rotateX(-Math.PI / 2),

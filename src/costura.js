@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { texturaDeCanvas } from './canvasTextura.js';
 
 // Brisa, a boneca de pano, modelada por código e "costurada" no esqueleto da boneca do Meshy.
 // Mantém o esqueleto e TODAS as animações (andar, correr, golpes, pulo, queda, morte); troca só o
@@ -18,7 +19,7 @@ const suave = (x, a, b) => { const t = Math.min(1, Math.max(0, (x - a) / (b - a)
 function canvas(w, h, desenhar) {
   const c = document.createElement('canvas'); c.width = w; c.height = h;
   desenhar(c.getContext('2d'), w, h);
-  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.wrapS = t.wrapT = THREE.RepeatWrapping; t.anisotropy = 4;
+  const t = texturaDeCanvas(c); t.colorSpace = THREE.SRGBColorSpace; t.wrapS = t.wrapT = THREE.RepeatWrapping; t.anisotropy = 4;
   return t;
 }
 // trama do tecido: fios cruzados bem finos + leve irregularidade

@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { texturaDeCanvas } from './canvasTextura.js';
 import { aplicarPose } from './cambalhota.js';
 import { linhaLivre } from './colisao.js';
 
@@ -81,7 +82,7 @@ export function criarCombate({ cena, mapa, mundo, terreno, inimigos, campanha, j
     const g = c.getContext('2d'), gr = g.createRadialGradient(32, 32, 0, 32, 32, 32);
     gr.addColorStop(0, 'rgba(255,240,190,0.9)'); gr.addColorStop(1, 'rgba(255,240,190,0)');
     g.fillStyle = gr; g.fillRect(0, 0, 64, 64);
-    return new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(c), transparent: true, depthWrite: false, blending: THREE.AdditiveBlending });
+    return new THREE.SpriteMaterial({ map: texturaDeCanvas(c), transparent: true, depthWrite: false, blending: THREE.AdditiveBlending });
   })();
   const objetos = [];
   function colocarNoChao(o, x, z, yRef) {
