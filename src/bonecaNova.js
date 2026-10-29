@@ -146,7 +146,7 @@ export function adaptarTrilhas(clipe, { antigas, novas, razaoQuadril, hips }) {
 // por isso o lado certo é o da pose de repouso: se a mecha ficou do outro lado do braço, ela volta
 // por cima dele em vez de ser empurrada para dentro. No fim cada osso gira para apontar para a
 // partícula seguinte. Roda depois da animação e dos ajustes de postura.
-const _s = new THREE.Vector3(), _t = new THREE.Vector3(), _r = new THREE.Vector3(), _n = new THREE.Vector3(), _nr = new THREE.Vector3();
+const _s = new THREE.Vector3(), _t = new THREE.Vector3(), _r = new THREE.Vector3(), _n = new THREE.Vector3();
 // pontos mais próximos entre os segmentos p1–q1 e p2–q2 (Ericson, Real-Time Collision Detection 5.1.9)
 function maisProximos(p1, q1, p2, q2, c1, c2) {
   const d1 = _s.subVectors(q1, p1), d2 = _t.subVectors(q2, p2), r = _r.subVectors(p1, p2);
@@ -173,7 +173,7 @@ export function criarCabelo(cadeias, ossos, opcoes = {}) {
   // espessura: a mecha é uma cortina em volta da linha dos ossos, não uma linha (m)
   // (mais contido que antes: com 63° de ângulo e pouco amortecimento a mecha dava a volta por cima
   // do ombro e embolava na frente quando ela parava de correr)
-  const { mola = 0.16, amortecimento = 0.8, gravidade = 2.5, anguloMax = 0.7, iteracoes = 3, espessura = 0.04 } = opcoes;
+  const { mola = 0.16, amortecimento = 0.8, gravidade = 2.5, anguloMax = 0.7, iteracoes = 4, espessura = 0.04 } = opcoes;
   const osso = n => ossos[M(n)];
   // cápsulas do corpo: [osso inicial, osso final, raio em m, encurta a ponta (fração)]
   const CAPSULAS = [
@@ -188,7 +188,7 @@ export function criarCabelo(cadeias, ossos, opcoes = {}) {
   const pontos = c => [...c.ossos.slice(1), c.ponta];
   let estado = null;
   const v = new THREE.Vector3(), a = new THREE.Vector3(), b = new THREE.Vector3(), d = new THREE.Vector3();
-  const cH = new THREE.Vector3(), cC = new THREE.Vector3(), rA = new THREE.Vector3(), rH = new THREE.Vector3(), rC = new THREE.Vector3();
+  const cH = new THREE.Vector3(), cC = new THREE.Vector3();
   const qMundo = new THREE.Quaternion(), qPai = new THREE.Quaternion(), giro = new THREE.Quaternion();
 
   function poseRepouso(ci) {
@@ -196,25 +196,20 @@ export function criarCabelo(cadeias, ossos, opcoes = {}) {
     cadeias[ci].ossos[0].updateMatrixWorld(true);
     return pontos(cadeias[ci]).map(p => p.getWorldPosition(new THREE.Vector3()));
   }
-  // empurra a ponta p do segmento anterior–p para fora das cápsulas; alvoA–alvoP é o mesmo
-  // segmento na pose de repouso (diz de que lado de cada cápsula a mecha deve ficar)
-  function colidir(anterior, p, alvoA, alvoP, primeiro) {
+  // empurra a junta p para fora das cápsulas do corpo, pela direção de agora (macio: metade da
+  // profundidade por iteração). Antes era o segmento inteiro da mecha, e o lado vinha da pose de
+  // repouso: com o braço passando rápido na corrida, a direção mais próxima entre dois segmentos
+  // e o lado escolhido pulavam de um quadro para o outro e a mecha tremia (medido com passo fixo:
+  // tremor na corrida 27 → 14 mm/quadro², cabelo dentro do braço 108 → 78 pontos; parada, 0 e 0)
+  function colidir(anterior, p, primeiro) {
     for (const c of CAPSULAS) {
       if (primeiro && c.cabeca) continue; // o primeiro osso nasce dentro da cabeça
-      const s = maisProximos(anterior, p, c.pa, c.pb, cH, cC);
+      maisProximos(p, p, c.pa, c.pb, cH, cC);
       _n.subVectors(cH, cC);
-      let dist = _n.length();
-      if (dist >= c.raio + 0.08) continue; // longe: nem confere o lado
-      // o lado certo: o do mesmo ponto da mecha em repouso
-      rA.lerpVectors(alvoA, alvoP, s);
-      maisProximos(rA, rA, c.pa, c.pb, rH, rC);
-      _nr.subVectors(rH, rC);
-      if (dist > 1e-6) _n.divideScalar(dist); else _n.copy(_nr).normalize();
-      if (_nr.lengthSq() > 1e-10 && _n.dot(_nr) < 0) { _n.negate(); dist = -dist; } // atravessou: volta
-      const prof = c.raio - dist;
+      const dist = _n.length(), prof = c.raio - dist;
       if (prof <= 0) continue;
-      // mexer só a ponta: o ponto da mecha a uma fração s dela anda prof
-      p.addScaledVector(_n, prof / Math.max(s, 0.35));
+      if (dist > 1e-6) _n.divideScalar(dist); else _n.subVectors(p, anterior).normalize();
+      p.addScaledVector(_n, 0.5 * prof);
     }
   }
   return {
@@ -231,9 +226,20 @@ export function criarCabelo(cadeias, ossos, opcoes = {}) {
         const alvo = poseRepouso(ci);
         const raiz = cadeia.ossos[0].getWorldPosition(new THREE.Vector3());
         const comprimentos = alvo.map((p, k) => p.distanceTo(k ? alvo[k - 1] : raiz));
+        // a pose de repouso também sai de dentro do corpo: as mechas do lado, em repouso, encostam
+        // nos braços (a animação os aproxima), e a mola puxava a mecha para dentro deles enquanto
+        // a colisão empurrava para fora — um cabo de guerra que tremia a cada quadro
+        {
+          let ant = raiz;
+          for (let k = 0; k < alvo.length; k++) {
+            colidir(ant, alvo[k], k === 0);
+            alvo[k].sub(ant).setLength(comprimentos[k]).add(ant);
+            ant = alvo[k];
+          }
+        }
         let e = estado[ci];
         // primeira vez, ou um salto grande (teleporte, renascer): começa em repouso
-        if (!e || e.atual[0].distanceTo(alvo[0]) > 1.5) e = estado[ci] = { atual: alvo.map(p => p.clone()), antes: alvo.map(p => p.clone()) };
+        if (!e || e.atual[0].distanceTo(alvo[0]) > 1.5) e = estado[ci] = { atual: alvo.map(p => p.clone()), antes: alvo.map(p => p.clone()), livre: alvo.map(p => p.clone()), mostrado: alvo.map(p => p.clone()) };
         for (let k = 0; k < alvo.length; k++) {
           const p = e.atual[k], ant = e.antes[k];
           v.subVectors(p, ant).multiplyScalar(Math.pow(amortecimento, passo));
@@ -243,6 +249,7 @@ export function criarCabelo(cadeias, ossos, opcoes = {}) {
         }
         // comprimentos, ângulo máximo em relação ao repouso e colisão com o corpo, algumas
         // vezes (empurrar para fora de um braço pode encostar no tronco)
+        for (let k = 0; k < alvo.length; k++) e.livre[k].copy(e.atual[k]);
         for (let it = 0; it < iteracoes; it++) {
           let anterior = raiz, alvoAnterior = raiz;
           for (let k = 0; k < alvo.length; k++) {
@@ -255,22 +262,29 @@ export function criarCabelo(cadeias, ossos, opcoes = {}) {
               if (eixo.lengthSq() > 0) dir.copy(dirRepouso).applyAxisAngle(eixo, anguloMax);
             }
             p.copy(anterior).addScaledVector(dir, comprimentos[k]);
-            colidir(anterior, p, alvoAnterior, alvo[k], k === 0);
+            colidir(anterior, p, k === 0);
             p.sub(anterior).setLength(comprimentos[k]).add(anterior);
             anterior = p; alvoAnterior = alvo[k];
           }
         }
+        // o que as restrições e a colisão mexeram não vira velocidade (choque sem quique): antes, cada
+        // empurrão para fora do braço fazia a mecha quicar e voltar para dentro no quadro seguinte
+        for (let k = 0; k < alvo.length; k++) e.antes[k].add(d.subVectors(e.atual[k], e.livre[k]).multiplyScalar(0.85));
+        // o que aparece na tela segue a simulação com um filtro curto (meio quadro de atraso): tira o
+        // vai-e-volta de um quadro só que sobrava com o braço passando pelo cabelo na corrida
+        const filtro = 1 - Math.pow(0.45, passo);
+        for (let k = 0; k < alvo.length; k++) e.mostrado[k].lerp(e.atual[k], filtro);
         // ossos apontando para as partículas (do primeiro ao último)
         let base = raiz;
         cadeia.ossos.forEach((o, k) => {
           const pontaRepouso = pontos(cadeia)[k].getWorldPosition(a);
           const origem = o.getWorldPosition(b);
-          giro.setFromUnitVectors(d.subVectors(pontaRepouso, origem).normalize(), v.subVectors(e.atual[k], base).normalize());
+          giro.setFromUnitVectors(d.subVectors(pontaRepouso, origem).normalize(), v.subVectors(e.mostrado[k], base).normalize());
           o.getWorldQuaternion(qMundo).premultiply(giro);
           o.parent.getWorldQuaternion(qPai);
           o.quaternion.copy(qPai.invert().multiply(qMundo));
           o.updateMatrixWorld(true);
-          base = e.atual[k];
+          base = e.mostrado[k];
         });
       });
     },

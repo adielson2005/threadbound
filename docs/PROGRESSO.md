@@ -514,3 +514,24 @@ tipo de superfície de onde vem).
 - Cabelo embolando na frente do ombro ao parar de correr: a mecha podia girar até 63° com pouco
   amortecimento. Agora até 40°, amortecimento maior e volta mais firme (bonecaNova.js): ao parar,
   a mecha do lado fica atrás do ombro (antes ia até 13 cm à frente).
+
+## Cabelo tremendo (29/10/2026)
+
+Medido com passo fixo de 1/60 s (animação e física chamadas direto, sem depender do fps do
+navegador): ponta de cada mecha no espaço da Brisa, aceleração média por quadro e % de quadros em
+"zigue-zague" (vai e volta de um quadro para o outro).
+
+- Antes: a mecha do meio estava estável; as do lado (encostadas nos braços) tremiam — parada, a
+  direita em zigue-zague 58% dos quadros (157 mm/quadro²); correndo 12–15% (27 mm).
+- Causas e correções (bonecaNova.js):
+  1. a pose de repouso das mechas do lado fica dentro do braço (a animação aproxima os braços): a
+     mola puxava para dentro e a colisão empurrava para fora a cada quadro. Agora o repouso também
+     é empurrado para fora do corpo antes de servir de alvo;
+  2. o empurrão da colisão virava velocidade (Verlet) e a mecha quicava de volta: agora o que as
+     restrições mexem não vira velocidade (choque sem quique);
+  3. a colisão por segmento, com o lado escolhido pela pose de repouso, mudava de direção de um
+     quadro para o outro com o braço passando rápido: agora é por junta, pela direção de agora, e
+     macia (metade por iteração, 4 iterações); o que aparece na tela tem um filtro curto.
+- Depois: parada 0% (0,25 mm); andando ≤ 5%; correndo 5% (7 mm). Sem colisão nos braços seria
+  5 mm, mas o cabelo atravessaria os braços. Contrapartida: correndo, um pouco mais de cabelo
+  encosta dentro do braço (129 pontos da amostra por quadro, antes 108); parada 0, andando 65.
