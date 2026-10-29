@@ -492,3 +492,25 @@ Reproduzido emulando um Pixel 5 (tela 1080×2340, densidade 2,75, Android) no na
   cobre.
 - Versão no menu de Gráficos (ferramentas/versionar.py): data e código da versão, para conferir se
   o navegador carregou a atualização ou mostra a guardada no cache.
+
+## Cabelo da boneca: pontinhos brancos e o cabelo embolando (29/10/2026)
+
+Investigado no perfil celular, pixel a pixel (cada pontinho rastreado até o ponto da textura e o
+tipo de superfície de onde vem).
+
+- Pontinhos/riscos claros nas mechas e riscos escuros nos braços — três causas somadas:
+  1. As ilhas da textura do Meshy vêm coladas umas nas outras (o cabelo encosta direto no vestido
+     e na pele): reduzida para longe (mipmaps; no celular a boneca ocupa poucos pixels), a cor da
+     vizinha vazava para a borda. Agora as 1.137 ilhas foram reorganizadas com margem de 8 px (em
+     4096) entre elas, só movidas e reduzidas por igual (sem girar: o normal map continua valendo),
+     e a margem recebe a cor da própria ilha (ferramentas/boneca_nova/reempacotar_uv.py e
+     preencher_bordas.py). Custo: a textura ficou com 77% da densidade original.
+  2. A suavização dos pesos espalhava peso dos ossos do cabelo para o vestido e a pele encostados
+     nele (307 vértices claros): ao balançar, o cabelo puxava esses pedaços, que furavam as mechas
+     como lascas lilás. Agora só o cabelo de verdade tem peso dos ossos de cabelo (sobram 26
+     vértices claros, cópias de borda de pontos de cabelo) (pesos.py).
+  3. (Tentativa descartada: repintar os pixels claros das ilhas escuras estragava a franja, que
+     divide ilha com a testa.)
+- Cabelo embolando na frente do ombro ao parar de correr: a mecha podia girar até 63° com pouco
+  amortecimento. Agora até 40°, amortecimento maior e volta mais firme (bonecaNova.js): ao parar,
+  a mecha do lado fica atrás do ombro (antes ia até 13 cm à frente).

@@ -171,7 +171,9 @@ function maisProximos(p1, q1, p2, q2, c1, c2) {
 
 export function criarCabelo(cadeias, ossos, opcoes = {}) {
   // espessura: a mecha é uma cortina em volta da linha dos ossos, não uma linha (m)
-  const { mola = 0.12, amortecimento = 0.86, gravidade = 2.5, anguloMax = 1.1, iteracoes = 3, espessura = 0.04 } = opcoes;
+  // (mais contido que antes: com 63° de ângulo e pouco amortecimento a mecha dava a volta por cima
+  // do ombro e embolava na frente quando ela parava de correr)
+  const { mola = 0.16, amortecimento = 0.8, gravidade = 2.5, anguloMax = 0.7, iteracoes = 3, espessura = 0.04 } = opcoes;
   const osso = n => ossos[M(n)];
   // cápsulas do corpo: [osso inicial, osso final, raio em m, encurta a ponta (fração)]
   const CAPSULAS = [
