@@ -554,3 +554,22 @@ navegador): ponta de cada mecha no espaço da Brisa, aceleração média por qua
   No celular deitado o objetivo foi para a esquerda, longe dos botões de toque.
 - Testado só no navegador (Playwright: 1280×720, Pixel 5 em pé e deitado), sem erros no console; não
   testado num celular de verdade.
+
+## Interface no estilo de jogo (minimalista)
+
+A versão anterior (painéis de vidro com degradês, ícones em cada item, botões dourados com brilho)
+parecia um site gerado. Referência agora: os jogos de aventura que deixam o cenário em primeiro plano
+(Zelda: Breath of the Wild, cuja ideia de interface é "melhor sem UI se não for necessária"; Unravel,
+sem HUD durante as fases).
+
+- Menus são listas de texto sobre a cena, sem caixas; um fio dourado entra na opção escolhida.
+  ↑/↓ passam pelas opções (como num console), o mouse escolhe ao passar por cima e Enter confirma.
+  Dicas de tecla no rodapé do menu inicial ("↑↓ Escolher · Enter Confirmar"; somem no toque).
+- Telas por cima do jogo (configurações, capítulos, créditos, gráficos, pausa) escurecem a cena e
+  ficam alinhadas à esquerda: título grande, linhas finas, "Esc Voltar" no rodapé (no toque, "‹ Voltar").
+  Configurações em uma linha por opção (nome à esquerda, controle à direita), abas em texto.
+- HUD sem caixas: carretéis, fragmentos e relógio com sombra no texto; objetivo com um fio dourado do
+  lado; fala numa faixa escura simples com o nome em dourado; "E" num círculo.
+- Botões de toque: círculos finos quase transparentes, ícones de traço.
+- No menu inicial Enter/Espaço com uma opção marcada aperta essa opção (antes sempre começava o jogo),
+  e as setas deixam de ser bloqueadas quando um controle do menu tem o foco (o volume anda com ← →).

@@ -250,7 +250,6 @@ function atualizarMenu() {
 }
 for (const b of painel.querySelectorAll('[data-nivel]')) b.addEventListener('click', () => aplicarNivel(b.dataset.nivel));
 $('fechar-graficos').addEventListener('click', () => abrirMenu(false));
-$('fechar-graficos-x').addEventListener('click', () => abrirMenu(false));
 $('abrir-graficos-menu').addEventListener('click', () => abrirMenu(true));
 
 async function aplicarNivel(nome) {
@@ -360,12 +359,14 @@ const camera3p = { yaw: 0, pitch: 0.35, dist: CAMERA.distancia, distAtual: CAMER
 const analogico = { x: 0, y: 0, camX: 0, camY: 0 }; // gamepad / toque
 
 addEventListener('keydown', e => {
-  if (e.code.startsWith('Arrow') || e.code === 'Space') e.preventDefault();
+  // num botão ou controle de menu as setas e o Espaço são dele (deslizar o volume, apertar a opção)
+  const emControle = document.activeElement?.matches?.('button, input, select, a');
+  if (!emControle && (e.code.startsWith('Arrow') || e.code === 'Space')) e.preventDefault();
   if (e.code === 'KeyG' && !e.repeat) { abrirMenu(); return; }
   if (menuAberto) { if (e.code === 'Escape') abrirMenu(false); return; }
   // com um painel aberto (capítulos, configurações) as teclas ficam com ele; Esc fecha (abaixo)
   if (paineis.classList.contains('aberto')) return;
-  if (estado === 'menu' && (e.code === 'Enter' || e.code === 'Space')) { reiniciar(); return; }
+  if (estado === 'menu' && (e.code === 'Enter' || e.code === 'Space')) { if (!emControle) reiniciar(); return; }
   if (estado === 'fim') return;
   if (estado === 'gameover') { if ((e.code === 'Enter' || e.code === 'Space') && !e.repeat) tentarDeNovo(); return; }
   if ((e.code === 'KeyE' || (e.code === 'Enter' && campanha?.lendo)) && !e.repeat) { campanha?.interagir(); return; }
@@ -705,10 +706,38 @@ function alternarPausa() {
   if (pausado) document.exitPointerLock?.();
 }
 
+// menus como num console: ↑/↓ passam pelas opções da tela de cima, o mouse escolhe ao passar por
+// cima (uma opção marcada por vez) e Enter confirma
+function telaDeCima() {
+  if (menuAberto) return painel;
+  if (paineis.classList.contains('aberto')) return paineis.querySelector('section.visivel');
+  if (pausado) return telaPausa;
+  if ($('gameover').style.display === 'flex') return $('gameover');
+  if (tela.style.display !== 'none') return tela;
+  return null;
+}
+addEventListener('keydown', e => {
+  if (e.code !== 'ArrowUp' && e.code !== 'ArrowDown') return;
+  const camada = telaDeCima();
+  if (!camada) return;
+  const itens = [...camada.querySelectorAll('button, input, select')].filter(b => b.offsetParent && !b.disabled);
+  if (!itens.length) return;
+  e.preventDefault();
+  const i = itens.indexOf(document.activeElement);
+  const prox = i < 0 ? 0 : (i + (e.code === 'ArrowDown' ? 1 : -1) + itens.length) % itens.length;
+  itens[prox].focus({ preventScroll: false, focusVisible: false });
+}, true);
+addEventListener('pointerover', e => {
+  if (e.pointerType !== 'mouse') return;
+  const b = e.target.closest?.('.item-menu, .botao, .aba, .voltar, [data-nivel]');
+  if (b && b !== document.activeElement) b.focus({ preventScroll: true, focusVisible: false });
+});
+
 // menu de pausa: continuar, configurações, gráficos, controles e voltar ao menu principal
 const telaPausa = $('pausa');
 $('abrir-pausa').addEventListener('click', () => alternarPausa());
 $('pausaContinuar').addEventListener('click', () => alternarPausa());
+$('pausaVoltar').addEventListener('click', () => alternarPausa());
 $('pausaGraficos').addEventListener('click', () => abrirMenu(true));
 $('pausaControles').addEventListener('click', () => abrirPainel('config', 'controles'));
 // o progresso fica salvo nos pontos de controle; recarregar volta à tela inicial com "Continuar"
