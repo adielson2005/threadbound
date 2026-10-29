@@ -35,5 +35,9 @@ html, n = re.subn(r'<script type="module" src="src/jogo\.js(\?v=[0-9a-f]+)?"></s
 if n != 1:
     sys.exit('index.html: <script type="module" src="src/jogo.js"> não encontrado')
 
+# número da versão no menu de Gráficos (para conferir se o navegador pegou a atualização)
+import datetime
+carimbo = datetime.datetime.now().strftime('%d/%m/%Y %H:%M') + ' · ' + versao(jogo)[:6]
+html, n = re.subn(r'<p id="versao"([^>]*)>[^<]*</p>', lambda m: f'<p id="versao"{m.group(1)}>versão {carimbo}</p>', html)
 index.write_text(html, encoding='utf-8')
 print(f'{len(modulos)} módulos versionados')

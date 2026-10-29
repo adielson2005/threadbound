@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { texturaDeCanvas } from './canvasTextura.js';
 import { aplicarPose } from './cambalhota.js';
 import { linhaLivre } from './colisao.js';
+import { brilhoDeDia } from './dia.js';
 import { criarCorpo, lancar, passo as passoObjeto, aplicar, empurrar as empurrarCorpo } from './objetos.js';
 
 // Combate de Brisa: socos (combo de 5), chute, pegar um objeto do chão (galho ou a Agulha de
@@ -388,7 +389,7 @@ export function criarCombate({ cena, mapa, mundo, terreno, inimigos, campanha, j
     empurrador.vel.set(jogador.vel.x, 0, jogador.vel.z);
     const empurra = Math.hypot(jogador.vel.x, jogador.vel.z) > 0.5 && !jogador.morta ? [empurrador] : [];
     for (const o of objetos) if (o.noChao) {
-      o.luz.material.opacity = 0.45 + Math.sin(t * 3 + o.fase) * 0.25;
+      o.luz.material.opacity = (0.45 + Math.sin(t * 3 + o.fase) * 0.25) * brilhoDeDia(0.3);
       if (o.corpo && passoObjeto(o.corpo, mapa.geo.boundsTree, Math.min(dt, 1 / 30), empurra)) { aplicar(o.corpo, o.grupo); posicionarLuz(o); }
     }
     for (const s of [...particulas]) {

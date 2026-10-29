@@ -101,11 +101,14 @@ export function ajustarAoHardware(base, hw = detectarHardware()) {
     n.texturaBoneca = NIVEIS.medium.texturaBoneca;
   }
   if (hw.perfil === 'celular') {
-    // celular: 60 fps primeiro. A tela é pequena e densa, então desenhar na resolução de CSS (1) já
-    // fica nítido o bastante; sem MSAA (o FXAA custa bem menos), sombra pequena (só se o jogador
-    // escolher Medium/High), material simples no Low, menos coisa ao longe e texturas no máximo do
-    // Medium (a memória de vídeo é dividida com o sistema)
-    n.resolucao = [Math.min(n.resolucao[0], 0.75), 1];
+    // celular: 60 fps primeiro, sem MSAA (o FXAA custa bem menos), material simples no Low, menos
+    // coisa ao longe e texturas no máximo do Medium (a memória de vídeo é dividida com o sistema).
+    // Resolução: antes ia de 0,75 a 1 pixel de CSS. Num celular com tela de 1080 pixels de largura
+    // (densidade 2,75) isso é desenhar uns 300–390 pixels e ampliar quase 3×: a boneca e tudo o mais
+    // ficavam borrados e serrilhados. Agora começa em 1,5 e o ajuste automático (fps) leva de 1
+    // até 2 pixels por pixel de CSS, nunca acima da densidade da tela
+    n.resolucao = [1, Math.min(2, Math.max(1, devicePixelRatio))];
+    n.resolucaoInicial = 1.5;
     n.antialias = false;
     n.suavizacao = 'fxaa';
     // a sombra do mapa é calculada uma vez só (fixa): no celular ela custa só a leitura da textura

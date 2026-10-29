@@ -28,6 +28,7 @@ import { criarCampanha } from './campanha.js';
 import { criarCombate, GOLPES } from './combate.js';
 import { INTRO, AVISOS, GAMEOVER, CAPITULO, CHAMADA, FIM, NOMES_CAPITULOS, DESCRICOES_CAPITULOS } from './historia.js';
 import { NIVEIS, nivelInicial, salvarNivel, detectarHardware, ajustarAoHardware } from './graficos.js';
+import { DIA } from './dia.js';
 import { criarDistancia } from './distancia.js';
 import { fundirEstaticos } from './lotes.js';
 
@@ -96,7 +97,7 @@ renderer.domElement.addEventListener('webglcontextlost', ev => {
   if (a) { a.textContent = 'A placa de vídeo reiniciou… recarregando o jogo'; a.style.opacity = 1; }
 });
 renderer.domElement.addEventListener('webglcontextrestored', () => location.reload());
-const RESOLUCAO = { atual: THREE.MathUtils.clamp(devicePixelRatio, ...nivel.resolucao) };
+const RESOLUCAO = { atual: THREE.MathUtils.clamp(Math.min(devicePixelRatio, nivel.resolucaoInicial ?? Infinity), ...nivel.resolucao) };
 renderer.setPixelRatio(RESOLUCAO.atual);
 renderer.setSize(innerWidth, innerHeight);
 // tone mapping Neutral (Khronos) no Low e no Medium: até ~80% do branco as cores ficam como estão;
@@ -190,7 +191,10 @@ const manchaTex = (() => {
   g.fillStyle = gr; g.fillRect(0, 0, 64, 64);
   return texturaDeCanvas(c);
 })();
-const mancha = new THREE.Mesh(new THREE.PlaneGeometry(1.1, 1.1), new THREE.MeshBasicMaterial({ map: manchaTex, transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -4 }));
+// (sem polygonOffset: o deslocamento de profundidade -4 fazia o disco ser desenhado por cima de
+// degraus, pedras e pés de mesa perto dela, um círculo cortando o que ela passava por perto; agora
+// ele fica só 4 cm acima do chão e o que está na frente o cobre normalmente)
+const mancha = new THREE.Mesh(new THREE.PlaneGeometry(1.1, 1.1), new THREE.MeshBasicMaterial({ map: manchaTex, transparent: true, depthWrite: false }));
 mancha.renderOrder = 1;
 cena.add(mancha);
 const rcMancha = new THREE.Raycaster(); rcMancha.firstHitOnly = true; rcMancha.layers.enableAll();
@@ -206,7 +210,7 @@ function atualizarMancha() {
   const h = chaoAbaixo;
   mancha.visible = !!h;
   if (!h) return;
-  mancha.position.copy(h.point).addScaledVector(h.face.normal, 0.03);
+  mancha.position.copy(h.point).addScaledVector(h.face.normal, 0.04);
   mancha.quaternion.setFromUnitVectors(frenteZ, h.face.normal);
   const altura = jogador.pos.y - h.point.y;
   mancha.scale.setScalar(Math.max(0.35, 1 - altura * 0.08));
@@ -320,6 +324,7 @@ function aplicarHora() {
   const fb = cena.userData.neblinaBase;
   if (fb) { cena.fog.near = fb[0] * (1 - 0.45 * chuva.intensidade); cena.fog.far = fb[1] * (1 - 0.4 * chuva.intensidade); }
   if (cena.background?.isColor) cena.background.copy(e.neblina);
+  DIA.valor = e.dia;
   tintaHora.copy(branco).lerp(e.corLuz, 0.45).multiplyScalar(THREE.MathUtils.lerp(0.28, 1, e.dia));
   if (altos?.ativo) {
     cena.environmentIntensity = 0.55 * THREE.MathUtils.lerp(0.12, 1, e.dia);
