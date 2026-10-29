@@ -230,11 +230,24 @@ const hudFps = $('fps');
 const tela = $('tela'), msg = $('msg'), botao = $('botao'), barra = document.querySelector('#barra div');
 const dica = $('dica'), escuro = $('escuro'), painel = $('graficos');
 
+// ---------- Telas que abrem e fecham com animação ----------
+// abrir: a tela aparece (display) e o CSS a anima entrando (opacidade e deslize; nada de desfoque,
+// que pesa no celular). fechar: classe "saindo" esmaece em 0,16 s e só então a tela some. Reabrir
+// no meio do esmaecer cancela o fechamento.
+function sumir(el, esconder, ms = 160) {
+  clearTimeout(el._sumir);
+  if (getComputedStyle(el).display === 'none') { esconder(); return; }
+  el.classList.add('saindo');
+  el._sumir = setTimeout(() => { el.classList.remove('saindo'); esconder(); }, ms);
+}
+function mostrar(el, abrir) { clearTimeout(el._sumir); el.classList.remove('saindo'); abrir(); }
+
 // ---------- Menu de gráficos ----------
 let menuAberto = false;
 function abrirMenu(abrir = !menuAberto) {
   menuAberto = abrir;
-  painel.style.display = abrir ? 'flex' : 'none';
+  if (abrir) mostrar(painel, () => { painel.style.display = 'flex'; });
+  else sumir(painel, () => { painel.style.display = 'none'; });
   if (abrir) document.exitPointerLock?.();
   atualizarMenu();
 }
@@ -576,7 +589,7 @@ function reiniciar() {
   const primeiraVez = estado === 'menu';
   estado = 'jogando';
   pausado = false;
-  tela.style.display = 'none';
+  sumir(tela, () => { tela.style.display = 'none'; }, 320);
   // tira o foco do botão: senão o Espaço (pulo) "clicaria" nele de novo
   botao.blur();
   teclas.clear();
@@ -594,7 +607,7 @@ function continuarJogo() {
   const p = new THREE.Vector3().fromArray(s.checkpoint ?? terreno.nascimento.toArray());
   respawn(p); jogador.seguro.copy(p);
   estado = 'jogando'; pausado = false;
-  tela.style.display = 'none';
+  sumir(tela, () => { tela.style.display = 'none'; }, 320);
   $('continuarJogo').blur(); teclas.clear();
   campanha.iniciar({ continuando: true });
 }
@@ -635,7 +648,7 @@ montarCapitulos();
 // ---------- Painéis do menu: capítulos, configurações, créditos ----------
 const paineis = $('paineis');
 function abrirPainel(nome, aba = 'geral') {
-  paineis.classList.add('aberto');
+  mostrar(paineis, () => paineis.classList.add('aberto'));
   mostrarAba(aba);
   for (const s of paineis.querySelectorAll('section')) s.classList.toggle('visivel', s.dataset.painel === nome);
   // foco para o teclado/controle, sem rolar o painel até o botão (em tela baixa o título sumia)
@@ -643,7 +656,7 @@ function abrirPainel(nome, aba = 'geral') {
   aberto?.querySelector('.corpo button, .corpo input')?.focus({ preventScroll: true, focusVisible: false });
   if (aberto) aberto.scrollTop = 0;
 }
-function fecharPaineis() { paineis.classList.remove('aberto'); }
+function fecharPaineis() { sumir(paineis, () => paineis.classList.remove('aberto')); }
 for (const b of document.querySelectorAll('[data-painel]')) if (b.tagName === 'BUTTON') b.addEventListener('click', () => abrirPainel(b.dataset.painel));
 for (const b of document.querySelectorAll('.fechar-painel')) b.addEventListener('click', fecharPaineis);
 paineis.addEventListener('click', e => { if (e.target === paineis) fecharPaineis(); });
@@ -671,13 +684,13 @@ $('cfgSens').addEventListener('input', e => { config.sensibilidade = +e.target.v
 $('cfgTexto').addEventListener('change', e => { config.texto = +e.target.value; aplicarConfig(); });
 $('cfgTremor').addEventListener('change', e => { config.tremor = e.target.checked; aplicarConfig(); });
 aplicarConfig();
-$('continuar').addEventListener('click', () => { tela.style.display = 'none'; estado = 'jogando'; $('continuar').style.display = 'none'; $('continuar').blur(); teclas.clear(); });
+$('continuar').addEventListener('click', () => { sumir(tela, () => { tela.style.display = 'none'; }, 320); estado = 'jogando'; $('continuar').style.display = 'none'; $('continuar').blur(); teclas.clear(); });
 
 function terminarCapitulo(r) {
   campanhaTerminada = true;
   estado = 'fim';
   document.exitPointerLock?.();
-  tela.style.display = 'flex';
+  mostrar(tela, () => { tela.style.display = 'flex'; });
   // "Capítulo 1 — A Oficina Esquecida": o número vai no selo, o nome no título
   const [numero, nome] = r.capitulo.split(' — ');
   tela.querySelector('.selo').textContent = `${numero} concluído`;
@@ -699,7 +712,8 @@ function terminarCapitulo(r) {
 function alternarPausa() {
   if (estado !== 'jogando') return;
   pausado = !pausado;
-  telaPausa.style.display = pausado ? 'flex' : 'none';
+  if (pausado) mostrar(telaPausa, () => { telaPausa.style.display = 'flex'; });
+  else sumir(telaPausa, () => { telaPausa.style.display = 'none'; });
   if (pausado) $('pausaContinuar').focus({ preventScroll: true, focusVisible: false });
   else { fecharPaineis(); abrirMenu(false); }
   pedidoPulo = false;

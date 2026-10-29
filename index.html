@@ -152,6 +152,8 @@
   /* enquanto uma tela estiver aberta, o HUD da partida some */
   body:has(#tela:not([style*="display: none"])) :is(#hud, #objetivo, #dica, #dicaTutorial, #fala, #interagir, #golpe, .toque) { opacity: 0 !important; visibility: hidden; }
 
+  /* na pausa e nas telas por cima do jogo, o HUD sai de baixo das opções */
+  body:has(#pausa[style*="flex"], #paineis.aberto, #graficos[style*="flex"]) :is(#hud, #objetivo, #dica, #dicaTutorial, #fala, #interagir, #golpe, .toque) { opacity: 0 !important; visibility: hidden; }
   /* ---------- telas por cima do jogo (painéis, gráficos, pausa): o jogo escurece atrás, o conteúdo
      fica solto, alinhado à esquerda, com título, linhas finas e "Esc Voltar" no rodapé ---------- */
   .fundo-modal { position: fixed; inset: 0; display: none; align-items: stretch; justify-content: flex-start; z-index: 10;
@@ -306,9 +308,51 @@
     .aba { padding: 8px 0 7px; } .opcao { min-height: 40px; }
     #pausa h2 { font-size: 28px; } #pausa .item-menu { min-height: 34px; }
   }
+  /* ---------- animações: só opacidade e deslocamento (a placa de vídeo faz sem redesenhar a página),
+     curtas (0,16 a 0,4 s) e em cascata nas listas ---------- */
+  @keyframes aparecer { from { opacity: 0; } }
+  @keyframes deslizar { from { opacity: 0; transform: translateX(-16px); } }
+  @keyframes subir { from { opacity: 0; transform: translateY(8px); } }
+  @keyframes some { to { opacity: 0; } }
+  .fundo-modal { animation: aparecer .22s ease-out; }
+  .saindo { animation: some .16s ease-in forwards !important; pointer-events: none; }
+  #tela.saindo { animation-duration: .32s !important; }
+  .janela header, .janela .abas, .janela .corpo, .janela footer { animation: deslizar .34s cubic-bezier(.2, .8, .2, 1) backwards; }
+  .janela .abas { animation-delay: .04s; } .janela .corpo { animation-delay: .07s; } .janela footer { animation-delay: .12s; }
+  #pausa .corpo > * { animation: deslizar .32s cubic-bezier(.2, .8, .2, 1) backwards; }
+  #pausa .corpo > :nth-child(2) { animation-delay: .04s; } #pausa .corpo > :nth-child(3) { animation-delay: .08s; }
+  #pausa .corpo > :nth-child(4) { animation-delay: .12s; } #pausa .corpo > :nth-child(5) { animation-delay: .16s; }
+  .pagina.ativa { animation: subir .24s ease-out; }
+  .capitulos li { animation: subir .3s ease-out backwards; }
+  .capitulos li:nth-child(2) { animation-delay: .05s; } .capitulos li:nth-child(3) { animation-delay: .1s; } .capitulos li:nth-child(4) { animation-delay: .15s; }
+  #graficos button[data-nivel] { animation: subir .3s ease-out backwards; }
+  #graficos button[data-nivel]:nth-child(2) { animation-delay: .05s; } #graficos button[data-nivel]:nth-child(3) { animation-delay: .1s; }
+  #graficos button[data-nivel]::before { transition: background .2s, border-color .2s, box-shadow .2s; }
+  .aba::after { animation: crescer .22s ease-out; transform-origin: left; }
+  @keyframes crescer { from { transform: scaleX(0); } }
+  /* menu inicial: título e opções entram em cascata; os botões de jogar entram quando o carregamento acaba */
+  .cabecalho { animation: deslizar .6s cubic-bezier(.2, .8, .2, 1) backwards; }
+  .acoes .botao { animation: deslizar .45s cubic-bezier(.2, .8, .2, 1) backwards; }
+  .menu-links > * { animation: deslizar .45s cubic-bezier(.2, .8, .2, 1) backwards; }
+  .menu-links > :nth-child(1) { animation-delay: .1s; } .menu-links > :nth-child(2) { animation-delay: .15s; }
+  .menu-links > :nth-child(3) { animation-delay: .2s; } .menu-links > :nth-child(4) { animation-delay: .25s; }
+  .prompts { animation: aparecer .6s .4s backwards; }
+  #barra div { transition: width .35s ease-out; }
+  #msg { animation: aparecer .3s ease-out; }
+  /* HUD: objetivo novo entra deslizando; a fala sobe um pouco ao aparecer */
+  #objetivo b, #objetivo span, #objetivo small { animation: subir .4s ease-out backwards; }
+  #objetivo span { animation-delay: .08s; }
+  #hud .esq, #hud .dir { animation: aparecer .5s ease-out backwards; }
+  #fala span { display: block; animation: aparecer .25s ease-out; }
+  #gameover .botoes > * { animation: subir .4s 1s ease-out backwards; }
+  #gameover .botoes > :nth-child(2) { animation-delay: 1.08s; }
+  /* toque: o botão afunda ao apertar */
+  .toque { transition: transform .08s, background .12s; }
+  .toque:active { transform: scale(.92); }
+  @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; animation-delay: 0s !important; transition-duration: .01ms !important; } }
 </style>
 <!-- bibliotecas na própria pasta (vendor/): three 0.165.0, three-mesh-bvh 0.7.6, meshoptimizer 0.21.0. O jogo roda sem internet (e dentro do APK) -->
-<script type="importmap">{"imports":{"three":"./vendor/three/build/three.module.js","three/addons/":"./vendor/three/examples/jsm/","three-mesh-bvh":"./vendor/three-mesh-bvh/build/index.module.js","meshoptimizer/simplifier":"./vendor/meshoptimizer/meshopt_simplifier.module.js","./src/agua.js":"./src/agua.js?v=e2a2da6b9b","./src/altos.js":"./src/altos.js?v=ac761e4342","./src/boneca.js":"./src/boneca.js?v=87f39b0066","./src/bonecaNova.js":"./src/bonecaNova.js?v=6925cd35b7","./src/cachoeira.js":"./src/cachoeira.js?v=f700bc46b9","./src/cambalhota.js":"./src/cambalhota.js?v=aff8debf26","./src/campanha.js":"./src/campanha.js?v=22d7123551","./src/canvasTextura.js":"./src/canvasTextura.js?v=8ddd89e18a","./src/capitulo.js":"./src/capitulo.js?v=5631f04f86","./src/casas.js":"./src/casas.js?v=bf5f443903","./src/ceu.js":"./src/ceu.js?v=8ffb931fd1","./src/chuva.js":"./src/chuva.js?v=6cf0295986","./src/colisao.js":"./src/colisao.js?v=ac6260ec0b","./src/combate.js":"./src/combate.js?v=acafc23595","./src/dia.js":"./src/dia.js?v=e05b6cc395","./src/distancia.js":"./src/distancia.js?v=9a5844420e","./src/estilo.js":"./src/estilo.js?v=0c453af42f","./src/fisica.js":"./src/fisica.js?v=7949a2cbcf","./src/graficos.js":"./src/graficos.js?v=ad366c9334","./src/historia.js":"./src/historia.js?v=21af753ccb","./src/ilha.js":"./src/ilha.js?v=b6d5e4d838","./src/inimigos.js":"./src/inimigos.js?v=95087f1816","./src/jogo.js":"./src/jogo.js?v=3cf8d763a6","./src/lotes.js":"./src/lotes.js?v=f3831174bf","./src/mapa.js":"./src/mapa.js?v=6640d26460","./src/mundo.js":"./src/mundo.js?v=08560bc849","./src/nevoa.js":"./src/nevoa.js?v=9bccad8ac5","./src/objetos.js":"./src/objetos.js?v=243e276518","./src/oclusao.js":"./src/oclusao.js?v=a1ec74f05f","./src/particulas.js":"./src/particulas.js?v=efad11a94e","./src/pes.js":"./src/pes.js?v=9f8ed5d180","./src/praia.js":"./src/praia.js?v=700cd3c717","./src/praiaForma.js":"./src/praiaForma.js?v=79c406a618","./src/reparos.js":"./src/reparos.js?v=e805cead1a","./src/salvar.js":"./src/salvar.js?v=0d75e7e284","./src/simplificar.js":"./src/simplificar.js?v=a439e6c6ca","./src/suavizar.js":"./src/suavizar.js?v=042d8dcf4b","./src/terreno.js":"./src/terreno.js?v=30a71b0a42","./src/texturas.js":"./src/texturas.js?v=5b74c7049c"}}</script>
+<script type="importmap">{"imports":{"three":"./vendor/three/build/three.module.js","three/addons/":"./vendor/three/examples/jsm/","three-mesh-bvh":"./vendor/three-mesh-bvh/build/index.module.js","meshoptimizer/simplifier":"./vendor/meshoptimizer/meshopt_simplifier.module.js","./src/agua.js":"./src/agua.js?v=e2a2da6b9b","./src/altos.js":"./src/altos.js?v=ac761e4342","./src/boneca.js":"./src/boneca.js?v=87f39b0066","./src/bonecaNova.js":"./src/bonecaNova.js?v=6925cd35b7","./src/cachoeira.js":"./src/cachoeira.js?v=f700bc46b9","./src/cambalhota.js":"./src/cambalhota.js?v=aff8debf26","./src/campanha.js":"./src/campanha.js?v=22d7123551","./src/canvasTextura.js":"./src/canvasTextura.js?v=8ddd89e18a","./src/capitulo.js":"./src/capitulo.js?v=5631f04f86","./src/casas.js":"./src/casas.js?v=bf5f443903","./src/ceu.js":"./src/ceu.js?v=8ffb931fd1","./src/chuva.js":"./src/chuva.js?v=6cf0295986","./src/colisao.js":"./src/colisao.js?v=ac6260ec0b","./src/combate.js":"./src/combate.js?v=acafc23595","./src/dia.js":"./src/dia.js?v=e05b6cc395","./src/distancia.js":"./src/distancia.js?v=9a5844420e","./src/estilo.js":"./src/estilo.js?v=0c453af42f","./src/fisica.js":"./src/fisica.js?v=7949a2cbcf","./src/graficos.js":"./src/graficos.js?v=ad366c9334","./src/historia.js":"./src/historia.js?v=21af753ccb","./src/ilha.js":"./src/ilha.js?v=b6d5e4d838","./src/inimigos.js":"./src/inimigos.js?v=95087f1816","./src/jogo.js":"./src/jogo.js?v=3acb0f377e","./src/lotes.js":"./src/lotes.js?v=f3831174bf","./src/mapa.js":"./src/mapa.js?v=6640d26460","./src/mundo.js":"./src/mundo.js?v=08560bc849","./src/nevoa.js":"./src/nevoa.js?v=9bccad8ac5","./src/objetos.js":"./src/objetos.js?v=243e276518","./src/oclusao.js":"./src/oclusao.js?v=a1ec74f05f","./src/particulas.js":"./src/particulas.js?v=efad11a94e","./src/pes.js":"./src/pes.js?v=9f8ed5d180","./src/praia.js":"./src/praia.js?v=700cd3c717","./src/praiaForma.js":"./src/praiaForma.js?v=79c406a618","./src/reparos.js":"./src/reparos.js?v=e805cead1a","./src/salvar.js":"./src/salvar.js?v=0d75e7e284","./src/simplificar.js":"./src/simplificar.js?v=a439e6c6ca","./src/suavizar.js":"./src/suavizar.js?v=042d8dcf4b","./src/terreno.js":"./src/terreno.js?v=30a71b0a42","./src/texturas.js":"./src/texturas.js?v=5b74c7049c"}}</script>
 </head>
 <body>
 <div id="hud">
@@ -437,7 +481,7 @@
       </div>
       <p id="perfil-pc"></p>
       <div id="aviso-aa">O antisserrilhado deste nível só muda ao abrir o jogo de novo.</div>
-      <p id="versao">versão 29/10/2026 04:07 · 3cf8d7</p>
+      <p id="versao">versão 29/10/2026 04:33 · 3acb0f</p>
     </div>
     <footer><button id="fechar-graficos" class="voltar"><kbd>Esc</kbd>Voltar</button></footer>
   </div>
@@ -488,6 +532,6 @@
     msg.appendChild(b);
   }, true);
 </script>
-<script type="module" src="src/jogo.js?v=3cf8d763a6"></script>
+<script type="module" src="src/jogo.js?v=3acb0f377e"></script>
 </body>
 </html>

@@ -573,3 +573,17 @@ sem HUD durante as fases).
 - Botões de toque: círculos finos quase transparentes, ícones de traço.
 - No menu inicial Enter/Espaço com uma opção marcada aperta essa opção (antes sempre começava o jogo),
   e as setas deixam de ser bloqueadas quando um controle do menu tem o foco (o volume anda com ← →).
+
+### Animações da interface
+
+- Telas (configurações, capítulos, créditos, gráficos, pausa) entram com o fundo esmaecendo e o
+  conteúdo deslizando em cascata (título, abas, opções, rodapé); fecham esmaecendo em 0,16 s antes de
+  sumir (`sumir`/`mostrar` em `jogo.js`; reabrir no meio do fechamento cancela o fechamento). O menu
+  inicial some em 0,32 s ao começar o jogo.
+- Menu inicial, listas de capítulos e níveis de gráficos entram em cascata; aba nova sobe; o fio da
+  aba escolhida cresce; objetivo novo desliza; botões de toque afundam ao apertar.
+- Só opacidade e deslocamento (a placa de vídeo compõe sem redesenhar a página), nada de desfoque;
+  durações de 0,16 a 0,6 s. Com "reduzir movimento" ligado no sistema, tudo fica instantâneo.
+- Na pausa e com uma tela aberta, o HUD (fala, dicas, objetivo, botões de toque) sai de baixo das opções.
+- Testado (Pixel 5 simulado): cada tela some de fato depois do esmaecer, reabrir no meio a mantém
+  aberta, Esc fecha; sem erros no console.
