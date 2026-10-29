@@ -268,9 +268,10 @@ async function aplicarNivel(nome) {
 // o céu físico do High ilumina por reflexo (IBL) só os materiais PBR; com material simples
 // (PC sem placa de vídeo) a luz de céu comum precisa voltar a preencher as sombras
 // (um pouco mais forte que no Low: o tone mapping do High escurece)
-// (Low/Medium: 1,8 com o sol a 3,0. Antes 1,55 com o sol a 3,1: na sombra das copas sobrava só um terço
+// (Low/Medium: 2,1 desde que a luz em faixas saiu (estilo.js), que clareava os meios-tons; antes 1,8
+// com o sol a 3,0. Antes 1,55 com o sol a 3,1: na sombra das copas sobrava só um terço
 // da luz do sol e a floresta ficava quase preta; agora a sombra fica em ~0,6 da luz cheia)
-const luzCeuBase = () => (!nivel.efeitos ? 1.8 : nivel.materialSimples ? 1.9 : 0.65);
+const luzCeuBase = () => (!nivel.efeitos ? 2.1 : nivel.materialSimples ? 2.2 : 0.65);
 function aplicarEfeitos() {
   renderer.shadowMap.type = nivel.sombraBasica ? THREE.BasicShadowMap : nivel.sombraSuave ? THREE.PCFSoftShadowMap : THREE.PCFShadowMap;
   // com o céu físico iluminando, a luz de céu simples fica mais fraca (senão tudo lava)
@@ -1103,7 +1104,6 @@ function animarPersonagem(dt) {
   // afundou no mar: some sob a espuma; logo depois de atingida, pisca (invulnerável)
   const piscando = (combate?.invulneravel ?? 0) > 0.4 && Math.floor(tempoCena * 14) % 2 === 0;
   personagem.malha.visible = !(j.noVazio && agua && j.pos.y < agua.nivel - 0.6) && !piscando && camera3p.distAtual > DIST_ESCONDE_BONECA;
-  if (personagem.linha) personagem.linha.visible = personagem.malha.visible;
   personagem.ajustarDetalhe(camera.position.distanceTo(j.pos));
 }
 let pesoPes = 0, pesoPlanar = 0;
@@ -1415,7 +1415,6 @@ renderer.setAnimationLoop(() => {
   aplicarHora();
   altos?.atualizar(dt, t, jogador.pos);
   // a janela na folhagem acompanha o meio do corpo da Brisa
-  if (mapa?.focoVegetacao) mapa.focoVegetacao.copy(jogador.pos).y += 0.8;
   particulas.atualizar(t, jogador.pos, ceuJogo.estado.noite, chuva.intensidade, !!altos?.ativo, renderer.getDrawingBufferSize(_tamTela).y);
   if (assarSombra) {
     assarSombra = false;

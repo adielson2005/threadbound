@@ -1,16 +1,16 @@
 import * as THREE from 'three';
 
-// Estilo visual de jogo mobile, aplicado a todos os materiais do three.js de uma vez (trechos de
-// shader compartilhados, antes de qualquer material compilar):
-//  - luz em faixas (cel shading suave): a luz do sol vira duas faixas com borda macia, em vez de
-//    um degradê contínuo; parte do degradê fica, para o volume não sumir
-//  - sombra fria e luz quente: o lado escuro puxa para o azul-lilás, o lado aceso para o dourado
-//  - brilho de borda (rim): a silhueta de morros, árvores e personagens acende contra o céu
-//  - cores mais vivas: saturação um pouco acima do natural
+// Acabamento visual, aplicado a todos os materiais do three.js de uma vez (trechos de shader
+// compartilhados, antes de qualquer material compilar):
+//  - névoa por altura e o dourado do lado do sol (atmosfera)
+//  - sombra levemente fria e luz levemente quente, e um pouco mais de cor no que está apagado
+//  - (só com ?estilo=desenho) luz em faixas de desenho animado e brilho de borda, o visual antigo
 // Custa poucas operações por pixel, sem passada extra de pós-processamento, então roda igual no
 // celular. ?estilo=0 desliga (para comparar).
 
 export const ESTILO_LIGADO = new URLSearchParams(location.search).get('estilo') !== '0';
+// o visual de desenho animado (luz em faixas e borda acesa) só com ?estilo=desenho
+const DESENHO = new URLSearchParams(location.search).get('estilo') === 'desenho';
 
 const LINHA_LUZ = 'float dotNL = saturate( dot( geometryNormal, directLight.direction ) );';
 const FAIXAS = `${LINHA_LUZ}
@@ -24,9 +24,10 @@ const GRADE = `
 		float lumEstilo = dot( outgoingLight, vec3( 0.299, 0.587, 0.114 ) );
 		float maxC = max( outgoingLight.r, max( outgoingLight.g, outgoingLight.b ) ), minC = min( outgoingLight.r, min( outgoingLight.g, outgoingLight.b ) );
 		float satEstilo = ( maxC - minC ) / max( maxC, 1e-4 );
-		outgoingLight = mix( vec3( lumEstilo ), outgoingLight, 1.0 + 0.5 * ( 1.0 - smoothstep( 0.2, 0.75, satEstilo ) ) );
+		// (leve: com 0,5 e o quente/frio forte as cores ficavam de desenho, não de lugar de verdade)
+		outgoingLight = mix( vec3( lumEstilo ), outgoingLight, 1.0 + 0.15 * ( 1.0 - smoothstep( 0.2, 0.75, satEstilo ) ) );
 		// (o frio entra só na sombra funda e mais fraco: forte, ele deixava reboco e pedra cinza azulados)
-		outgoingLight *= mix( vec3( 0.9, 0.95, 1.08 ), vec3( 1.08, 1.01, 0.9 ), smoothstep( 0.02, 0.35, lumEstilo ) );
+		outgoingLight *= mix( vec3( 0.97, 0.985, 1.03 ), vec3( 1.03, 1.0, 0.97 ), smoothstep( 0.02, 0.35, lumEstilo ) );
 		#if defined( ESTILO_RIM )
 			// brilho de borda: mais forte onde já há luz (não acende o lado de dentro da sombra)
 			float bordaEstilo = 1.0 - saturate( dot( normal, normalize( vViewPosition ) ) );
@@ -98,11 +99,12 @@ export function aplicarEstilo() {
   for (const s of Object.values(THREE.ShaderLib)) if (s.uniforms.fogColor) Object.assign(s.uniforms, extra);
   C.fog_vertex = NEVOA_VERT;
   C.fog_fragment = NEVOA_FRAG;
-  for (const nome of ['lights_lambert_pars_fragment', 'lights_physical_pars_fragment']) {
+  // (a luz em faixas de desenho animado e o brilho de borda saíram: a luz do sol cai de forma
+  // contínua, como no mundo real, e as bordas não acendem em branco. FAIXAS fica guardado para
+  // ?estilo=desenho, para comparar)
+  if (DESENHO) for (const nome of ['lights_lambert_pars_fragment', 'lights_physical_pars_fragment']) {
     if (!C[nome].includes(LINHA_LUZ)) { console.warn('estilo: trecho mudou', nome); continue; }
-    // a faixa vale para a luz direta (sol/lua); a luz do céu continua suave
     C[nome] = C[nome].replace(LINHA_LUZ, FAIXAS);
-    // rim só onde existem normal e vViewPosition (Lambert e PBR)
     C[nome] = '#define ESTILO_RIM\n' + C[nome];
   }
   // a grade de cor entra no fim de cada material padrão (antes da neblina)

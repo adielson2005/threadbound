@@ -630,7 +630,7 @@ const MODELOS = {
 
 // ---------------- material da vegetação (atlas + vento no shader) ----------------
 const ESPEC_VEG = 0.25; // teto do brilho especular das folhas (luz linear, por canal)
-function materialVegetacao(simples, tempo, foco) {
+function materialVegetacao(simples, tempo) {
   const comum = { vertexColors: true, map: atlasVegetacao(), alphaTest: 0.42, side: THREE.DoubleSide };
   const m = simples
     ? new THREE.MeshLambertMaterial(comum)
@@ -638,7 +638,6 @@ function materialVegetacao(simples, tempo, foco) {
   if (CORTE_SECO) m.defines = { CORTE_SECO: '' };
   m.onBeforeCompile = sh => {
     sh.uniforms.uTempo = tempo;
-    sh.uniforms.uFoco = foco;
     sh.vertexShader = 'uniform float uTempo;\nattribute float balanco;\n' + sh.vertexShader.replace('#include <begin_vertex>', `#include <begin_vertex>
       vec3 raizV = (modelMatrix * vec4(position, 1.0)).xyz;
       float vento = sin(uTempo * 1.3 + raizV.x * 0.21 + raizV.z * 0.17) * 0.6 + sin(uTempo * 2.9 + raizV.x * 0.9) * 0.25;
@@ -647,11 +646,11 @@ function materialVegetacao(simples, tempo, foco) {
       .replace('#include <project_vertex>', '#include <project_vertex>\n      vDistCamVeg = -mvPosition.z;\n      vMundoVeg = (modelMatrix * vec4(transformed, 1.0)).xyz;')
       .replace('#include <common>', '#include <common>\nvarying float vDistCamVeg;\nvarying vec3 vMundoVeg;');
     // folhagem colada na câmera some aos poucos, com pontilhado (dither): sem isso as copas tampam
-    // a tela na floresta. Descartar pixels é barato (já há alphaTest) e não precisa ordenar nada
-    // E a "janela": folhagem no caminho entre a câmera e a Brisa (um cilindro estreito em volta
-    // dessa linha, só na frente dela) some com o mesmo pontilhado: ela nunca fica escondida atrás
-    // de uma árvore na floresta
-    sh.fragmentShader = 'varying float vDistCamVeg;\nvarying vec3 vMundoVeg;\nuniform vec3 uFoco;\n' + sh.fragmentShader.replace('#include <alphatest_fragment>', `#include <alphatest_fragment>
+    // a tela na floresta. Descartar pixels é barato (já há alphaTest) e não precisa ordenar nada.
+    // (Havia também uma "janela": a folhagem entre a câmera e a Brisa sumia num cilindro que
+    // alargava até 1,5 m em volta dela. Aparecia como um círculo transparente em volta da boneca,
+    // cortando arbustos e árvores por onde ela passava: saiu.)
+    sh.fragmentShader = 'varying float vDistCamVeg;\nvarying vec3 vMundoVeg;\n' + sh.fragmentShader.replace('#include <alphatest_fragment>', `#include <alphatest_fragment>
       {
         // ruído de gradiente intercalado: um grão fino e espalhado (a grade 4×4 de antes formava
         // bolinhas em fileira bem visíveis). No celular e no PC fraco a imagem é desenhada em
@@ -663,18 +662,6 @@ function materialVegetacao(simples, tempo, foco) {
           float limiar = fract(52.9829189 * fract(dot(floor(gl_FragCoord.xy), vec2(0.06711056, 0.00583715))));
         #endif
         float fica = smoothstep(2.4, 3.4, vDistCamVeg); // faixa curta: pouca área em meio-pontilhado
-        vec3 aFoco = uFoco - cameraPosition;
-        float L = length(aFoco);
-        vec3 dirFoco = aFoco / max(L, 1e-3), w = vMundoVeg - cameraPosition;
-        float tFoco = dot(w, dirFoco);
-        // (só o que está acima do joelho dela e não é capim: a grama do chão no caminho fica, sem
-        // riscar pontilhado na encosta; o capim é o canto inferior direito do atlas)
-        bool capim = vMapUv.x > 0.5 && vMapUv.y < 0.5;
-        if (!capim && tFoco > 0.0 && tFoco < L - 0.5 && vMundoVeg.y > uFoco.y - 0.2) {
-          float perp = length(w - dirFoco * tFoco);
-          float raioJanela = mix(0.5, 1.5, tFoco / L); // mais larga perto da Brisa
-          fica = min(fica, mix(0.15, 1.0, smoothstep(raioJanela * 0.55, raioJanela, perp)));
-        }
         if (fica < limiar) discard;
       }`);
     // folha contra o sol: a luz atravessa a folha e ela acende em verde-dourado (a copa vira um
@@ -705,7 +692,7 @@ function materialVegetacao(simples, tempo, foco) {
       ? sh.fragmentShader.replace('float lumEstilo', translucida + 'float lumEstilo')
       : sh.fragmentShader.replace('#include <opaque_fragment>', translucida + '#include <opaque_fragment>');
   };
-  m.customProgramCacheKey = () => 'vegetacao9-' + (simples ? 's' : 'p') + (CORTE_SECO ? '-seco' : '');
+  m.customProgramCacheKey = () => 'vegetacao10-' + (simples ? 's' : 'p') + (CORTE_SECO ? '-seco' : '');
   return m;
 }
 // ---------------- geração ----------------
@@ -1019,8 +1006,7 @@ export async function gerarIlha(renderer, aoProgredir = () => {}) {
 
   // ---------- setores de vegetação ----------
   const tempo = { value: 0 };
-  const foco = { value: new THREE.Vector3(0, -1e4, 0) }; // a Brisa (jogo.js atualiza): a "janela" na folhagem
-  let matVeg = materialVegetacao(false, tempo, foco);
+  let matVeg = materialVegetacao(false, tempo);
   const vegetacao = new THREE.Group(); vegetacao.name = 'vegetacao';
   const setoresLod = [];
   for (const s of setores.values()) {
@@ -1058,7 +1044,6 @@ export async function gerarIlha(renderer, aoProgredir = () => {}) {
     malha, geo, grupo, lods, renderer, texturas: new Map(), amostrar, qualidade: null, procedural: true,
     enfeites: [vegetacao, construcoes],
     setores: setoresLod, // setores de vegetação (occlusion culling: oclusao.js)
-    focoVegetacao: foco.value,
     mar: MAR, // nível do mar e a forma da praia (agua.js, praia.js)
     nascimentoPreferido: new THREE.Vector3(VILA.x, alturaVila, VILA.z),
     pontos: { vila: VILA, morro: MORRO, ilhotas: ILHOTAS.map(i => ({ nome: i.nome, x: i.cx, z: i.cz, topo: alturaEm(i.cx, i.cz) })), casas },
@@ -1068,7 +1053,7 @@ export async function gerarIlha(renderer, aoProgredir = () => {}) {
       for (const o of obras) o.atualizar?.(t, noite);
     },
     aoMudarQualidade(nivel) {
-      const novo = materialVegetacao(nivel.materialSimples, tempo, foco);
+      const novo = materialVegetacao(nivel.materialSimples, tempo);
       vegetacao.traverse(o => { if (o.isMesh) o.material = novo; });
       matVeg.dispose(); matVeg = novo;
       const longe = nivel.vegetacaoLonge ?? (nivel.materialSimples ? 38 : nivel.efeitos ? 85 : 60);

@@ -2,8 +2,7 @@ import * as THREE from 'three';
 import { FBXLoader } from 'three/addons/loaders/FBXLoader.js';
 import { removerPicos, fecharCiclo, alinharGolpe, velocidadeNatural } from './reparos.js';
 import { carregarTextura } from './texturas.js';
-import { simplificar, simplificarIndices } from './simplificar.js';
-import { ESTILO_LIGADO } from './estilo.js';
+import { simplificarIndices } from './simplificar.js';
 import { carregarBonecaNova, vestirBonecaNova, adaptarTrilhas, criarCabelo } from './bonecaNova.js';
 
 // animações em ciclo (precisam terminar exatamente onde começam)
@@ -26,6 +25,7 @@ const CORTES_COMBO = [['soco1', 0.15, 0.8], ['soco2', 0.8, 1.33], ['soco3', 1.33
 // Parada, pulo, queda e aterrissagem vêm do Human Basic Motions e são transferidos para este esqueleto.
 
 export const ALTURA = 1.7;
+const TOM_BONECA = 0.8; // multiplica a cor da textura da boneca (ver aplicarQualidadeBoneca)
 const PASTA = new URL('../assets/boneca/', import.meta.url).href;
 const PASTA_HBM = new URL('../assets/animacoes/', import.meta.url).href;
 const PIXEL = 'data:image/gif;base64,R0lGODlhAQABAAAAACw=';
@@ -353,10 +353,13 @@ export async function aplicarQualidadeBoneca(boneca, renderer, nivel) {
   // do céu (0,8 no High) somavam luz branca por cima do vestido lilás, e o bloom do High ainda
   // espalhava em halo: a boneca aparecia branca e brilhante. Agora o brilho de tecido é fraco e da
   // cor do vestido, o especular é de tecido (0,35) e o reflexo do céu é pouco
+  // (a textura do modelo é clara, com luz já pintada nela: com o sol do jogo o vestido lilás e a
+  // pele estouravam para quase branco; TOM_BONECA traz de volta a cor da textura)
+  const tom = new THREE.Color().setScalar(TOM_BONECA);
   boneca.malha.material = nivel.materialSimples
-    ? contorno(new THREE.MeshLambertMaterial({ map: cor }), 0.14)
+    ? contorno(new THREE.MeshLambertMaterial({ map: cor, color: tom }), 0.14)
     : contorno(new THREE.MeshPhysicalMaterial({
-      map: cor, normalMap: normal, roughnessMap: rugosidade, metalnessMap: metal,
+      map: cor, color: tom, normalMap: normal, roughnessMap: rugosidade, metalnessMap: metal,
       normalScale: new THREE.Vector2(0.7, 0.7), roughness: 0.82, metalness: 0,
       specularIntensity: 0.35,
       sheen: 0.18, sheenRoughness: 0.8, sheenColor: new THREE.Color('#b9a3d6'),
@@ -445,27 +448,8 @@ export async function criarBoneca(renderer, nivel, aoProgredir) {
   const mixer = new THREE.AnimationMixer(fbx);
   const acoes = Object.fromEntries(Object.entries(clipes).map(([k, c]) => [k, mixer.clipAction(c)]));
   const perna = l => ({ coxa: fbx.getObjectByName(M(`${l}UpLeg`)), canela: fbx.getObjectByName(M(`${l}Leg`)), pe: fbx.getObjectByName(M(`${l}Foot`)) });
-  // contorno de desenho animado (estilo de jogo mobile): o "casco invertido", uma cópia da malha
-  // inflada um pouquinho pela normal e desenhada só por dentro, em marrom escuro. Usa o mesmo
-  // esqueleto, então segue todas as animações; custa um desenho a mais, sem pós-processamento.
-  // A malha do contorno é uma versão simplificada (~25% dos triângulos, com os mesmos pesos dos
-  // ossos): de longe ninguém vê a diferença na borda, e a GPU anima 4× menos vértices.
-  let linha = null;
-  if (ESTILO_LIGADO) {
-    malha.geometry.computeBoundingBox();
-    const bb = malha.geometry.boundingBox, espessura = (bb.max.y - bb.min.y) * 0.016;
-    const mat = new THREE.MeshBasicMaterial({ color: '#2b1a14', side: THREE.BackSide });
-    mat.onBeforeCompile = sh => {
-      sh.vertexShader = sh.vertexShader.replace('#include <begin_vertex>', `vec3 transformed = vec3( position ) + normalize( normal ) * ${espessura.toFixed(5)};`);
-    };
-    mat.customProgramCacheKey = () => 'boneca-linha';
-    const leve = await simplificar(malha.geometry, 0.25, 0.01);
-    linha = new THREE.SkinnedMesh(leve, mat);
-    linha.position.copy(malha.position); linha.quaternion.copy(malha.quaternion); linha.scale.copy(malha.scale);
-    linha.bind(malha.skeleton, malha.bindMatrix);
-    linha.frustumCulled = false; linha.castShadow = false;
-    malha.parent.add(linha);
-  }
+  // (sem contorno de desenho animado: o "casco invertido" de 2,7 cm, feito para a boneca antiga,
+  // atravessava o rosto, os braços e as dobras do vestido da boneca nova e virava manchas escuras)
   // nível de detalhe: com a câmera a mais de ~4,5 m (o jogo quase todo) ela fica com metade dos
   // triângulos. São só outros índices sobre os mesmos vértices e pesos dos ossos: a animação é a
   // mesma e trocar não envia nada de novo para a GPU (os dois índices ficam lá)
@@ -482,7 +466,7 @@ export async function criarBoneca(renderer, nivel, aoProgredir) {
   const rigOssos = Object.fromEntries(ossos.map(o => [o.name, o]));
   // cabelo solto balançando por cima da animação (chamado por jogo.js depois da postura)
   const cabelo = criarCabelo(ajuste.cadeias, rigOssos);
-  const boneca = { raiz, corpo, malha, linha, cabelo, mixer, acoes, velocidades, diagnostico, ajustarDetalhe, pernas: [perna('Left'), perna('Right')], rig: { ossos: rigOssos, lista: ossos, ligacao, papeis: PAPEIS } };
+  const boneca = { raiz, corpo, malha, cabelo, mixer, acoes, velocidades, diagnostico, ajustarDetalhe, pernas: [perna('Left'), perna('Right')], rig: { ossos: rigOssos, lista: ossos, ligacao, papeis: PAPEIS } };
   await aplicarQualidadeBoneca(boneca, renderer, nivel);
   return boneca;
 }
