@@ -173,7 +173,7 @@ export function criarCabelo(cadeias, ossos, opcoes = {}) {
   // espessura: a mecha é uma cortina em volta da linha dos ossos, não uma linha (m)
   // (mais contido que antes: com 63° de ângulo e pouco amortecimento a mecha dava a volta por cima
   // do ombro e embolava na frente quando ela parava de correr)
-  const { mola = 0.16, amortecimento = 0.8, gravidade = 2.5, anguloMax = 0.7, iteracoes = 3, espessura = 0.04 } = opcoes;
+  const { mola = 0.16, amortecimento = 0.8, gravidade = 2.5, anguloMax = 0.7, iteracoes = 4, espessura = 0.04 } = opcoes;
   const osso = n => ossos[M(n)];
   // cápsulas do corpo: [osso inicial, osso final, raio em m, encurta a ponta (fração)]
   const CAPSULAS = [
@@ -183,7 +183,8 @@ export function criarCabelo(cadeias, ossos, opcoes = {}) {
     ]),
   // (tronco e cabeça já com a folga da pose de repouso; nos membros soma a espessura da mecha)
   ].map(([a, b, raio, corte = 0, grossa = true]) => ({ a: osso(a), b: osso(b), raio: raio + (grossa ? espessura : 0), corte, cabeca: a === 'Head', pa: new THREE.Vector3(), pb: new THREE.Vector3() }))
-    .filter(c => c.a && c.b);
+    .filter(c => c.a && c.b)
+    .filter(c => !(opcoes.soBraco && /ForeArm|Hand/.test(c.a.name)));
   const repouso = cadeias.map(c => c.ossos.map(b => b.quaternion.clone()));
   const pontos = c => [...c.ossos.slice(1), c.ponta];
   let estado = null;
@@ -210,11 +211,14 @@ export function criarCabelo(cadeias, ossos, opcoes = {}) {
       maisProximos(rA, rA, c.pa, c.pb, rH, rC);
       _nr.subVectors(rH, rC);
       if (dist > 1e-6) _n.divideScalar(dist); else _n.copy(_nr).normalize();
-      if (_nr.lengthSq() > 1e-10 && _n.dot(_nr) < 0) { _n.negate(); dist = -dist; } // atravessou: volta
+      // atravessou: volta (só quando o repouso está claramente de um lado: perto de zero o lado
+      // trocava de um quadro para o outro e a mecha tremia)
+      if (_nr.lengthSq() > 0.02 * 0.02 && _n.dot(_nr) < 0) { _n.negate(); dist = -dist; }
       const prof = c.raio - dist;
       if (prof <= 0) continue;
-      // mexer só a ponta: o ponto da mecha a uma fração s dela anda prof
-      p.addScaledVector(_n, prof / Math.max(s, 0.35));
+      // mexer só a ponta: o ponto da mecha a uma fração s dela anda prof (metade por iteração:
+      // o contato com o braço que balança fica macio, sem trancos)
+      p.addScaledVector(_n, 0.5 * prof / Math.max(s, 0.35));
     }
   }
   return {
@@ -224,16 +228,29 @@ export function criarCabelo(cadeias, ossos, opcoes = {}) {
       const passo = Math.min(dt, 1 / 30) * 60; // mesma resposta em 30 ou 60 quadros por segundo
       if (!estado) estado = cadeias.map(() => null);
       for (const c of CAPSULAS) {
-        c.a.getWorldPosition(c.pa); c.b.getWorldPosition(c.pb);
-        if (c.corte) c.pb.lerp(c.pa, c.corte);
+        c.a.getWorldPosition(_s); c.b.getWorldPosition(_t);
+        if (c.corte) _t.lerp(_s, c.corte);
+        const k = c.iniciada && opcoes.suaveCapsula ? 1 - Math.pow(opcoes.suaveCapsula, passo) : 1;
+        c.pa.lerp(_s, k); c.pb.lerp(_t, k); c.iniciada = true;
       }
       cadeias.forEach((cadeia, ci) => {
         const alvo = poseRepouso(ci);
         const raiz = cadeia.ossos[0].getWorldPosition(new THREE.Vector3());
         const comprimentos = alvo.map((p, k) => p.distanceTo(k ? alvo[k - 1] : raiz));
+        // a pose de repouso também sai de dentro do corpo: as mechas do lado, em repouso, encostam
+        // nos braços (a animação os aproxima), e a mola puxava a mecha para dentro deles enquanto
+        // a colisão empurrava para fora — um cabo de guerra que tremia a cada quadro
+        {
+          let ant = raiz;
+          for (let k = 0; k < alvo.length; k++) {
+            colidir(ant, alvo[k], ant, alvo[k], k === 0);
+            alvo[k].sub(ant).setLength(comprimentos[k]).add(ant);
+            ant = alvo[k];
+          }
+        }
         let e = estado[ci];
         // primeira vez, ou um salto grande (teleporte, renascer): começa em repouso
-        if (!e || e.atual[0].distanceTo(alvo[0]) > 1.5) e = estado[ci] = { atual: alvo.map(p => p.clone()), antes: alvo.map(p => p.clone()) };
+        if (!e || e.atual[0].distanceTo(alvo[0]) > 1.5) e = estado[ci] = { atual: alvo.map(p => p.clone()), antes: alvo.map(p => p.clone()), livre: alvo.map(p => p.clone()), mostrado: alvo.map(p => p.clone()) };
         for (let k = 0; k < alvo.length; k++) {
           const p = e.atual[k], ant = e.antes[k];
           v.subVectors(p, ant).multiplyScalar(Math.pow(amortecimento, passo));
@@ -243,6 +260,7 @@ export function criarCabelo(cadeias, ossos, opcoes = {}) {
         }
         // comprimentos, ângulo máximo em relação ao repouso e colisão com o corpo, algumas
         // vezes (empurrar para fora de um braço pode encostar no tronco)
+        for (let k = 0; k < alvo.length; k++) e.livre[k].copy(e.atual[k]);
         for (let it = 0; it < iteracoes; it++) {
           let anterior = raiz, alvoAnterior = raiz;
           for (let k = 0; k < alvo.length; k++) {
@@ -260,17 +278,24 @@ export function criarCabelo(cadeias, ossos, opcoes = {}) {
             anterior = p; alvoAnterior = alvo[k];
           }
         }
+        // o que as restrições e a colisão mexeram não vira velocidade (choque sem quique): antes, cada
+        // empurrão para fora do braço fazia a mecha quicar e voltar para dentro no quadro seguinte
+        for (let k = 0; k < alvo.length; k++) e.antes[k].add(d.subVectors(e.atual[k], e.livre[k]).multiplyScalar(0.85));
+        // o que aparece na tela segue a simulação com um filtro curto (meio quadro de atraso): tira o
+        // vai-e-volta de um quadro só que sobrava com o braço passando pelo cabelo na corrida
+        const filtro = 1 - Math.pow(0.45, passo);
+        for (let k = 0; k < alvo.length; k++) e.mostrado[k].lerp(e.atual[k], filtro);
         // ossos apontando para as partículas (do primeiro ao último)
         let base = raiz;
         cadeia.ossos.forEach((o, k) => {
           const pontaRepouso = pontos(cadeia)[k].getWorldPosition(a);
           const origem = o.getWorldPosition(b);
-          giro.setFromUnitVectors(d.subVectors(pontaRepouso, origem).normalize(), v.subVectors(e.atual[k], base).normalize());
+          giro.setFromUnitVectors(d.subVectors(pontaRepouso, origem).normalize(), v.subVectors(e.mostrado[k], base).normalize());
           o.getWorldQuaternion(qMundo).premultiply(giro);
           o.parent.getWorldQuaternion(qPai);
           o.quaternion.copy(qPai.invert().multiply(qMundo));
           o.updateMatrixWorld(true);
-          base = e.atual[k];
+          base = e.mostrado[k];
         });
       });
     },
