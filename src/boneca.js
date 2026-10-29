@@ -465,7 +465,7 @@ export async function criarBoneca(renderer, nivel, aoProgredir) {
   }
   const rigOssos = Object.fromEntries(ossos.map(o => [o.name, o]));
   // cabelo solto balançando por cima da animação (chamado por jogo.js depois da postura)
-  const cabelo = criarCabelo(ajuste.cadeias, rigOssos, JSON.parse(new URLSearchParams(location.search).get('cabeloOpcoes') || '{}'));
+  const cabelo = criarCabelo(ajuste.cadeias, rigOssos);
   const boneca = { raiz, corpo, malha, cabelo, mixer, acoes, velocidades, diagnostico, ajustarDetalhe, pernas: [perna('Left'), perna('Right')], rig: { ossos: rigOssos, lista: ossos, ligacao, papeis: PAPEIS } };
   await aplicarQualidadeBoneca(boneca, renderer, nivel);
   return boneca;

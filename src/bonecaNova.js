@@ -146,7 +146,7 @@ export function adaptarTrilhas(clipe, { antigas, novas, razaoQuadril, hips }) {
 // por isso o lado certo é o da pose de repouso: se a mecha ficou do outro lado do braço, ela volta
 // por cima dele em vez de ser empurrada para dentro. No fim cada osso gira para apontar para a
 // partícula seguinte. Roda depois da animação e dos ajustes de postura.
-const _s = new THREE.Vector3(), _t = new THREE.Vector3(), _r = new THREE.Vector3(), _n = new THREE.Vector3(), _nr = new THREE.Vector3();
+const _s = new THREE.Vector3(), _t = new THREE.Vector3(), _r = new THREE.Vector3(), _n = new THREE.Vector3();
 // pontos mais próximos entre os segmentos p1–q1 e p2–q2 (Ericson, Real-Time Collision Detection 5.1.9)
 function maisProximos(p1, q1, p2, q2, c1, c2) {
   const d1 = _s.subVectors(q1, p1), d2 = _t.subVectors(q2, p2), r = _r.subVectors(p1, p2);
@@ -183,13 +183,12 @@ export function criarCabelo(cadeias, ossos, opcoes = {}) {
     ]),
   // (tronco e cabeça já com a folga da pose de repouso; nos membros soma a espessura da mecha)
   ].map(([a, b, raio, corte = 0, grossa = true]) => ({ a: osso(a), b: osso(b), raio: raio + (grossa ? espessura : 0), corte, cabeca: a === 'Head', pa: new THREE.Vector3(), pb: new THREE.Vector3() }))
-    .filter(c => c.a && c.b)
-    .filter(c => !(opcoes.soBraco && /ForeArm|Hand/.test(c.a.name)));
+    .filter(c => c.a && c.b);
   const repouso = cadeias.map(c => c.ossos.map(b => b.quaternion.clone()));
   const pontos = c => [...c.ossos.slice(1), c.ponta];
   let estado = null;
   const v = new THREE.Vector3(), a = new THREE.Vector3(), b = new THREE.Vector3(), d = new THREE.Vector3();
-  const cH = new THREE.Vector3(), cC = new THREE.Vector3(), rA = new THREE.Vector3(), rH = new THREE.Vector3(), rC = new THREE.Vector3();
+  const cH = new THREE.Vector3(), cC = new THREE.Vector3();
   const qMundo = new THREE.Quaternion(), qPai = new THREE.Quaternion(), giro = new THREE.Quaternion();
 
   function poseRepouso(ci) {
@@ -197,28 +196,20 @@ export function criarCabelo(cadeias, ossos, opcoes = {}) {
     cadeias[ci].ossos[0].updateMatrixWorld(true);
     return pontos(cadeias[ci]).map(p => p.getWorldPosition(new THREE.Vector3()));
   }
-  // empurra a ponta p do segmento anterior–p para fora das cápsulas; alvoA–alvoP é o mesmo
-  // segmento na pose de repouso (diz de que lado de cada cápsula a mecha deve ficar)
-  function colidir(anterior, p, alvoA, alvoP, primeiro) {
+  // empurra a junta p para fora das cápsulas do corpo, pela direção de agora (macio: metade da
+  // profundidade por iteração). Antes era o segmento inteiro da mecha, e o lado vinha da pose de
+  // repouso: com o braço passando rápido na corrida, a direção mais próxima entre dois segmentos
+  // e o lado escolhido pulavam de um quadro para o outro e a mecha tremia (medido com passo fixo:
+  // tremor na corrida 27 → 14 mm/quadro², cabelo dentro do braço 108 → 78 pontos; parada, 0 e 0)
+  function colidir(anterior, p, primeiro) {
     for (const c of CAPSULAS) {
       if (primeiro && c.cabeca) continue; // o primeiro osso nasce dentro da cabeça
-      const s = maisProximos(anterior, p, c.pa, c.pb, cH, cC);
+      maisProximos(p, p, c.pa, c.pb, cH, cC);
       _n.subVectors(cH, cC);
-      let dist = _n.length();
-      if (dist >= c.raio + 0.08) continue; // longe: nem confere o lado
-      // o lado certo: o do mesmo ponto da mecha em repouso
-      rA.lerpVectors(alvoA, alvoP, s);
-      maisProximos(rA, rA, c.pa, c.pb, rH, rC);
-      _nr.subVectors(rH, rC);
-      if (dist > 1e-6) _n.divideScalar(dist); else _n.copy(_nr).normalize();
-      // atravessou: volta (só quando o repouso está claramente de um lado: perto de zero o lado
-      // trocava de um quadro para o outro e a mecha tremia)
-      if (_nr.lengthSq() > 0.02 * 0.02 && _n.dot(_nr) < 0) { _n.negate(); dist = -dist; }
-      const prof = c.raio - dist;
+      const dist = _n.length(), prof = c.raio - dist;
       if (prof <= 0) continue;
-      // mexer só a ponta: o ponto da mecha a uma fração s dela anda prof (metade por iteração:
-      // o contato com o braço que balança fica macio, sem trancos)
-      p.addScaledVector(_n, 0.5 * prof / Math.max(s, 0.35));
+      if (dist > 1e-6) _n.divideScalar(dist); else _n.subVectors(p, anterior).normalize();
+      p.addScaledVector(_n, 0.5 * prof);
     }
   }
   return {
@@ -228,10 +219,8 @@ export function criarCabelo(cadeias, ossos, opcoes = {}) {
       const passo = Math.min(dt, 1 / 30) * 60; // mesma resposta em 30 ou 60 quadros por segundo
       if (!estado) estado = cadeias.map(() => null);
       for (const c of CAPSULAS) {
-        c.a.getWorldPosition(_s); c.b.getWorldPosition(_t);
-        if (c.corte) _t.lerp(_s, c.corte);
-        const k = c.iniciada && opcoes.suaveCapsula ? 1 - Math.pow(opcoes.suaveCapsula, passo) : 1;
-        c.pa.lerp(_s, k); c.pb.lerp(_t, k); c.iniciada = true;
+        c.a.getWorldPosition(c.pa); c.b.getWorldPosition(c.pb);
+        if (c.corte) c.pb.lerp(c.pa, c.corte);
       }
       cadeias.forEach((cadeia, ci) => {
         const alvo = poseRepouso(ci);
@@ -243,7 +232,7 @@ export function criarCabelo(cadeias, ossos, opcoes = {}) {
         {
           let ant = raiz;
           for (let k = 0; k < alvo.length; k++) {
-            colidir(ant, alvo[k], ant, alvo[k], k === 0);
+            colidir(ant, alvo[k], k === 0);
             alvo[k].sub(ant).setLength(comprimentos[k]).add(ant);
             ant = alvo[k];
           }
@@ -273,7 +262,7 @@ export function criarCabelo(cadeias, ossos, opcoes = {}) {
               if (eixo.lengthSq() > 0) dir.copy(dirRepouso).applyAxisAngle(eixo, anguloMax);
             }
             p.copy(anterior).addScaledVector(dir, comprimentos[k]);
-            colidir(anterior, p, alvoAnterior, alvo[k], k === 0);
+            colidir(anterior, p, k === 0);
             p.sub(anterior).setLength(comprimentos[k]).add(anterior);
             anterior = p; alvoAnterior = alvo[k];
           }
