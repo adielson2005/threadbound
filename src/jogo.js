@@ -1241,9 +1241,20 @@ const dirCamera = new THREE.Vector3(), alvoCamera = new THREE.Vector3();
 const _ladoCam = new THREE.Vector3(), _cimaCam = new THREE.Vector3(), _origemCam = new THREE.Vector3();
 const CANTOS_CAMERA = [[0, 0], [1, 1], [-1, 1], [1, -1], [-1, -1]];
 // encostada numa parede com a câmera do lado dela, o obstáculo fica a ~35 cm: com o mínimo antigo
-// (0,8 m) a câmera parava dentro da parede. Agora ela chega até 0,25 m e, perto assim, a boneca
-// some (a câmera estaria dentro da cabeça dela)
-const DIST_MIN_CAMERA = 0.25, DIST_ESCONDE_BONECA = 0.55;
+// (0,8 m) a câmera parava dentro da parede. Agora ela chega até 0,25 m sem entrar em nada; antes
+// disso (obstáculo a menos de DIST_SUBIR_CAMERA) ela sobe por cima da Brisa. A boneca só é
+// escondida se mesmo assim a câmera ficar dentro dela (antes sumia já a 0,55 m: andando rente a
+// muros e árvores a personagem desaparecia)
+const DIST_MIN_CAMERA = 0.25, DIST_ESCONDE_BONECA = 0.3, DIST_SUBIR_CAMERA = 1.6;
+const SUBIDAS_CAMERA = [0.35, 0.7, 1.0];
+const _dirTeste = new THREE.Vector3();
+function distLivre(pitch) {
+  const cp = Math.cos(pitch);
+  _dirTeste.set(Math.sin(camera3p.yaw) * cp, Math.sin(pitch), Math.cos(camera3p.yaw) * cp);
+  rcCamera.set(camera3p.alvo, _dirTeste); rcCamera.far = camera3p.dist + 0.3;
+  const h = rcCamera.intersectObject(mapa.malha)[0];
+  return h ? h.distance - 0.3 : camera3p.dist;
+}
 function atualizarCamera(dt) {
   const giro = (algumaTecla(T.camDir) ? 1 : 0) - (algumaTecla(T.camEsq) ? 1 : 0);
   camera3p.yaw -= (giro * 2.2 + analogico.camX * 3) * dt;
@@ -1259,8 +1270,20 @@ function atualizarCamera(dt) {
   // caindo no mar, a câmera para acima da superfície e olha o respingo (não mergulha junto)
   const yAlvo = agua ? Math.max(jogador.pos.y + 1.3, agua.nivel + 2.2) : jogador.pos.y + 1.3;
   alvo.lerp(alvoCamera.set(jogador.pos.x, yAlvo, jogador.pos.z), Math.min(1, dt * 12));
-  const cp = Math.cos(camera3p.pitch);
-  dirCamera.set(Math.sin(camera3p.yaw) * cp, Math.sin(camera3p.pitch), Math.cos(camera3p.yaw) * cp);
+  // parede ou tronco logo atrás dela: em vez de chegar a câmera até quase dentro da cabeça (e ter
+  // de esconder a boneca), a câmera sobe por cima e olha de cima. "subida" é quanto o ângulo da
+  // câmera sobe; vai e volta suave
+  if (mapa) {
+    let quer = 0;
+    if (distLivre(camera3p.pitch) < DIST_SUBIR_CAMERA) {
+      quer = SUBIDAS_CAMERA[SUBIDAS_CAMERA.length - 1];
+      for (const sobe of SUBIDAS_CAMERA) if (distLivre(Math.min(1.4, camera3p.pitch + sobe)) >= DIST_SUBIR_CAMERA + 0.4) { quer = sobe; break; }
+    }
+    camera3p.subida = THREE.MathUtils.lerp(camera3p.subida ?? 0, quer, Math.min(1, dt * (quer > (camera3p.subida ?? 0) ? 6 : 2)));
+  }
+  const pitchFinal = Math.min(1.4, camera3p.pitch + (camera3p.subida ?? 0));
+  const cp = Math.cos(pitchFinal);
+  dirCamera.set(Math.sin(camera3p.yaw) * cp, Math.sin(pitchFinal), Math.cos(camera3p.yaw) * cp);
 
   // não deixa a câmera entrar nos penhascos: aproxima até o primeiro obstáculo. Um raio só (o do
   // meio) deixava a borda da imagem atravessar paredes e encostas ao lado da câmera (meia tela

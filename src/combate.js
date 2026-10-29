@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { texturaDeCanvas } from './canvasTextura.js';
 import { aplicarPose } from './cambalhota.js';
 import { linhaLivre } from './colisao.js';
+import { criarCorpo, lancar, passo as passoObjeto, aplicar, empurrar as empurrarCorpo } from './objetos.js';
 
 // Combate de Brisa: socos (combo de 5), chute, pegar um objeto do chão (galho ou a Agulha de
 // Prata) e bater com ele, e defender. Os Retalhos atacam com uma investida; defender de frente
@@ -85,14 +86,29 @@ export function criarCombate({ cena, mapa, mundo, terreno, inimigos, campanha, j
     return new THREE.SpriteMaterial({ map: texturaDeCanvas(c), transparent: true, depthWrite: false, blending: THREE.AdditiveBlending });
   })();
   const objetos = [];
+  // pontas de cada objeto ao longo de +Y (para a física: objetos.js)
+  const PONTAS = { galho: [-0.12, 0.9, 0.04], agulha: [-0.13, 1.08, 0.035] };
+  // no começo: solto um pouco acima do chão, deitado, e assentado pela própria física (fica
+  // deitado acompanhando a encosta, sem flutuar)
   function colocarNoChao(o, x, z, yRef) {
     const y = chaoEm(x, yRef, z);
     if (y === null) return false;
-    o.grupo.position.set(x, y + 0.06, z);
-    o.grupo.rotation.set(0, rnd() * Math.PI * 2, Math.PI / 2); // deitado
-    o.noChao = true; o.base = o.grupo.position.y;
+    o.grupo.position.set(x, y + 0.2, z);
+    o.grupo.rotation.set(0, rnd() * Math.PI * 2, Math.PI / 2);
+    o.noChao = true;
     cena.add(o.grupo);
+    const [y0, y1, r] = PONTAS[o.tipo];
+    o.corpo = criarCorpo(o.grupo, y0, y1, r);
+    lancar(o.corpo, o.grupo, new THREE.Vector3());
+    for (let k = 0; k < 120 && !o.corpo.dormindo; k++) passoObjeto(o.corpo, mapa.geo.boundsTree, 1 / 60);
+    aplicar(o.corpo, o.grupo); posicionarLuz(o);
     return true;
+  }
+  // o brilho que marca o objeto fica sempre acima do meio dele (não gira junto)
+  const _acima = new THREE.Vector3();
+  function posicionarLuz(o) {
+    o.grupo.updateMatrixWorld(true);
+    o.luz.position.copy(o.grupo.worldToLocal(_acima.copy(o.corpo.pts[1]).setY(o.corpo.pts[1].y + 0.3)));
   }
   function criarObjeto(tipo) {
     const grupo = new THREE.Group();
@@ -142,14 +158,24 @@ export function criarCombate({ cena, mapa, mundo, terreno, inimigos, campanha, j
     segurando = o;
     atualizarHud();
   }
+  // soltar: o objeto sai da mão de onde está (posição e direção de verdade), com a velocidade
+  // dela mais um pequeno arremesso para a frente, e cai, quica e para sozinho (objetos.js)
   function soltar() {
     if (!segurando) return;
     const o = segurando;
+    personagem.raiz.updateMatrixWorld(true);
+    o.grupo.updateMatrixWorld(true);
+    const m = o.grupo.matrixWorld.clone();
     suporte.remove(o.grupo);
+    m.decompose(o.grupo.position, o.grupo.quaternion, o.grupo.scale);
+    o.grupo.scale.setScalar(1);
+    cena.add(o.grupo);
     const f = new THREE.Vector3(Math.sin(jogador.angulo), 0, Math.cos(jogador.angulo));
-    const x = jogador.pos.x + f.x * 0.8, z = jogador.pos.z + f.z * 0.8;
-    o.luz.visible = true;
-    if (!colocarNoChao(o, x, z, jogador.pos.y)) colocarNoChao(o, jogador.pos.x, jogador.pos.z, jogador.pos.y);
+    const vel = new THREE.Vector3(jogador.vel.x, Math.max(0, jogador.vel.y), jogador.vel.z).addScaledVector(f, 1.2).setY(Math.max(0, jogador.vel.y) + 1.5);
+    const [y0, y1, r] = PONTAS[o.tipo];
+    o.corpo = criarCorpo(o.grupo, y0, y1, r);
+    lancar(o.corpo, o.grupo, vel, 1 / 60, new THREE.Vector3(f.z, 0, -f.x).multiplyScalar(4 + rnd() * 3));
+    o.luz.visible = true; o.noChao = true;
     segurando = null;
     atualizarHud();
   }
@@ -227,6 +253,16 @@ export function criarCombate({ cena, mapa, mundo, terreno, inimigos, campanha, j
     const ini = jogador.pos.clone().addScaledVector(frente, GOLPE_INICIO).setY(jogador.pos.y + GOLPE_ALTURA);
     const fim = jogador.pos.clone().addScaledVector(frente, Math.max(GOLPE_INICIO, alcance + 0.45 - GOLPE_RAIO - 0.44)).setY(ini.y);
     const peito = jogador.pos.clone().setY(jogador.pos.y + PEITO);
+    // objetos soltos à frente voam com o golpe (o chute manda mais longe)
+    for (const o of objetos) {
+      if (!o.noChao || !o.corpo || est.acertados.has(o)) continue;
+      const d = o.corpo.pts[1].clone().sub(centro); const dy = Math.abs(d.y); d.setY(0);
+      if (d.length() > alcance + 0.3 || dy > 1.2) continue;
+      if (d.lengthSq() > 0.04 && d.normalize().dot(frente) < 0.25) continue;
+      est.acertados.add(o);
+      const forca = g.nome === 'chute' ? 7 : 4;
+      empurrarCorpo(o.corpo, frente.clone().multiplyScalar(forca).setY(forca * 0.45));
+    }
     for (const a of alvos()) {
       if (est.acertados.has(a.obj)) continue;
       const ponto = a.pos.clone().add(new THREE.Vector3(0, a.tipo === 'inimigo' ? 0.5 : 0.3, 0));
@@ -338,16 +374,22 @@ export function criarCombate({ cena, mapa, mundo, terreno, inimigos, campanha, j
     pertoDe = null;
     if (!segurando) {
       let d = 1.6;
-      for (const o of objetos) if (o.noChao) { const x = o.grupo.position.distanceTo(j.pos); if (x < d) { d = x; pertoDe = o; } }
+      for (const o of objetos) if (o.noChao) { const x = (o.corpo ? o.corpo.pts[1] : o.grupo.position).distanceTo(j.pos); if (x < d) { d = x; pertoDe = o; } }
     }
   }
 
   // ---------- por quadro (visual) ----------
+  const empurrador = { inicio: new THREE.Vector3(), fim: new THREE.Vector3(), raio: 0.2, vel: new THREE.Vector3() };
   let hudAntes = '';
   function atualizar(dt, t) {
+    // física dos objetos soltos; a Brisa empurra (chuta) o que estiver nos pés dela
+    const p = jogador.pos;
+    empurrador.inicio.set(p.x, p.y + 0.06, p.z); empurrador.fim.set(p.x, p.y + 0.5, p.z);
+    empurrador.vel.set(jogador.vel.x, 0, jogador.vel.z);
+    const empurra = Math.hypot(jogador.vel.x, jogador.vel.z) > 0.5 && !jogador.morta ? [empurrador] : [];
     for (const o of objetos) if (o.noChao) {
       o.luz.material.opacity = 0.45 + Math.sin(t * 3 + o.fase) * 0.25;
-      o.grupo.position.y = o.base + Math.max(0, Math.sin(t * 2 + o.fase)) * 0.03;
+      if (o.corpo && passoObjeto(o.corpo, mapa.geo.boundsTree, Math.min(dt, 1 / 30), empurra)) { aplicar(o.corpo, o.grupo); posicionarLuz(o); }
     }
     for (const s of [...particulas]) {
       const u = s.userData; u.vida -= dt;

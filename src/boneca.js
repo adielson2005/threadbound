@@ -318,9 +318,10 @@ function contorno(material, forca) {
       .replace('#include <common>', '#include <common>\nuniform float uContorno;')
       .replace('#include <emissivemap_fragment>', `#include <emissivemap_fragment>
         float bordaRim = 1.0 - clamp(dot(normal, normalize(vViewPosition)), 0.0, 1.0);
-        totalEmissiveRadiance += vec3(0.92, 0.86, 1.0) * pow(bordaRim, 3.0) * uContorno * (0.55 + 0.45 * diffuseColor.rgb);`);
+        // (na cor da própria superfície: em branco a borda virava um halo em volta da boneca)
+        totalEmissiveRadiance += vec3(0.92, 0.86, 1.0) * pow(bordaRim, 3.0) * uContorno * (0.2 + 0.8 * diffuseColor.rgb);`);
   };
-  material.customProgramCacheKey = () => 'boneca-contorno';
+  material.customProgramCacheKey = () => 'boneca-contorno2';
   return material;
 }
 const cacheTexturas = new Map();
@@ -347,15 +348,20 @@ export async function aplicarQualidadeBoneca(boneca, renderer, nivel) {
     texturaAtual.anisotropy = anisotropia;
     texturaAtual.needsUpdate = true;
   }
-  // PBR com "sheen" (o brilho macio de tecido, visto de lado): roupa, laço e cabelo de boneca de pano
+  // PBR com "sheen" (o brilho macio de tecido, visto de lado): roupa, laço e cabelo de boneca de pano.
+  // Algodão é fosco: o brilho de tecido branco e forte (0,45), o reflexo especular cheio e o reflexo
+  // do céu (0,8 no High) somavam luz branca por cima do vestido lilás, e o bloom do High ainda
+  // espalhava em halo: a boneca aparecia branca e brilhante. Agora o brilho de tecido é fraco e da
+  // cor do vestido, o especular é de tecido (0,35) e o reflexo do céu é pouco
   boneca.malha.material = nivel.materialSimples
-    ? contorno(new THREE.MeshLambertMaterial({ map: cor }), 0.22)
+    ? contorno(new THREE.MeshLambertMaterial({ map: cor }), 0.14)
     : contorno(new THREE.MeshPhysicalMaterial({
       map: cor, normalMap: normal, roughnessMap: rugosidade, metalnessMap: metal,
-      normalScale: new THREE.Vector2(0.7, 0.7), roughness: 0.78, metalness: metal ? 0.12 : 0,
-      sheen: 0.45, sheenRoughness: 0.7, sheenColor: new THREE.Color('#fff4ff'),
-      envMapIntensity: nivel.nome === 'High' ? 0.8 : 0.35,
-    }), nivel.nome === 'High' ? 0.3 : 0.24);
+      normalScale: new THREE.Vector2(0.7, 0.7), roughness: 0.82, metalness: 0,
+      specularIntensity: 0.35,
+      sheen: 0.18, sheenRoughness: 0.8, sheenColor: new THREE.Color('#b9a3d6'),
+      envMapIntensity: nivel.nome === 'High' ? 0.3 : 0.25,
+    }), nivel.nome === 'High' ? 0.16 : 0.14);
   antigo?.dispose?.();
 }
 

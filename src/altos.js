@@ -5,6 +5,7 @@ import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { GTAOPass } from 'three/addons/postprocessing/GTAOPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+const EXPOSICAO_HIGH = 0.66;
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { SMAAPass } from 'three/addons/postprocessing/SMAAPass.js';
 
@@ -259,8 +260,12 @@ export function criarEfeitosAltos({ renderer, cena, camera, mapa, terreno }) {
       cena.background = null;
       cena.environment = ambiente;
       cena.environmentIntensity = 0.55;
-      renderer.toneMapping = THREE.ACESFilmicToneMapping;
-      renderer.toneMappingExposure = 0.72; // mais claro: dia ensolarado
+      // Neutral (Khronos, sem a curva de pé: estilo.js), como no Low e no Medium. O ACES de antes
+      // leva as cores claras para o branco (o vestido lilás, o reboco e o céu ficavam lavados:
+      // metade da saturação do Medium nas mesmas vistas); o Neutral só comprime perto do branco e
+      // mantém a cor
+      renderer.toneMapping = THREE.NeutralToneMapping;
+      renderer.toneMappingExposure = EXPOSICAO_HIGH;
       cena.fog.color.set('#a6c6dc'); // a cor do céu no horizonte: as ilhas distantes somem nele
       // o céu visível é o da cúpula de dia e noite (ceu.js); o céu físico só gera a luz de ambiente
       cena.add(grama.grupo, nuvens.grupo, polen.pts);
