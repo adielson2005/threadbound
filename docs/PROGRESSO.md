@@ -535,3 +535,55 @@ navegador): ponta de cada mecha no espaço da Brisa, aceleração média por qua
 - Depois: parada 0% (0,25 mm); andando ≤ 5%; correndo 5% (7 mm). Sem colisão nos braços seria
   5 mm, mas o cabelo atravessaria os braços. Contrapartida: correndo, um pouco mais de cabelo
   encosta dentro do braço (129 pontos da amostra por quadro, antes 108); parada 0, andando 65.
+
+## Interface nova (menus, HUD, pausa, configurações)
+
+- Visual trocado: o tema de linho/feltro com bordas tracejadas em toda superfície deu lugar a painéis
+  escuros translúcidos (desfoque do fundo), bordas finas e acentos lilás e dourado; ícones desenhados
+  (SVG) no lugar de emojis nos menus e nos botões de toque.
+- Menu inicial: título grande, história com fio lateral, botão principal dourado e lista vertical
+  de itens com ícone. No celular em pé o cartão fica embaixo; deitado, texto à esquerda e botões à
+  direita (cabe sem rolar em 851×393).
+- Janelas (capítulos, configurações, créditos, gráficos) com cabeçalho, botão fechar, corpo que rola e
+  rodapé. Configurações com abas **Geral** e **Controles** (a lista de teclas saiu do meio das opções);
+  interruptor no lugar da caixinha de marcar.
+- Menu de pausa de verdade (P, Esc, Start ou o botão ⏸ no HUD, que substitui a engrenagem):
+  Continuar, Configurações, Gráficos, Controles e Menu principal (recarrega; o progresso fica no último
+  ponto salvo). Com um painel aberto, as teclas ficam com ele e Esc só fecha o painel.
+- HUD menor no PC e menor ainda no celular (fôlego, fragmentos, relógio, objetivo, fala, dica e "E").
+  No celular deitado o objetivo foi para a esquerda, longe dos botões de toque.
+- Testado só no navegador (Playwright: 1280×720, Pixel 5 em pé e deitado), sem erros no console; não
+  testado num celular de verdade.
+
+## Interface no estilo de jogo (minimalista)
+
+A versão anterior (painéis de vidro com degradês, ícones em cada item, botões dourados com brilho)
+parecia um site gerado. Referência agora: os jogos de aventura que deixam o cenário em primeiro plano
+(Zelda: Breath of the Wild, cuja ideia de interface é "melhor sem UI se não for necessária"; Unravel,
+sem HUD durante as fases).
+
+- Menus são listas de texto sobre a cena, sem caixas; um fio dourado entra na opção escolhida.
+  ↑/↓ passam pelas opções (como num console), o mouse escolhe ao passar por cima e Enter confirma.
+  Dicas de tecla no rodapé do menu inicial ("↑↓ Escolher · Enter Confirmar"; somem no toque).
+- Telas por cima do jogo (configurações, capítulos, créditos, gráficos, pausa) escurecem a cena e
+  ficam alinhadas à esquerda: título grande, linhas finas, "Esc Voltar" no rodapé (no toque, "‹ Voltar").
+  Configurações em uma linha por opção (nome à esquerda, controle à direita), abas em texto.
+- HUD sem caixas: carretéis, fragmentos e relógio com sombra no texto; objetivo com um fio dourado do
+  lado; fala numa faixa escura simples com o nome em dourado; "E" num círculo.
+- Botões de toque: círculos finos quase transparentes, ícones de traço.
+- No menu inicial Enter/Espaço com uma opção marcada aperta essa opção (antes sempre começava o jogo),
+  e as setas deixam de ser bloqueadas quando um controle do menu tem o foco (o volume anda com ← →).
+
+### Animações da interface
+
+- Telas (configurações, capítulos, créditos, gráficos, pausa) entram com o fundo esmaecendo e o
+  conteúdo deslizando em cascata (título, abas, opções, rodapé); fecham esmaecendo em 0,16 s antes de
+  sumir (`sumir`/`mostrar` em `jogo.js`; reabrir no meio do fechamento cancela o fechamento). O menu
+  inicial some em 0,32 s ao começar o jogo.
+- Menu inicial, listas de capítulos e níveis de gráficos entram em cascata; aba nova sobe; o fio da
+  aba escolhida cresce; objetivo novo desliza; botões de toque afundam ao apertar.
+- Só opacidade e deslocamento (a placa de vídeo compõe sem redesenhar a página), nada de desfoque;
+  durações de 0,16 a 0,6 s. Com "reduzir movimento" ligado no sistema, tudo fica instantâneo.
+- Na pausa e com uma tela aberta, o HUD (fala, dicas, objetivo, botões de toque) sai de baixo das opções.
+- Testado (Pixel 5 simulado): cada tela some de fato depois do esmaecer, reabrir no meio a mantém
+  aberta, Esc fecha; sem erros no console.
