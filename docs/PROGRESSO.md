@@ -421,3 +421,32 @@ Medido com testes automáticos no navegador (SwiftShader, sem placa de vídeo; n
   beira de algumas pedras e a roupa da boneca.
 - Brilho médio no Medium quase igual (floresta 111 → 106, morro 157 → 155, aérea 130 → 131); parte
   da queda é o próprio branco que saiu.
+
+## Brilho da roupa e do High, física dos objetos e a boneca que sumia (29/10/2026)
+
+Medido no navegador do PC (SwiftShader, sem placa de vídeo); falta um celular.
+
+- Roupa da boneca (boneca.js): no High o vestido lilás aparecia branco e brilhando. Somavam-se o
+  brilho de tecido branco e forte (sheen 0,45), o especular cheio, o reflexo do céu (0,8) e a luz
+  de contorno branca, e o bloom espalhava em halo. Agora: sheen 0,18 na cor do vestido, especular de
+  tecido (0,35), reflexo do céu 0,25–0,3 e contorno na cor da própria superfície (0,14–0,16).
+- Brilho do mapa no High (altos.js): o High usava tone mapping ACES, que leva as cores claras para o
+  branco (metade da saturação do Medium nas mesmas vistas). Agora usa o Neutral do Low/Medium, com
+  exposição 0,66. Mesmas 6 vistas, antes → depois: saturação vila 23 → 36, praia 16 → 34, morro
+  34 → 43; brilho médio morro 188 → 157, aérea 150 → 141 (o Medium dá 155 e 131). A vila ainda tem
+  5,7% de pixels no máximo (areia ao sol e o brilho da agulha).
+- Objetos soltos (objetos.js, combate.js): galho e agulha eram colocados direto no chão, sempre na
+  horizontal (mesmo no morro), 6 cm acima dele e balançando; soltos da mão apareciam no chão.
+  Agora são corpos rígidos (três pontos, Verlet, contra a malha de colisão): gravidade, quique,
+  atrito e atrito estático, rolam e dormem parados; a Brisa os chuta ao passar e soco/chute os
+  joga. Medido: assentados no começo encostam no chão (folga 0) e se inclinam com a encosta
+  (4,8–9,2°); solto de 1,5 m girando, quica 1 vez e para deitado em 1,35 s; chutado anda 1,3 m;
+  numa encosta de 24° desliza 14 cm e para (sem o atrito estático escorregava 4,7 m sem parar);
+  pegar e soltar no jogo: cai da mão e para deitado (0,1°). Custo ~0,04 ms por objeto acordado.
+- A boneca sumia (jogo.js): na correção anterior da câmera, com uma parede ou tronco logo atrás
+  dela, a câmera chegava perto e a boneca era escondida a menos de 0,55 m. Agora, com obstáculo a
+  menos de 1,6 m, a câmera sobe por cima dela (olha de cima) e a boneca só some se a câmera ainda
+  ficar a menos de 0,3 m (encurralada entre paredes): em 160 posições aleatórias na vila, a câmera
+  subiu em 50 e a boneca sumiu em 4.
+- Recorte por oclusão (oclusao.js) conferido: nenhum bloco do chão ou setor de vegetação escondido
+  estando visível (0 de 56, com tempo para o rodízio de conferência).
