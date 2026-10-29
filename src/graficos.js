@@ -114,6 +114,9 @@ export function ajustarAoHardware(base, hw = detectarHardware()) {
     n.sombra = 2048;
     n.sombraSuave = false;
     if (base !== NIVEIS.low) { n.texturaMapa = NIVEIS.medium.texturaMapa; n.texturaBoneca = NIVEIS.medium.texturaBoneca; }
+    // a boneca ocupa boa parte da tela pequena: no Low a cor dela vem em 2048 (2 MB de vídeo em
+    // KTX2), não em 1024, para o rosto não borrar de perto
+    else n.texturaBoneca = { cor: 'boneca_nova_cor_2048.jpg' };
     n.lod = n.lod.map(d => Math.round(d * 0.75));
     // vista longa o bastante para as ilhotas aparecerem no horizonte (escala e vontade de explorar):
     // o que fica longe já está no nível de detalhe mais leve, então custa pouco

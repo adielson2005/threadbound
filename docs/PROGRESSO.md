@@ -450,3 +450,26 @@ Medido no navegador do PC (SwiftShader, sem placa de vídeo); falta um celular.
   subiu em 50 e a boneca sumiu em 4.
 - Recorte por oclusão (oclusao.js) conferido: nenhum bloco do chão ou setor de vegetação escondido
   estando visível (0 de 56, com tempo para o rodízio de conferência).
+
+## Boneca sem riscos nem brilho, visual realista, sem o círculo em volta dela (29/10/2026)
+
+Medido no navegador do PC (SwiftShader) no perfil de celular, que é o do jogador.
+
+- Riscos escuros no rosto, braços e vestido (a "textura feia"): era o contorno de desenho animado
+  (uma cópia da malha inflada 2,7 cm, desenhada por dentro em marrom). Feito para a boneca antiga,
+  mais simples; na boneca nova ele atravessava o rosto, os braços e as dobras do vestido. Saiu.
+- Boneca clara/brilhosa ao abrir o mapa: a textura do modelo é clara (tem luz pintada nela) e, com
+  o sol do jogo, o vestido lilás e a pele estouravam para quase branco; somava-se a luz em faixas do
+  estilo de desenho (que clareia os meios-tons). A cor da textura agora é multiplicada por 0,8
+  (boneca.js, TOM_BONECA). No celular a cor da boneca vem em 2048 em vez de 1024 (rosto nítido de
+  perto; ~2 MB de vídeo em KTX2).
+- Realismo (estilo.js): saíram a luz em faixas (cel shading) e o brilho de borda branco; a luz do
+  sol cai contínua, como no mundo real. A correção de cor ficou leve (realce de cor 0,5 → 0,15,
+  quente/frio bem mais fraco). O visual antigo continua em ?estilo=desenho. Para compensar a
+  claridade que as faixas davam aos meios-tons, a luz do céu no Low/Medium subiu de 1,8 para 2,1.
+  Mesmas 6 vistas (celular), antes → depois: brilho médio vila 160 → 147, morro 150 → 147, floresta
+  104 → 99; quase preto no fim de tarde 10,8% → 10,6%; saturação um pouco maior (morro 48 → 52).
+- Círculo transparente em volta da boneca: era a "janela" na folhagem (ilha.js), que apagava a
+  vegetação entre a câmera e a Brisa num cilindro que alargava até 1,5 m em volta dela, cortando
+  arbustos e árvores por onde ela passava. Saiu. A folhagem colada na câmera (a menos de ~3 m)
+  continua sumindo, senão as copas tampam a tela na floresta.
