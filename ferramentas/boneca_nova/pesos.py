@@ -134,6 +134,16 @@ for it in range(3):
     viz=S/np.maximum(c,1)
     Ws=np.where(c>0,0.5*Ws+0.5*viz,Ws)
 W=Ws[sold]
+# a suavização espalhava um pouco do peso dos ossos do cabelo para o vestido e a pele encostados
+# nele (costas, gola, nuca): ao balançar, o cabelo puxava esses pedaços, que furavam as mechas
+# como lascas lilás. Só o cabelo de verdade (a maioria das cópias de cada ponto é cabelo) fica
+# com peso dos ossos de cabelo; o resto volta para o corpo
+ehCab=np.zeros(ns); np.add.at(ehCab,sold,cab.astype(float)); ehCab=ehCab/np.bincount(sold,minlength=ns)
+osCab=np.array([o.startswith('Cabelo') for o in ossos])
+corpo=ehCab[sold]<0.5
+W[np.ix_(corpo,osCab)]=0
+vazio=corpo&(W.sum(1)<1e-6); W[vazio,ix['Spine2']]=1
+print('vértices de corpo sem peso de cabelo:',int(corpo.sum()))
 # top 4, normaliza, quantiza
 ordem=np.argsort(-W,axis=1)[:,:4]
 wv=np.take_along_axis(W,ordem,1); wv/=wv.sum(1,keepdims=True)
