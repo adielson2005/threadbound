@@ -535,3 +535,22 @@ navegador): ponta de cada mecha no espaço da Brisa, aceleração média por qua
 - Depois: parada 0% (0,25 mm); andando ≤ 5%; correndo 5% (7 mm). Sem colisão nos braços seria
   5 mm, mas o cabelo atravessaria os braços. Contrapartida: correndo, um pouco mais de cabelo
   encosta dentro do braço (129 pontos da amostra por quadro, antes 108); parada 0, andando 65.
+
+## Interface nova (menus, HUD, pausa, configurações)
+
+- Visual trocado: o tema de linho/feltro com bordas tracejadas em toda superfície deu lugar a painéis
+  escuros translúcidos (desfoque do fundo), bordas finas e acentos lilás e dourado; ícones desenhados
+  (SVG) no lugar de emojis nos menus e nos botões de toque.
+- Menu inicial: título grande, história com fio lateral, botão principal dourado e lista vertical
+  de itens com ícone. No celular em pé o cartão fica embaixo; deitado, texto à esquerda e botões à
+  direita (cabe sem rolar em 851×393).
+- Janelas (capítulos, configurações, créditos, gráficos) com cabeçalho, botão fechar, corpo que rola e
+  rodapé. Configurações com abas **Geral** e **Controles** (a lista de teclas saiu do meio das opções);
+  interruptor no lugar da caixinha de marcar.
+- Menu de pausa de verdade (P, Esc, Start ou o botão ⏸ no HUD, que substitui a engrenagem):
+  Continuar, Configurações, Gráficos, Controles e Menu principal (recarrega; o progresso fica no último
+  ponto salvo). Com um painel aberto, as teclas ficam com ele e Esc só fecha o painel.
+- HUD menor no PC e menor ainda no celular (fôlego, fragmentos, relógio, objetivo, fala, dica e "E").
+  No celular deitado o objetivo foi para a esquerda, longe dos botões de toque.
+- Testado só no navegador (Playwright: 1280×720, Pixel 5 em pé e deitado), sem erros no console; não
+  testado num celular de verdade.

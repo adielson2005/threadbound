@@ -250,7 +250,7 @@ function atualizarMenu() {
 }
 for (const b of painel.querySelectorAll('[data-nivel]')) b.addEventListener('click', () => aplicarNivel(b.dataset.nivel));
 $('fechar-graficos').addEventListener('click', () => abrirMenu(false));
-$('abrir-graficos').addEventListener('click', () => abrirMenu(true));
+$('fechar-graficos-x').addEventListener('click', () => abrirMenu(false));
 $('abrir-graficos-menu').addEventListener('click', () => abrirMenu(true));
 
 async function aplicarNivel(nome) {
@@ -363,6 +363,8 @@ addEventListener('keydown', e => {
   if (e.code.startsWith('Arrow') || e.code === 'Space') e.preventDefault();
   if (e.code === 'KeyG' && !e.repeat) { abrirMenu(); return; }
   if (menuAberto) { if (e.code === 'Escape') abrirMenu(false); return; }
+  // com um painel aberto (capítulos, configurações) as teclas ficam com ele; Esc fecha (abaixo)
+  if (paineis.classList.contains('aberto')) return;
   if (estado === 'menu' && (e.code === 'Enter' || e.code === 'Space')) { reiniciar(); return; }
   if (estado === 'fim') return;
   if (estado === 'gameover') { if ((e.code === 'Enter' || e.code === 'Space') && !e.repeat) tentarDeNovo(); return; }
@@ -540,7 +542,7 @@ function mostrarGameOver() {
   const g = $('gameover');
   g.style.display = 'flex';
   requestAnimationFrame(() => requestAnimationFrame(() => g.classList.add('visivel')));
-  $('tentarDeNovo').focus();
+  $('tentarDeNovo').focus({ focusVisible: false });
 }
 function tentarDeNovo() {
   if (estado !== 'gameover') return;
@@ -631,12 +633,13 @@ montarCapitulos();
 
 // ---------- Painéis do menu: capítulos, configurações, créditos ----------
 const paineis = $('paineis');
-function abrirPainel(nome) {
+function abrirPainel(nome, aba = 'geral') {
   paineis.classList.add('aberto');
+  mostrarAba(aba);
   for (const s of paineis.querySelectorAll('section')) s.classList.toggle('visivel', s.dataset.painel === nome);
   // foco para o teclado/controle, sem rolar o painel até o botão (em tela baixa o título sumia)
   const aberto = paineis.querySelector('section.visivel');
-  aberto?.querySelector('button, input')?.focus({ preventScroll: true });
+  aberto?.querySelector('.corpo button, .corpo input')?.focus({ preventScroll: true, focusVisible: false });
   if (aberto) aberto.scrollTop = 0;
 }
 function fecharPaineis() { paineis.classList.remove('aberto'); }
@@ -644,6 +647,12 @@ for (const b of document.querySelectorAll('[data-painel]')) if (b.tagName === 'B
 for (const b of document.querySelectorAll('.fechar-painel')) b.addEventListener('click', fecharPaineis);
 paineis.addEventListener('click', e => { if (e.target === paineis) fecharPaineis(); });
 addEventListener('keydown', e => { if (e.code === 'Escape' && paineis.classList.contains('aberto')) fecharPaineis(); });
+// abas das configurações (Geral / Controles)
+function mostrarAba(nome) {
+  for (const a of paineis.querySelectorAll('.aba')) a.classList.toggle('ativa', a.dataset.aba === nome);
+  for (const p of paineis.querySelectorAll('.pagina')) p.classList.toggle('ativa', p.dataset.pagina === nome);
+}
+for (const a of paineis.querySelectorAll('.aba')) a.addEventListener('click', () => mostrarAba(a.dataset.aba));
 
 // configurações: aplicadas na hora e guardadas
 const config = lerConfig();
@@ -683,16 +692,27 @@ function terminarCapitulo(r) {
   proximoCapitulo = r.numero < TOTAL_CAPITULOS ? r.numero + 1 : 1;
   botao.textContent = r.numero < TOTAL_CAPITULOS ? 'Próximo capítulo ▶' : 'Jogar desde o começo';
   botao.className = 'botao principal';
-  $('continuar').style.display = 'inline-block';
+  $('continuar').style.display = 'block';
 }
 
 function alternarPausa() {
   if (estado !== 'jogando') return;
   pausado = !pausado;
-  const aviso = $('aviso'); aviso.textContent = pausado ? 'Pausado · P para continuar' : ''; aviso.style.opacity = pausado ? 1 : 0;
+  telaPausa.style.display = pausado ? 'flex' : 'none';
+  if (pausado) $('pausaContinuar').focus({ preventScroll: true, focusVisible: false });
+  else { fecharPaineis(); abrirMenu(false); }
   pedidoPulo = false;
   if (pausado) document.exitPointerLock?.();
 }
+
+// menu de pausa: continuar, configurações, gráficos, controles e voltar ao menu principal
+const telaPausa = $('pausa');
+$('abrir-pausa').addEventListener('click', () => alternarPausa());
+$('pausaContinuar').addEventListener('click', () => alternarPausa());
+$('pausaGraficos').addEventListener('click', () => abrirMenu(true));
+$('pausaControles').addEventListener('click', () => abrirPainel('config', 'controles'));
+// o progresso fica salvo nos pontos de controle; recarregar volta à tela inicial com "Continuar"
+$('pausaMenu').addEventListener('click', () => location.reload());
 
 // arco de uma corrente de vento até o ponto de pouso (mesma conta usada para posicioná-las)
 function lancar(t) {
@@ -1543,7 +1563,7 @@ Promise.all([
     botao.textContent = salvo ? 'Novo jogo' : 'Começar';
     botao.className = salvo ? 'botao secundario' : 'botao principal';
     botao.style.display = 'block';
-    if (salvo) { $('continuarJogo').style.display = 'block'; $('continuarJogo').focus(); } else botao.focus();
+    if (salvo) { $('continuarJogo').style.display = 'block'; $('continuarJogo').focus({ focusVisible: false }); } else botao.focus({ focusVisible: false });
     window.__jogo = {
       jogador, personagem, camera, camera3p, mapa, terreno, correntes, renderer, cena, sol, medidor, altos, mundo, inimigos, campanha, agua, nevoa, cachoeiras, praia, ceu: ceuJogo, get combate() { return combate; },
       animacao: () => animAtual, estado: () => estado, nivel: () => nomeNivel, aplicarNivel, ocioso, get oclusao() { return oclusao; },
