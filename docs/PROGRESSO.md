@@ -473,3 +473,22 @@ Medido no navegador do PC (SwiftShader) no perfil de celular, que é o do jogado
   vegetação entre a câmera e a Brisa num cilindro que alargava até 1,5 m em volta dela, cortando
   arbustos e árvores por onde ela passava. Saiu. A folhagem colada na câmera (a menos de ~3 m)
   continua sumindo, senão as copas tampam a tela na floresta.
+
+## Celular: nitidez, brilhos e a sombra que cortava objetos (29/10/2026)
+
+Reproduzido emulando um Pixel 5 (tela 1080×2340, densidade 2,75, Android) no navegador do PC.
+
+- Imagem borrada/serrilhada (a "textura feia"): no perfil celular a resolução ia de 0,75 a 1 pixel
+  de CSS, ou seja ~300–390 pixels de largura ampliados quase 3× numa tela de 1080. Agora começa em
+  1,5 e o ajuste automático (fps) vai de 1 a 2 (nunca acima da densidade da tela); se o fps não
+  segura, o orçamento ainda pode descer mais, como antes.
+- Brilho em volta da Brisa ao entrar no mapa: ~16 brilhos aditivos a até 13 m de onde ela nasce
+  (as luzinhas mágicas douradas, a lanterna da oficina, que aparecia como uma coluna de luz sobre
+  a mesa, e a marca de luz dos objetos), todos na força total em pleno sol. Agora o brilho depende
+  da hora (dia.js): de dia 15–30% da força, à noite inteiro.
+- Círculo que cortava o que ela passava por perto: a sombra redonda sob os pés era desenhada com
+  deslocamento de profundidade (polygonOffset −4) e aparecia por cima de degraus, pedras e pés de
+  mesa vizinhos. Saiu o deslocamento; o disco fica 4 cm acima do chão e o que está na frente o
+  cobre.
+- Versão no menu de Gráficos (ferramentas/versionar.py): data e código da versão, para conferir se
+  o navegador carregou a atualização ou mostra a guardada no cache.

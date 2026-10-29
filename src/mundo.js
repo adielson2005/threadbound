@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { brilhoDeDia } from './dia.js';
 import { texturaDeCanvas } from './canvasTextura.js';
 import { fundirEstaticos } from './lotes.js';
 
@@ -50,6 +51,7 @@ function texturaBrilho(cor) {
 }
 
 const MAT = {};
+const lanternas = []; // brilho das lanternas (oficina, casas): forte só à noite
 function materiais() {
   if (MAT.pedra) return MAT;
   const pedra = texturaArquivo('pedra_cor.jpg', true, 1.5, 1.5), pedraN = texturaArquivo('pedra_normal.png', false, 1.5, 1.5);
@@ -191,7 +193,7 @@ function oficina() {
   }
   const viga = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.18, 4.4), M.madeira); viga.position.set(-3.6, 2.55, 0.1); viga.rotation.x = 0.13; g.add(viga);
   // lantern
-  const lanterna = new THREE.Sprite(M.brilhoOuro.clone()); lanterna.scale.setScalar(0.9); lanterna.position.set(-2.4, 1.45, 1.2);
+  const lanterna = new THREE.Sprite(M.brilhoOuro.clone()); lanterna.scale.setScalar(0.9); lanterna.position.set(-2.4, 1.45, 1.2); lanternas.push(lanterna);
   g.add(lanterna);
   solido(sombra(g));
   fundirEstaticos(g); // ~30 pieces → one mesh per material
@@ -222,7 +224,7 @@ function chegada(tipo) {
   const a2 = a1.clone(); a2.position.y = -0.32;
   const carretel = new THREE.Group(); carretel.add(nucleo, a1, a2); carretel.rotation.z = Math.PI / 2; carretel.position.set(1.8, 0.42, -1.2);
   g.add(carretel);
-  const lanterna = new THREE.Sprite(M.brilhoOuro.clone()); lanterna.scale.setScalar(0.9); lanterna.position.set(-2.2, 1.2, 1.2); g.add(lanterna);
+  const lanterna = new THREE.Sprite(M.brilhoOuro.clone()); lanterna.scale.setScalar(0.9); lanterna.position.set(-2.2, 1.2, 1.2); g.add(lanterna); lanternas.push(lanterna);
   const fio = g.userData.fio;
   solido(sombra(g)); if (fio) solido(fio, false);
   fundirEstaticos(g, fio ? [fio] : []);
@@ -613,10 +615,12 @@ export function criarMundo({ cena, mapa, terreno }) {
   }
   const mD = new THREE.Matrix4(), qD = new THREE.Quaternion(), pD = new THREE.Vector3(), sD = new THREE.Vector3();
   animados.push((dt, t) => {
+    // lanternas acesas de verdade só quando escurece (de dia, um brilho fraco)
+    for (const l of lanternas) l.material.opacity = brilhoDeDia(0.15);
     for (const s of luzes.children) {
       const u = s.userData;
       s.position.set(u.base.x + Math.sin(t * 0.4 + u.fase) * 0.6, u.base.y + Math.sin(t * 0.9 + u.fase) * 0.35, u.base.z + Math.cos(t * 0.35 + u.fase) * 0.6);
-      s.material.opacity = 0.55 + Math.sin(t * 2 + u.fase) * 0.35;
+      s.material.opacity = (0.55 + Math.sin(t * 2 + u.fase) * 0.35) * brilhoDeDia(0.2);
     }
     dadosDestrocos.forEach((u, k) => {
       u.ang += u.vel * dt;
