@@ -26,7 +26,7 @@ import { carregarCachoeira, posicionarCachoeiras } from './cachoeira.js';
 import { criarInimigos } from './inimigos.js';
 import { criarCampanha } from './campanha.js';
 import { criarCombate, GOLPES } from './combate.js';
-import { AVISOS, GAMEOVER, CAPITULO, FIM, NOMES_CAPITULOS, DESCRICOES_CAPITULOS } from './historia.js';
+import { INTRO, CHAMADA, AVISOS, GAMEOVER, CAPITULO, FIM, NOMES_CAPITULOS, DESCRICOES_CAPITULOS } from './historia.js';
 import { NIVEIS, nivelInicial, salvarNivel, detectarHardware, ajustarAoHardware } from './graficos.js';
 import { DIA } from './dia.js';
 import { criarDistancia } from './distancia.js';
@@ -682,7 +682,14 @@ function fecharPaineis() { sumir(paineis, () => paineis.classList.remove('aberto
 for (const b of document.querySelectorAll('[data-painel]')) if (b.tagName === 'BUTTON') b.addEventListener('click', () => abrirPainel(b.dataset.painel));
 for (const b of document.querySelectorAll('.fechar-painel')) b.addEventListener('click', fecharPaineis);
 paineis.addEventListener('click', e => { if (e.target === paineis) fecharPaineis(); });
-addEventListener('keydown', e => { if (e.code === 'Escape' && paineis.classList.contains('aberto')) fecharPaineis(); });
+addEventListener('keydown', e => {
+  if (e.code !== 'Escape' || !paineis.classList.contains('aberto')) return;
+  // da sinopse, Esc volta aos créditos (de onde ela abre); dos outros painéis, fecha
+  if (paineis.querySelector('section.visivel')?.dataset.painel === 'sinopse') abrirPainel('creditos');
+  else fecharPaineis();
+});
+// sinopse (Créditos → Sinopse do jogo): a história de abertura do capítulo e a chamada
+$('sinopse').innerHTML = INTRO.map(l => `<p>${l}</p>`).join('') + `<p class="chamada">${CHAMADA}</p>`;
 // abas das configurações (Geral / Controles)
 function mostrarAba(nome) {
   for (const a of paineis.querySelectorAll('.aba')) a.classList.toggle('ativa', a.dataset.aba === nome);

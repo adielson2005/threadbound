@@ -67,3 +67,11 @@ originais em vez das comprimidas KTX2), `?oclusao=0` (desliga o occlusion cullin
 
 As texturas KTX2 são geradas por `ferramentas/gerar-ktx2.sh` (precisa do `toktx`, do
 [KTX-Software](https://github.com/KhronosGroup/KTX-Software/releases)).
+
+## Créditos de terceiros
+
+(Saíram da tela de Créditos do jogo, que agora mostra só o autor; ficam registrados aqui.)
+
+- Boneca: modelo "Little Lavender Doll" (Meshy) · animações extras: Human Basic Motions
+- Motor gráfico: three.js · colisão: three-mesh-bvh · simplificação: meshoptimizer (licenças em `vendor/`)
+- Fontes: Fredoka e Nunito (SIL Open Font License)
