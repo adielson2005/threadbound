@@ -39,5 +39,15 @@ if n != 1:
 import datetime
 carimbo = datetime.datetime.now().strftime('%d/%m/%Y %H:%M') + ' · ' + versao(jogo)[:6]
 html, n = re.subn(r'<p id="versao"([^>]*)>[^<]*</p>', lambda m: f'<p id="versao"{m.group(1)}>versão {carimbo}</p>', html)
+
+# versão do site inteiro (página + módulos): o hash do index.html sem o carimbo de hora e sem ela
+# mesma. Vai no <meta name="versao-site"> e em versao.txt; a página compara as duas ao abrir e, se
+# o navegador mostrou uma página guardada de antes da atualização, recarrega a nova (ver index.html).
+sem = lambda h: re.sub(r'<meta name="versao-site" content="[^"]*">', '', re.sub(r'<p id="versao"([^>]*)>[^<]*</p>', '', h))
+site = hashlib.sha1(sem(html).encode('utf-8')).hexdigest()[:10]
+html, n = re.subn(r'<meta name="versao-site" content="[^"]*">', f'<meta name="versao-site" content="{site}">', html)
+if n != 1:
+    sys.exit('index.html: <meta name="versao-site"> não encontrado')
+(raiz / 'versao.txt').write_text(site + '\n', encoding='utf-8')
 index.write_text(html, encoding='utf-8')
 print(f'{len(modulos)} módulos versionados')
