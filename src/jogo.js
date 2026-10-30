@@ -1250,6 +1250,7 @@ function animarPersonagem(dt) {
   // clipe atual não anima (a animação parada não mexe na coluna) acumulariam o giro de cada quadro
   for (const osso of ossosPorCima()) osso.quaternion.copy(personagem.rig.ligacao.get(osso.name).q);
   personagem.mixer.update(dt);
+  estabilizarTronco(dt, (animAtual === 'andar' || animAtual === 'correr') && j.noChao && !j.golpe);
   // impulso com as pernas, grupado no ar ("bola") e abertura para cair (por cima da animação)
   aplicarCambalhota(personagem.rig, j.cambalhota);
   // planando: braços abertos para cima segurando o ar, corpo arqueado, pernas soltas balançando
@@ -1283,6 +1284,22 @@ function animarPersonagem(dt) {
   personagem.ajustarDetalhe(camera.position.distanceTo(j.pos));
 }
 let pesoPes = 0, pesoPlanar = 0;
+
+// As animações de andar e correr vieram de outro esqueleto (Mixamo). Na Brisa (tronco curto, cabeça
+// grande) a torção da bacia e o arco da coluna ficavam exagerados: de lado, as costas côncavas e a
+// barriga para a frente; de trás, o tronco tombando de um lado para o outro a cada passo (e o cabelo
+// junto). Depois da animação, a bacia e a coluna voltam boa parte do caminho para a postura reta da
+// boneca; a inclinação para a frente da corrida vem da postura viva, proporcional à velocidade.
+const TRONCO = { bacia: 0.45, coluna: 0.65 };
+let pesoTronco = 0;
+function estabilizarTronco(dt, ativo) {
+  pesoTronco += ((ativo ? 1 : 0) - pesoTronco) * Math.min(1, dt * 8);
+  if (pesoTronco < 0.01) return;
+  const { ossos, papeis: P, ligacao } = personagem.rig;
+  const reto = (o, k) => { const l = o && ligacao.get(o.name); if (l) o.quaternion.slerp(l.q, k * pesoTronco); };
+  reto(ossos[P.hips], TRONCO.bacia);
+  for (const n of P.coluna) reto(ossos[n], TRONCO.coluna);
+}
 let _ossosPorCima = null;
 function ossosPorCima() {
   if (_ossosPorCima) return _ossosPorCima;
@@ -1381,7 +1398,8 @@ function posturaViva(dt, v) {
   const yaw = raiz.rotation.y;
   if (postura.yawAnt !== null) { let d = yaw - postura.yawAnt; d = Math.atan2(Math.sin(d), Math.cos(d)); postura.giro += (d / dt - postura.giro) * Math.min(1, dt * 8); }
   postura.yawAnt = yaw;
-  const alvoFrente = livre ? THREE.MathUtils.clamp(postura.acel * 0.018 + v * 0.006, -0.14, 0.2) : 0;
+  // (andando ~0,06 rad, correndo ~0,1, na corrida super rápida ~0,16: o corpo vai junto com o passo)
+  const alvoFrente = livre ? THREE.MathUtils.clamp(postura.acel * 0.018 + v * 0.022, -0.14, 0.24) : 0;
   const alvoLado = livre ? THREE.MathUtils.clamp(-postura.giro * v * 0.02, -0.2, 0.2) : 0;
   postura.frente += (alvoFrente - postura.frente) * Math.min(1, dt * 5);
   postura.lado += (alvoLado - postura.lado) * Math.min(1, dt * 5);
