@@ -7,7 +7,7 @@
 <!-- fontes da interface (sem internet, caem para a fonte do sistema) -->
 <link rel="icon" href="data:,">
 <link rel="stylesheet" href="vendor/fontes/fontes.css">
-<meta name="versao-site" content="7f64db9071">
+<meta name="versao-site" content="cabd242dc7">
 <script>
   // O GitHub Pages deixa o navegador reaproveitar esta página por até 10 minutos (e um endereço
   // que já foi aberto, como "?v=22", pode continuar vindo da memória). Aqui a página pergunta ao site,
@@ -314,8 +314,8 @@
   }
   @media (pointer: coarse) and (orientation: landscape) {
     #objetivo { right: auto; left: var(--margem); top: calc(var(--margem) + 46px); text-align: left; border-right: 0; border-left: 2px solid var(--ouro); padding: 0 0 0 8px; }
-    #fala { left: 12px; right: 170px; width: auto; transform: none; bottom: 10px; }
-    #dicaTutorial { left: 12px; right: 170px; transform: none; max-width: none; top: auto; bottom: 86px; text-align: left; }
+    #fala { left: 12px; right: 226px; width: auto; transform: none; bottom: 10px; }
+    #dicaTutorial { left: 12px; right: 226px; transform: none; max-width: none; top: auto; bottom: 86px; text-align: left; }
     #interagir { bottom: 150px; left: calc(50% - 80px); }
   }
   @media (pointer: coarse) and (orientation: portrait) {
@@ -450,9 +450,11 @@
   #energia i { display: block; height: 100%; background: linear-gradient(90deg, #8fe3ff, #e6f7ff); transform-origin: 0 50%; transform: scaleX(1); will-change: transform; }
   #energia.cansada i { background: var(--vermelho); }
   @media (max-width: 760px), (pointer: coarse) { #energia { width: 56px; height: 3px; } }
+  /* ⚡ corrida super rápida (celular): à esquerda do chute */
+  #tSuper { bottom: 30px; right: 172px; width: 44px; height: 44px; border-color: rgba(143, 227, 255, 0.7); }
 </style>
 <!-- bibliotecas na própria pasta (vendor/): three 0.165.0, three-mesh-bvh 0.7.6, meshoptimizer 0.21.0. O jogo roda sem internet (e dentro do APK) -->
-<script type="importmap">{"imports":{"three":"./vendor/three/build/three.module.js","three/addons/":"./vendor/three/examples/jsm/","three-mesh-bvh":"./vendor/three-mesh-bvh/build/index.module.js","meshoptimizer/simplifier":"./vendor/meshoptimizer/meshopt_simplifier.module.js","./src/agua.js":"./src/agua.js?v=e2a2da6b9b","./src/altos.js":"./src/altos.js?v=ac761e4342","./src/boneca.js":"./src/boneca.js?v=87f39b0066","./src/bonecaNova.js":"./src/bonecaNova.js?v=6925cd35b7","./src/cachoeira.js":"./src/cachoeira.js?v=f700bc46b9","./src/cambalhota.js":"./src/cambalhota.js?v=aff8debf26","./src/campanha.js":"./src/campanha.js?v=22d7123551","./src/canvasTextura.js":"./src/canvasTextura.js?v=8ddd89e18a","./src/capitulo.js":"./src/capitulo.js?v=5631f04f86","./src/casas.js":"./src/casas.js?v=bf5f443903","./src/ceu.js":"./src/ceu.js?v=8ffb931fd1","./src/chuva.js":"./src/chuva.js?v=6cf0295986","./src/colisao.js":"./src/colisao.js?v=ac6260ec0b","./src/combate.js":"./src/combate.js?v=acafc23595","./src/dia.js":"./src/dia.js?v=e05b6cc395","./src/distancia.js":"./src/distancia.js?v=9a5844420e","./src/estilo.js":"./src/estilo.js?v=0c453af42f","./src/fisica.js":"./src/fisica.js?v=7949a2cbcf","./src/graficos.js":"./src/graficos.js?v=7dc7bab243","./src/historia.js":"./src/historia.js?v=721e075962","./src/ilha.js":"./src/ilha.js?v=b6d5e4d838","./src/inimigos.js":"./src/inimigos.js?v=95087f1816","./src/jogo.js":"./src/jogo.js?v=bd13100ac1","./src/lotes.js":"./src/lotes.js?v=f3831174bf","./src/mapa.js":"./src/mapa.js?v=6640d26460","./src/mundo.js":"./src/mundo.js?v=08560bc849","./src/nevoa.js":"./src/nevoa.js?v=9bccad8ac5","./src/objetos.js":"./src/objetos.js?v=243e276518","./src/oclusao.js":"./src/oclusao.js?v=a1ec74f05f","./src/particulas.js":"./src/particulas.js?v=efad11a94e","./src/pes.js":"./src/pes.js?v=9f8ed5d180","./src/praia.js":"./src/praia.js?v=700cd3c717","./src/praiaForma.js":"./src/praiaForma.js?v=79c406a618","./src/reparos.js":"./src/reparos.js?v=e805cead1a","./src/resolucao.js":"./src/resolucao.js?v=0d1e50cb15","./src/salvar.js":"./src/salvar.js?v=0d75e7e284","./src/simplificar.js":"./src/simplificar.js?v=a439e6c6ca","./src/suavizar.js":"./src/suavizar.js?v=042d8dcf4b","./src/terreno.js":"./src/terreno.js?v=30a71b0a42","./src/texturas.js":"./src/texturas.js?v=5b74c7049c"}}</script>
+<script type="importmap">{"imports":{"three":"./vendor/three/build/three.module.js","three/addons/":"./vendor/three/examples/jsm/","three-mesh-bvh":"./vendor/three-mesh-bvh/build/index.module.js","meshoptimizer/simplifier":"./vendor/meshoptimizer/meshopt_simplifier.module.js","./src/agua.js":"./src/agua.js?v=e2a2da6b9b","./src/altos.js":"./src/altos.js?v=ac761e4342","./src/boneca.js":"./src/boneca.js?v=87f39b0066","./src/bonecaNova.js":"./src/bonecaNova.js?v=6925cd35b7","./src/cachoeira.js":"./src/cachoeira.js?v=f700bc46b9","./src/cambalhota.js":"./src/cambalhota.js?v=aff8debf26","./src/campanha.js":"./src/campanha.js?v=22d7123551","./src/canvasTextura.js":"./src/canvasTextura.js?v=8ddd89e18a","./src/capitulo.js":"./src/capitulo.js?v=5631f04f86","./src/casas.js":"./src/casas.js?v=bf5f443903","./src/ceu.js":"./src/ceu.js?v=8ffb931fd1","./src/chuva.js":"./src/chuva.js?v=6cf0295986","./src/colisao.js":"./src/colisao.js?v=ac6260ec0b","./src/combate.js":"./src/combate.js?v=acafc23595","./src/dia.js":"./src/dia.js?v=e05b6cc395","./src/distancia.js":"./src/distancia.js?v=9a5844420e","./src/estilo.js":"./src/estilo.js?v=0c453af42f","./src/fisica.js":"./src/fisica.js?v=7949a2cbcf","./src/graficos.js":"./src/graficos.js?v=7dc7bab243","./src/historia.js":"./src/historia.js?v=c04dddae83","./src/ilha.js":"./src/ilha.js?v=b6d5e4d838","./src/inimigos.js":"./src/inimigos.js?v=95087f1816","./src/jogo.js":"./src/jogo.js?v=bf09edd22f","./src/lotes.js":"./src/lotes.js?v=f3831174bf","./src/mapa.js":"./src/mapa.js?v=6640d26460","./src/mundo.js":"./src/mundo.js?v=08560bc849","./src/nevoa.js":"./src/nevoa.js?v=9bccad8ac5","./src/objetos.js":"./src/objetos.js?v=243e276518","./src/oclusao.js":"./src/oclusao.js?v=a1ec74f05f","./src/particulas.js":"./src/particulas.js?v=efad11a94e","./src/pes.js":"./src/pes.js?v=9f8ed5d180","./src/praia.js":"./src/praia.js?v=700cd3c717","./src/praiaForma.js":"./src/praiaForma.js?v=79c406a618","./src/reparos.js":"./src/reparos.js?v=e805cead1a","./src/resolucao.js":"./src/resolucao.js?v=0d1e50cb15","./src/salvar.js":"./src/salvar.js?v=0d75e7e284","./src/simplificar.js":"./src/simplificar.js?v=a439e6c6ca","./src/suavizar.js":"./src/suavizar.js?v=042d8dcf4b","./src/terreno.js":"./src/terreno.js?v=30a71b0a42","./src/texturas.js":"./src/texturas.js?v=5b74c7049c"}}</script>
 </head>
 <body>
 <!-- abertura: logo AA animada; depois, a tela de carregamento até o jogo ficar pronto (ver o script
@@ -592,6 +594,7 @@
           <div><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd><span>andar</span></div>
           <div><kbd>Mouse</kbd><span>girar a câmera (Z / C)</span></div>
           <div><kbd>Shift</kbd><span>correr</span></div>
+          <div><kbd>Shift</kbd><kbd>2×</kbd><span>corrida super rápida (gasta o fôlego)</span></div>
           <div><kbd>X</kbd><span>andar devagar (segurar)</span></div>
           <div><kbd>Espaço</kbd><span>pular · no ar: cambalhota · segurar: planar</span></div>
           <div><kbd>Borda</kbd><span>pule contra ela para subir</span></div>
@@ -606,7 +609,7 @@
           <div><kbd>T</kbd><span>avançar dia / noite</span></div>
           <div><kbd>Y</kbd><span>chuva liga / desliga</span></div>
         </div>
-        <p class="controle-pad">Controle: A pula · B soca · Y chuta · RB pega · LT defende · X corre · LB interage · Start pausa</p>
+        <p class="controle-pad">Controle: A pula · B soca · Y chuta · RB pega · LT defende · X corre · L3 corrida super rápida · LB interage · Start pausa</p>
       </div>
     </div>
     
@@ -647,7 +650,7 @@
       </div>
       <p id="perfil-pc"></p>
       <div id="aviso-aa">O antisserrilhado deste nível só muda ao abrir o jogo de novo.</div>
-      <p id="versao">versão 30/10/2026 17:44 · bd1310</p>
+      <p id="versao">versão 30/10/2026 18:23 · bf09ed</p>
     </div>
     <footer><button id="fechar-graficos" class="voltar"><kbd>Esc</kbd>Voltar</button></footer>
   </div>
@@ -681,6 +684,7 @@
 <div class="toque" id="tChute"><svg viewBox="0 0 24 24"><path d="M9 3v8l-5 5a2.5 2.5 0 0 0 2 4h9l4-3h2"/><path d="M9 11h4"/></svg></div>
 <div class="toque" id="tDefesa"><svg viewBox="0 0 24 24"><path d="M12 3 5 6v5c0 4.5 3 8 7 10 4-2 7-5.5 7-10V6z"/></svg></div>
 <div class="toque" id="tPegar"><svg viewBox="0 0 24 24"><path d="M8 13V6a1.5 1.5 0 0 1 3 0v5M11 11V4.5a1.5 1.5 0 0 1 3 0V11M14 11V6a1.5 1.5 0 0 1 3 0v6M17 12V9a1.5 1.5 0 0 1 3 0v4a8 8 0 0 1-8 8h-.5a7 7 0 0 1-5.6-2.8L3.5 15a1.5 1.5 0 0 1 2.4-1.8L8 15"/></svg></div>
+<div class="toque" id="tSuper" title="Corrida super rápida"><svg viewBox="0 0 24 24"><path d="M13 3 5 13h6l-1 8 8-10h-6z"/></svg></div>
 <div id="golpe"></div>
 <script>
   // se o jogo não conseguir carregar (um arquivo que não veio, versões misturadas no cache), a tela
@@ -700,6 +704,6 @@
     msg.appendChild(b);
   }, true);
 </script>
-<script type="module" src="src/jogo.js?v=bd13100ac1"></script>
+<script type="module" src="src/jogo.js?v=bf09edd22f"></script>
 </body>
 </html>

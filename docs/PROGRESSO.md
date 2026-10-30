@@ -674,3 +674,13 @@ Medido no perfil celular (Pixel 5 simulado, navegador sem placa de vídeo, entã
   cheia. A barra anda por `transform: scaleX` e só é atualizada quando o valor muda.
 - Medido: andando 2,7 m/s; sprint 6,5 m/s com a barra descendo de 1 a 0; ao zerar, cansada e
   andando; soltando, recarrega até 1 e a barra some.
+
+### Três passos: andar, correr e corrida super rápida
+
+- Andar 2,7 m/s (padrão). Correr 4,6 m/s, sem gastar nada: Shift, X/RT no controle, bastão além da
+  borda no celular. Corrida super rápida 7,2 m/s, gastando a barra de fôlego: Shift duas vezes
+  seguidas (e segurar), L3 no controle (liga até parar de andar), botão ⚡ no celular.
+- Cansada (barra zerada), pedir a super dá a corrida normal; volta à super soltando o comando (25% da
+  barra) ou com a barra cheia.
+- Medido: andar 2,7; Shift 4,6 com a barra cheia depois de 6 s; Shift 2× 7,2 com a barra descendo;
+  ⚡ 7,2. No celular deitado a fala e a dica ficaram mais estreitas para não cobrir o ⚡.
