@@ -1398,8 +1398,8 @@ function posturaViva(dt, v) {
   const yaw = raiz.rotation.y;
   if (postura.yawAnt !== null) { let d = yaw - postura.yawAnt; d = Math.atan2(Math.sin(d), Math.cos(d)); postura.giro += (d / dt - postura.giro) * Math.min(1, dt * 8); }
   postura.yawAnt = yaw;
-  // (andando ~0,06 rad, correndo ~0,1, na corrida super rápida ~0,16: o corpo vai junto com o passo)
-  const alvoFrente = livre ? THREE.MathUtils.clamp(postura.acel * 0.018 + v * 0.022, -0.14, 0.24) : 0;
+  // (andando, reta; correndo ~0,07 rad, na corrida super rápida ~0,16: o corpo vai junto com o passo)
+  const alvoFrente = livre ? THREE.MathUtils.clamp(postura.acel * 0.018 + Math.max(0, v - 2.6) * 0.035, -0.14, 0.24) : 0;
   const alvoLado = livre ? THREE.MathUtils.clamp(-postura.giro * v * 0.02, -0.2, 0.2) : 0;
   postura.frente += (alvoFrente - postura.frente) * Math.min(1, dt * 5);
   postura.lado += (alvoLado - postura.lado) * Math.min(1, dt * 5);
