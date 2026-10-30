@@ -26,6 +26,7 @@ import { carregarCachoeira, posicionarCachoeiras } from './cachoeira.js';
 import { criarInimigos } from './inimigos.js';
 import { criarCampanha } from './campanha.js';
 import { criarCombate, GOLPES } from './combate.js';
+import { criarAjusteResolucao, ajustarResolucao } from './resolucao.js';
 import { INTRO, CHAMADA, AVISOS, GAMEOVER, CAPITULO, FIM, NOMES_CAPITULOS, DESCRICOES_CAPITULOS } from './historia.js';
 import { NIVEIS, nivelInicial, salvarNivel, detectarHardware, ajustarAoHardware } from './graficos.js';
 import { DIA } from './dia.js';
@@ -99,6 +100,7 @@ renderer.domElement.addEventListener('webglcontextlost', ev => {
 renderer.domElement.addEventListener('webglcontextrestored', () => location.reload());
 const RESOLUCAO = { atual: THREE.MathUtils.clamp(Math.min(devicePixelRatio, nivel.resolucaoInicial ?? Infinity), ...nivel.resolucao) };
 renderer.setPixelRatio(RESOLUCAO.atual);
+const ajusteResolucao = criarAjusteResolucao(RESOLUCAO.atual); // resolucao.js: degraus, sem ficar trocando
 renderer.setSize(innerWidth, innerHeight);
 // tone mapping Neutral (Khronos) no Low e no Medium: até ~80% do branco as cores ficam como estão;
 // acima disso o brilho é comprimido em vez de cortado. Sem ele, a grama e as folhas ao sol passavam
@@ -276,6 +278,7 @@ async function aplicarNivel(nome) {
   camera.far = nivel.distancia; camera.updateProjectionMatrix();
   distancia.definirAlcance(nivel.alcanceObjetos);
   RESOLUCAO.atual = THREE.MathUtils.clamp(RESOLUCAO.atual, ...nivel.resolucao);
+  Object.assign(ajusteResolucao, criarAjusteResolucao(RESOLUCAO.atual)); // modo novo: o ajuste recomeça
   renderer.setPixelRatio(RESOLUCAO.atual);
   atualizarMenu();
   if (mapa) { await aplicarQualidadeMapa(mapa, nivel); aquecerMapa(mapa, renderer, cena, camera); }
@@ -1454,19 +1457,12 @@ function medirDesempenho(dt) {
   hudFps.textContent = `${Math.round(medidor.fps)} fps`;
   if (estado !== 'jogando' || document.hidden || pausado) { orcamento.lento = orcamento.folga = 0; return; }
   const min = pisoResolucao(), max = nivel.resolucao[1];
-  let r = RESOLUCAO.atual;
-  // meta: 45 fps no PC; no celular, 60 (a tela atualiza a 60 Hz ou mais e menos que isso se sente
-  // no toque): abaixo da meta a resolução desce, com folga ela sobe
+  // meta: 45 fps no PC; no celular, 58 (a tela atualiza a 60 Hz ou mais e menos que isso se sente
+  // no toque). Cada troca de resolução recria a tela na GPU (uma travadinha): resolucao.js anda em
+  // degraus e lembra o degrau que falhou, para não ficar subindo e descendo
   const meta = nivel.metaFps ?? 45;
-  // cada troca de resolução realoca a tela na GPU (um tranco de vários ms no celular): com o fps
-  // oscilando perto da meta ela trocava todo segundo. Agora desce depois de 2 s lentos seguidos
-  // (na hora se a queda é grande) e sobe só depois de 4 s seguidos com folga
-  RESOLUCAO.lento = medidor.fps < meta ? (RESOLUCAO.lento ?? 0) + 1 : 0;
-  RESOLUCAO.folga = medidor.fps > Math.max(58, meta + 1) ? (RESOLUCAO.folga ?? 0) + 1 : 0;
-  if (RESOLUCAO.lento >= 2 || medidor.fps < meta * 0.75) { r -= 0.08; RESOLUCAO.lento = 0; }
-  else if (RESOLUCAO.folga >= 4) { r += 0.04; RESOLUCAO.folga = 0; }
-  r = THREE.MathUtils.clamp(r, min, max);
-  if (Math.abs(r - RESOLUCAO.atual) > 0.01) { RESOLUCAO.atual = r; renderer.setPixelRatio(r); redimensionarPos(); }
+  const r = ajustarResolucao(ajusteResolucao, medidor.fps, { min, max, meta });
+  if (Math.abs(r - RESOLUCAO.atual) > 0.001) { RESOLUCAO.atual = r; renderer.setPixelRatio(r); redimensionarPos(); }
   // mesmo na menor resolução o fps continua baixo por 3 s: um passo a menos no orçamento.
   // Folga longa devolve um passo (cada queda pede mais folga, para não ficar indo e voltando)
   const noPiso = RESOLUCAO.atual <= min + 0.01;
@@ -1492,7 +1488,7 @@ function aplicarOrcamento() {
   cena.fog.near = nivel.neblina[0] * p.longe * CONFIG.ambiente.nevoa; cena.fog.far = nivel.neblina[1] * p.longe * CONFIG.ambiente.nevoa;
   cena.userData.neblinaBase = [cena.fog.near, cena.fog.far];
   camera.far = nivel.distancia * p.longe; camera.updateProjectionMatrix();
-  if (RESOLUCAO.atual < pisoResolucao()) { RESOLUCAO.atual = pisoResolucao(); renderer.setPixelRatio(RESOLUCAO.atual); redimensionarPos(); }
+  if (RESOLUCAO.atual < pisoResolucao()) { RESOLUCAO.atual = ajusteResolucao.atual = pisoResolucao(); renderer.setPixelRatio(RESOLUCAO.atual); redimensionarPos(); }
 }
 
 // ---------- Loop ----------

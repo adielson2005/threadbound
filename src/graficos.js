@@ -101,16 +101,21 @@ export function ajustarAoHardware(base, hw = detectarHardware()) {
     n.texturaBoneca = NIVEIS.medium.texturaBoneca;
   }
   if (hw.perfil === 'celular') {
-    // celular: 60 fps primeiro, sem MSAA (o FXAA custa bem menos), material simples no Low, menos
-    // coisa ao longe e texturas no máximo do Medium (a memória de vídeo é dividida com o sistema).
+    // celular: 60 fps primeiro, material simples no Low, menos coisa ao longe e texturas no máximo do
+    // Medium (a memória de vídeo é dividida com o sistema).
     // Resolução: antes ia de 0,75 a 1 pixel de CSS. Num celular com tela de 1080 pixels de largura
     // (densidade 2,75) isso é desenhar uns 300–390 pixels e ampliar quase 3×: a boneca e tudo o mais
-    // ficavam borrados e serrilhados. Agora começa em 1,5 e o ajuste automático (fps) leva de 1
-    // até 2 pixels por pixel de CSS, nunca acima da densidade da tela
-    n.resolucao = [1, Math.min(2, Math.max(1, devicePixelRatio))];
-    n.resolucaoInicial = 1.5;
-    n.antialias = false;
-    n.suavizacao = 'fxaa';
+    // ficavam borrados e serrilhados. Começa em 1,25 e o ajuste automático (fps, em degraus de 0,25:
+    // resolucao.js) leva de 1 até 1,75 pixel por pixel de CSS, nunca acima da densidade da tela
+    // (antes começava em 1,5 e ia até 2: na tela de 1080 × 2400 isso é desenhar até 1,4 milhão de
+    // pixels por quadro, pesado para a GPU de um celular médio)
+    n.resolucao = [1, Math.min(1.75, Math.max(1, devicePixelRatio))];
+    n.resolucaoInicial = 1.25;
+    // antisserrilhado nativo (MSAA) em vez do FXAA: a GPU do celular desenha em blocos na própria
+    // memória do chip e resolve o MSAA ali, quase de graça; o FXAA obrigava a desenhar a cena numa
+    // textura à parte e passar um filtro na tela inteira (uma passada a mais e muita banda de memória)
+    n.antialias = true;
+    n.suavizacao = 'msaa';
     // a sombra do mapa é calculada uma vez só (fixa): no celular ela custa só a leitura da textura
     // de sombra por pixel, então fica ligada até no Low (2048 com filtro simples: em 1024 ou sem
     // filtro, a ilha inteira cabe em poucos pixels e a sombra fica quadriculada)
