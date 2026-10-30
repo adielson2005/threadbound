@@ -613,3 +613,12 @@ sem HUD durante as fases).
 - Sem travar: tudo animado só com transform e opacidade (o navegador anima isso fora da linha
   principal, que fica ocupada montando o jogo); a barra anda por `transform: scaleX`. Antes do passo
   mais pesado (compilar os shaders) o carregamento espera um quadro para mostrar a etapa.
+
+### Logo e carregamento mais minimalistas
+
+- Logo refeita: monograma "AA" geométrico, os dois A como uma única linha contínua (um fio) em traço
+  fino, pontas retas, base cortada reta, sem brilho; uma barra dourada fina serve aos dois. Aparece por
+  uma cortina que corre para a direita, a barra se estende e "apresenta" surge (~2,6 s; pula com toque
+  ou tecla). Só transform e opacidade.
+- Carregamento: fundo liso, o nome do jogo, uma linha de progresso de 1 px em dourado e, embaixo, a
+  etapa e a porcentagem em letras pequenas (antes: capa escurecida, carretel girando e barra grossa).

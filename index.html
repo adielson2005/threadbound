@@ -7,7 +7,7 @@
 <!-- fontes da interface (sem internet, caem para a fonte do sistema) -->
 <link rel="icon" href="data:,">
 <link rel="stylesheet" href="vendor/fontes/fontes.css">
-<meta name="versao-site" content="75782847ac">
+<meta name="versao-site" content="8b4f52ef8b">
 <script>
   // O GitHub Pages deixa o navegador reaproveitar esta página por até 10 minutos (e um endereço
   // que já foi aberto, como "?v=22", pode continuar vindo da memória). Aqui a página pergunta ao site,
@@ -412,79 +412,62 @@
   /* botões que não ocupam a linha toda */
   .capitulos .botao, #gameover .botao { width: auto; }
   .voltar, .aba { touch-action: manipulation; }
-  /* ---------- abertura: logo AA (dois A unidos por uma linha dourada que a agulha costura) ---------- */
+  /* ---------- abertura: monograma AA ----------
+     Dois A geométricos em traço fino (ponta reta, sem brilho), o segundo apoiado no primeiro, e uma
+     só barra dourada fina servindo aos dois. Aparece por uma cortina que corre para a direita (a
+     cor do fundo saindo de cima das letras), depois a barra se estende e "apresenta" surge.
+     Só transform e opacidade: não trava enquanto o jogo carrega. */
   #abertura, #carregamento { position: fixed; inset: 0; z-index: 30; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #0d0a12; }
   #abertura.fora, #carregamento.fora { animation: some .3s ease-in forwards !important; pointer-events: none; }
-  .brilho-aa { position: absolute; width: 520px; height: 520px; border-radius: 50%; background: radial-gradient(rgba(196, 168, 255, 0.22), rgba(196, 168, 255, 0) 65%);
-    opacity: 0; animation: aparecer-brilho 1.2s .5s ease-out forwards; will-change: opacity, transform; }
-  @keyframes aparecer-brilho { from { opacity: 0; transform: scale(.7); } to { opacity: 1; transform: none; } }
-  .logo-aa { position: relative; width: 236px; height: 176px; transform: scale(var(--escala-logo, 1)); }
-  .logo-aa i { position: absolute; display: block; will-change: transform, opacity; }
-  /* pernas dos A: cada uma "cresce" do pé até o topo (scaleY), uma depois da outra */
-  .perna { bottom: 0; width: 16px; height: 172px; margin-left: -8px; border-radius: 8px; transform-origin: 50% 100%;
-    background: linear-gradient(180deg, #ffffff, #e6dcff); box-shadow: 0 0 18px rgba(196, 168, 255, 0.25);
-    transform: rotate(var(--g)) scaleY(0); animation: perna .42s cubic-bezier(.3, .7, .2, 1) forwards; }
-  @keyframes perna { to { transform: rotate(var(--g)) scaleY(1); } }
-  .p1 { left: 8px; --g: 19deg; animation-delay: .15s; }
-  .p2 { left: 120px; --g: -19deg; animation-delay: .3s; }
-  .p3 { left: 108px; --g: 19deg; animation-delay: .45s; }
-  .p4 { left: 220px; --g: -19deg; animation-delay: .6s; }
-  /* a linha dourada atravessa os dois A (é a barra deles), puxada pela agulha */
-  .linha { left: 14px; bottom: 60px; width: 200px; height: 5px; border-radius: 3px; transform-origin: 0 50%;
-    background: linear-gradient(90deg, #ffd98a, var(--ouro) 50%, #e2a93f); box-shadow: 0 0 12px rgba(242, 199, 107, 0.55);
-    transform: scaleX(0); animation: linha .5s cubic-bezier(.5, 0, .3, 1) 1s forwards; }
-  @keyframes linha { to { transform: scaleX(1); } }
-  .agulha { left: 6px; bottom: 58px; width: 40px; height: 9px; opacity: 0;
-    background: linear-gradient(90deg, transparent 0 6px, #c9d3e8 6px 30px, #f4f7ff 30px 38px, transparent 38px); clip-path: polygon(0 50%, 15% 0, 100% 45%, 100% 55%, 15% 100%);
-    animation: agulha .5s cubic-bezier(.5, 0, .3, 1) 1s forwards; }
-  @keyframes agulha { 0% { opacity: 1; transform: translateX(0); } 85% { opacity: 1; } 100% { opacity: 0; transform: translateX(200px); } }
-  /* o nó na ponta da linha */
-  .no { left: 6px; bottom: 56px; width: 13px; height: 13px; border-radius: 50%; background: var(--ouro); box-shadow: 0 0 10px rgba(242, 199, 107, 0.7);
-    transform: scale(0); animation: no .3s cubic-bezier(.3, 1.6, .5, 1) 1.45s forwards; }
-  @keyframes no { to { transform: scale(1); } }
-  .apresenta { margin: 30px 0 0; font: 600 13px var(--fonte); letter-spacing: 7px; text-transform: uppercase; color: var(--texto-2); padding-left: 7px;
-    opacity: 0; transform: translateY(8px); animation: apresenta .5s ease-out 1.55s forwards; will-change: transform, opacity; }
-  @keyframes apresenta { to { opacity: 1; transform: none; } }
-  /* costura: a linha passa por cima da 1ª e da 3ª perna e por baixo da 2ª e da 4ª (a agulha também) */
-  .p1, .p3 { z-index: 1; } .linha, .agulha { z-index: 2; } .p2, .p4 { z-index: 3; } .no { z-index: 4; }
-  @media (max-width: 520px) { .logo-aa { --escala-logo: .78; } .brilho-aa { width: 380px; height: 380px; } }
+  .marca-aa { position: relative; width: 168px; height: 124px; overflow: hidden; animation: marca-entra .9s cubic-bezier(.2, .7, .2, 1) both; will-change: transform, opacity; }
+  @keyframes marca-entra { from { opacity: 0; transform: scale(.94); } to { opacity: 1; transform: none; } }
+  .letras-aa { display: block; width: 100%; height: 100%; fill: none; stroke: #f6f2ea; stroke-width: 7; stroke-linejoin: miter; stroke-miterlimit: 8; stroke-linecap: butt; }
+  .cortina-aa { position: absolute; inset: 0 -4px; background: #0d0a12; transform-origin: 100% 50%;
+    animation: cortina .75s cubic-bezier(.65, 0, .35, 1) .2s both; will-change: transform; }
+  @keyframes cortina { from { transform: scaleX(1); } to { transform: scaleX(0); } }
+  .barra-aa { position: absolute; left: 13.5%; right: 13.5%; top: calc(62.9% - 1.5px); height: 3px; background: var(--ouro); transform-origin: 0 50%;
+    transform: scaleX(0); animation: barra-aa .5s cubic-bezier(.65, 0, .35, 1) .95s forwards; will-change: transform; }
+  @keyframes barra-aa { to { transform: scaleX(1); } }
+  .apresenta { margin: 34px 0 0; padding-left: 8px; font: 600 11px var(--fonte); letter-spacing: 8px; text-transform: uppercase; color: rgba(246, 242, 234, 0.55);
+    opacity: 0; animation: aparecer-texto .6s ease-out 1.35s forwards; will-change: opacity; }
+  @keyframes aparecer-texto { to { opacity: 1; } }
+  @media (max-width: 520px) { .marca-aa { width: 134px; height: 99px; } }
 
-  /* ---------- carregamento ---------- */
-  #carregamento { display: none; z-index: 29; background: linear-gradient(rgba(10, 7, 14, 0.82), rgba(10, 7, 14, 0.95)), url('assets/menu/capa.jpg') center / cover no-repeat, #0d0a12; }
-  #carregamento.ativo { display: flex; animation: aparecer .25s ease-out; }
-  .conteudo-carga { display: flex; flex-direction: column; align-items: center; gap: 14px; }
-  #carregamento h2 { margin: 6px 0 0; font: 700 34px var(--titulo); color: #fff; letter-spacing: .5px; text-shadow: 0 3px 0 rgba(90, 60, 140, 0.55); }
-  /* carretel girando (linha tracejada dourada em volta de um miolo) */
-  .carretel { position: relative; width: 54px; height: 54px; border-radius: 50%; border: 3px dashed var(--ouro); box-sizing: border-box;
-    animation: girar 1.4s linear infinite; will-change: transform; }
-  .carretel i { position: absolute; inset: 12px; border-radius: 50%; background: radial-gradient(#fff 0 22%, var(--lilas) 23% 100%); }
-  @keyframes girar { to { transform: rotate(360deg); } }
-  .progresso { width: min(280px, 70vw); height: 3px; border-radius: 2px; background: rgba(255, 255, 255, 0.14); overflow: hidden; }
-  .progresso i { display: block; height: 100%; background: var(--ouro); transform-origin: 0 50%; transform: scaleX(var(--progresso, 0.03));
-    transition: transform .35s ease-out; will-change: transform; }
-  #textoCarga { margin: 0; font-size: 12px; font-weight: 700; letter-spacing: 1px; color: var(--texto-2); }
+  /* ---------- carregamento: o nome do jogo, uma linha fina de progresso e a etapa com a porcentagem ---------- */
+  #carregamento { display: none; z-index: 29; }
+  #carregamento.ativo { display: flex; animation: aparecer .3s ease-out; }
+  .conteudo-carga { display: flex; flex-direction: column; align-items: stretch; width: min(300px, 72vw); gap: 18px; }
+  #carregamento h2 { margin: 0; text-align: center; font: 600 28px var(--titulo); letter-spacing: 1px; color: #f6f2ea; }
+  .progresso { height: 1px; background: rgba(246, 242, 234, 0.14); overflow: hidden; }
+  .progresso i { display: block; height: 100%; background: var(--ouro); transform-origin: 0 50%; transform: scaleX(var(--progresso, 0.02));
+    transition: transform .4s ease-out; will-change: transform; }
+  .conteudo-carga p { display: flex; justify-content: space-between; margin: -8px 0 0; font: 600 10px var(--fonte); letter-spacing: 2px; text-transform: uppercase; color: rgba(246, 242, 234, 0.45); }
+  #porcentoCarga { font-variant-numeric: tabular-nums; color: rgba(246, 242, 234, 0.7); }
 </style>
 <!-- bibliotecas na própria pasta (vendor/): three 0.165.0, three-mesh-bvh 0.7.6, meshoptimizer 0.21.0. O jogo roda sem internet (e dentro do APK) -->
-<script type="importmap">{"imports":{"three":"./vendor/three/build/three.module.js","three/addons/":"./vendor/three/examples/jsm/","three-mesh-bvh":"./vendor/three-mesh-bvh/build/index.module.js","meshoptimizer/simplifier":"./vendor/meshoptimizer/meshopt_simplifier.module.js","./src/agua.js":"./src/agua.js?v=e2a2da6b9b","./src/altos.js":"./src/altos.js?v=ac761e4342","./src/boneca.js":"./src/boneca.js?v=87f39b0066","./src/bonecaNova.js":"./src/bonecaNova.js?v=6925cd35b7","./src/cachoeira.js":"./src/cachoeira.js?v=f700bc46b9","./src/cambalhota.js":"./src/cambalhota.js?v=aff8debf26","./src/campanha.js":"./src/campanha.js?v=22d7123551","./src/canvasTextura.js":"./src/canvasTextura.js?v=8ddd89e18a","./src/capitulo.js":"./src/capitulo.js?v=5631f04f86","./src/casas.js":"./src/casas.js?v=bf5f443903","./src/ceu.js":"./src/ceu.js?v=8ffb931fd1","./src/chuva.js":"./src/chuva.js?v=6cf0295986","./src/colisao.js":"./src/colisao.js?v=ac6260ec0b","./src/combate.js":"./src/combate.js?v=acafc23595","./src/dia.js":"./src/dia.js?v=e05b6cc395","./src/distancia.js":"./src/distancia.js?v=9a5844420e","./src/estilo.js":"./src/estilo.js?v=0c453af42f","./src/fisica.js":"./src/fisica.js?v=7949a2cbcf","./src/graficos.js":"./src/graficos.js?v=ad366c9334","./src/historia.js":"./src/historia.js?v=21af753ccb","./src/ilha.js":"./src/ilha.js?v=b6d5e4d838","./src/inimigos.js":"./src/inimigos.js?v=95087f1816","./src/jogo.js":"./src/jogo.js?v=b84826e347","./src/lotes.js":"./src/lotes.js?v=f3831174bf","./src/mapa.js":"./src/mapa.js?v=6640d26460","./src/mundo.js":"./src/mundo.js?v=08560bc849","./src/nevoa.js":"./src/nevoa.js?v=9bccad8ac5","./src/objetos.js":"./src/objetos.js?v=243e276518","./src/oclusao.js":"./src/oclusao.js?v=a1ec74f05f","./src/particulas.js":"./src/particulas.js?v=efad11a94e","./src/pes.js":"./src/pes.js?v=9f8ed5d180","./src/praia.js":"./src/praia.js?v=700cd3c717","./src/praiaForma.js":"./src/praiaForma.js?v=79c406a618","./src/reparos.js":"./src/reparos.js?v=e805cead1a","./src/salvar.js":"./src/salvar.js?v=0d75e7e284","./src/simplificar.js":"./src/simplificar.js?v=a439e6c6ca","./src/suavizar.js":"./src/suavizar.js?v=042d8dcf4b","./src/terreno.js":"./src/terreno.js?v=30a71b0a42","./src/texturas.js":"./src/texturas.js?v=5b74c7049c"}}</script>
+<script type="importmap">{"imports":{"three":"./vendor/three/build/three.module.js","three/addons/":"./vendor/three/examples/jsm/","three-mesh-bvh":"./vendor/three-mesh-bvh/build/index.module.js","meshoptimizer/simplifier":"./vendor/meshoptimizer/meshopt_simplifier.module.js","./src/agua.js":"./src/agua.js?v=e2a2da6b9b","./src/altos.js":"./src/altos.js?v=ac761e4342","./src/boneca.js":"./src/boneca.js?v=87f39b0066","./src/bonecaNova.js":"./src/bonecaNova.js?v=6925cd35b7","./src/cachoeira.js":"./src/cachoeira.js?v=f700bc46b9","./src/cambalhota.js":"./src/cambalhota.js?v=aff8debf26","./src/campanha.js":"./src/campanha.js?v=22d7123551","./src/canvasTextura.js":"./src/canvasTextura.js?v=8ddd89e18a","./src/capitulo.js":"./src/capitulo.js?v=5631f04f86","./src/casas.js":"./src/casas.js?v=bf5f443903","./src/ceu.js":"./src/ceu.js?v=8ffb931fd1","./src/chuva.js":"./src/chuva.js?v=6cf0295986","./src/colisao.js":"./src/colisao.js?v=ac6260ec0b","./src/combate.js":"./src/combate.js?v=acafc23595","./src/dia.js":"./src/dia.js?v=e05b6cc395","./src/distancia.js":"./src/distancia.js?v=9a5844420e","./src/estilo.js":"./src/estilo.js?v=0c453af42f","./src/fisica.js":"./src/fisica.js?v=7949a2cbcf","./src/graficos.js":"./src/graficos.js?v=ad366c9334","./src/historia.js":"./src/historia.js?v=21af753ccb","./src/ilha.js":"./src/ilha.js?v=b6d5e4d838","./src/inimigos.js":"./src/inimigos.js?v=95087f1816","./src/jogo.js":"./src/jogo.js?v=e938191171","./src/lotes.js":"./src/lotes.js?v=f3831174bf","./src/mapa.js":"./src/mapa.js?v=6640d26460","./src/mundo.js":"./src/mundo.js?v=08560bc849","./src/nevoa.js":"./src/nevoa.js?v=9bccad8ac5","./src/objetos.js":"./src/objetos.js?v=243e276518","./src/oclusao.js":"./src/oclusao.js?v=a1ec74f05f","./src/particulas.js":"./src/particulas.js?v=efad11a94e","./src/pes.js":"./src/pes.js?v=9f8ed5d180","./src/praia.js":"./src/praia.js?v=700cd3c717","./src/praiaForma.js":"./src/praiaForma.js?v=79c406a618","./src/reparos.js":"./src/reparos.js?v=e805cead1a","./src/salvar.js":"./src/salvar.js?v=0d75e7e284","./src/simplificar.js":"./src/simplificar.js?v=a439e6c6ca","./src/suavizar.js":"./src/suavizar.js?v=042d8dcf4b","./src/terreno.js":"./src/terreno.js?v=30a71b0a42","./src/texturas.js":"./src/texturas.js?v=5b74c7049c"}}</script>
 </head>
 <body>
 <!-- abertura: logo AA animada; depois, a tela de carregamento até o jogo ficar pronto (ver o script
      logo abaixo). Tudo animado só com transform e opacidade: o navegador anima isso fora da linha
      principal, então não trava enquanto o jogo carrega no fundo. -->
 <div id="abertura" aria-hidden="true">
-  <div class="brilho-aa"></div>
-  <div class="logo-aa">
-    <i class="perna p1"></i><i class="perna p2"></i><i class="perna p3"></i><i class="perna p4"></i>
-    <i class="linha"></i><i class="no"></i><i class="agulha"></i>
+  <div class="marca-aa">
+    <svg class="letras-aa" viewBox="0 0 168 124" aria-hidden="true">
+      <!-- os dois A são uma linha só (um fio), cortada reta na base -->
+      <defs><clipPath id="baseAA"><rect x="0" y="0" width="168" height="116" /></clipPath></defs>
+      <path clip-path="url(#baseAA)" d="M8 130 L46 18 L84 130 L122 18 L160 130" />
+    </svg>
+    <i class="barra-aa"></i>
+    <i class="cortina-aa"></i>
   </div>
   <p class="apresenta">apresenta</p>
 </div>
 <div id="carregamento" aria-live="polite">
   <div class="conteudo-carga">
-    <div class="carretel"><i></i></div>
     <h2>Threadbound</h2>
     <div class="progresso"><i></i></div>
-    <p id="textoCarga">Costurando a ilha…</p>
+    <p><span id="textoCarga">Carregando</span><span id="porcentoCarga">0%</span></p>
   </div>
 </div>
 <script>
@@ -641,7 +624,7 @@
       </div>
       <p id="perfil-pc"></p>
       <div id="aviso-aa">O antisserrilhado deste nível só muda ao abrir o jogo de novo.</div>
-      <p id="versao">versão 30/10/2026 02:38 · b84826</p>
+      <p id="versao">versão 30/10/2026 02:40 · e93819</p>
     </div>
     <footer><button id="fechar-graficos" class="voltar"><kbd>Esc</kbd>Voltar</button></footer>
   </div>
@@ -694,6 +677,6 @@
     msg.appendChild(b);
   }, true);
 </script>
-<script type="module" src="src/jogo.js?v=b84826e347"></script>
+<script type="module" src="src/jogo.js?v=e938191171"></script>
 </body>
 </html>

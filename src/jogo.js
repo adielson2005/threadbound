@@ -1568,7 +1568,11 @@ renderer.setAnimationLoop(() => {
 const progresso = { personagem: 0, mapa: 0 };
 // barra do menu e da tela de carregamento (index.html): os downloads valem até 70%, a montagem do
 // mapa o resto (a barra da tela de carregamento anda por transform, sem redesenhar a página)
-const progressoCarga = f => document.documentElement.style.setProperty('--progresso', Math.max(0.03, Math.min(1, f)).toFixed(3));
+const progressoCarga = f => {
+  f = Math.max(0.02, Math.min(1, f));
+  document.documentElement.style.setProperty('--progresso', f.toFixed(3));
+  const el = $('porcentoCarga'); if (el) el.textContent = Math.round(f * 100) + '%';
+};
 const textoCarga = t => { const el = $('textoCarga'); if (el) el.textContent = t; };
 const mostrarProgresso = () => {
   const f = progresso.personagem * 0.5 + progresso.mapa * 0.5;
@@ -1585,7 +1589,7 @@ Promise.all([
 ])
   .then(async ([p, m, cach]) => {
     msg.textContent = 'Preparando o mapa…';
-    textoCarga('Preparando o mapa…'); progressoCarga(0.75);
+    textoCarga('Preparando o mapa'); progressoCarga(0.75);
     personagem = p; mapa = m;
     if (p.velocidades.andar > 0.2) velAndar = p.velocidades.andar;
     if (p.velocidades.correr > 0.5) velCorrer = p.velocidades.correr;
@@ -1660,7 +1664,7 @@ Promise.all([
     tocar('parada');
     // a tela de carregamento mostra a etapa nova antes do passo mais pesado (o navegador desenha a
     // interface entre um quadro e outro)
-    textoCarga('Preparando os gráficos…'); progressoCarga(0.88);
+    textoCarga('Preparando os gráficos'); progressoCarga(0.88);
     await new Promise(r => requestAnimationFrame(() => setTimeout(r, 0)));
       // compila os shaders e sobe todos os níveis de detalhe do mapa para a GPU antes de começar
     // (evita travadinhas na primeira vez que algo aparece ou quando a câmera vira)
