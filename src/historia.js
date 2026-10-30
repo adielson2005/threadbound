@@ -70,7 +70,7 @@ const CARTAS_1 = {
 // Contextual tutorials (each shows once)
 const DICAS_1 = {
   andar: 'W A S D (ou setas) para andar · mova o mouse para olhar em volta',
-  correr: 'Segure Shift para correr',
+  correr: 'Segure Shift para correr · Shift duas vezes (e segure) para a corrida super rápida, que gasta o fôlego',
   pular: 'Espaço para pular · no ar, Espaço de novo dá um impulso · segure Espaço para planar',
   borda: 'Pule contra uma borda e continue empurrando: Brisa se puxa para cima',
   planar: 'Caindo? Segure Espaço para planar devagar até o chão',
@@ -404,7 +404,7 @@ export const DICAS = { ...DICAS_1, ...T.DICAS };
 // "aperte E" vira "toque em E", Espaço vira ▲)
 export const DICAS_TOQUE = {
   andar: 'Arraste no lado esquerdo da tela para andar · arraste no direito para olhar em volta',
-  correr: 'Arraste o bastão além da borda para correr',
+  correr: 'Arraste o bastão além da borda para correr · segure ⚡ para a corrida super rápida, que gasta o fôlego',
   pular: '▲ pula · no ar, ▲ de novo dá um impulso · segure ▲ para planar',
   planar: 'Caindo? Segure ▲ para planar devagar até o chão',
 };

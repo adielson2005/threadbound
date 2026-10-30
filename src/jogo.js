@@ -39,10 +39,14 @@ const FISICA = {
   // velocidades escolhidas junto com a cadência das animações (ver velocidadeNatural: andar 1,43 m/s,
   // correr 4,2 m/s nos clipes). Sem o sprint ela anda (antes ia a 5,8 m/s, sempre correndo)
   velocidade: 2.7,          // andar firme
-  velocidadeDisparada: 6.5, // sprint: segurando Shift, X no controle ou o bastão arrastado além da borda
-  // fôlego do sprint (barra no HUD): ~5 s de corrida contínua; recarrega em ~3,5 s depois de 0,7 s sem
-  // correr. Zerado, ela fica cansada: volta a correr soltando o sprint (com 25% da barra) ou com a
-  // barra cheia (segurando o sprint, não fica correndo e cansando de novo a cada instante)
+  // três passos: andar; correr (Shift, X/RT no controle, bastão além da borda), sem gastar nada; e a
+  // corrida super rápida (Shift duas vezes e segurar, L3 no controle, botão ⚡ no celular), que gasta
+  // a barra de fôlego
+  velocidadeDisparada: 4.6, // correr
+  velocidadeSuper: 7.2,     // corrida super rápida
+  // fôlego da corrida super rápida (barra no HUD): ~5 s contínuos; recarrega em ~3,5 s depois de 0,7 s
+  // sem ela. Zerado, ela cansa e cai para a corrida normal: volta à super soltando o comando (com 25%
+  // da barra) ou com a barra cheia (segurando, não fica acelerando e cansando de novo a cada instante)
   energia: { duracao: 5, recarga: 3.5, espera: 0.7, voltar: 0.25 },
   velocidadeDevagar: 1.0,   // segurando X: um passeio
   velocidadeGuarda: 1.4,    // defendendo
@@ -378,6 +382,7 @@ const T = {
   esq: ['KeyA', 'ArrowLeft'], dir: ['KeyD', 'ArrowRight'],
   pulo: ['Space', 'GamepadPulo', 'ToquePulo'],
   disparar: ['ShiftLeft', 'ShiftRight', 'GamepadDisparar', 'ToqueCorrer'],
+  superCorrer: ['ShiftDuplo', 'GamepadSuper', 'ToqueSuper'],
   camEsq: ['KeyZ'], camDir: ['KeyC'], // E é interagir
   defender: ['KeyQ', 'GamepadDefender', 'ToqueDefesa'], // segurar
   devagar: ['KeyX'], // segurar: anda devagar
@@ -413,7 +418,18 @@ addEventListener('keydown', e => {
   if ((e.code === 'KeyP' || e.code === 'Escape') && !e.repeat) alternarPausa();
   teclas.add(e.code);
 });
-addEventListener('keyup', e => teclas.delete(e.code));
+addEventListener('keyup', e => {
+  teclas.delete(e.code);
+  if (e.code.startsWith('Shift')) teclas.delete('ShiftDuplo');
+});
+// Shift duas vezes seguidas (e segurar): corrida super rápida
+let ultimoShift = -1e9;
+addEventListener('keydown', e => {
+  if (!e.code.startsWith('Shift') || e.repeat) return;
+  const agora = performance.now();
+  if (agora - ultimoShift < 320) teclas.add('ShiftDuplo');
+  ultimoShift = agora;
+});
 // se a janela perde o foco com uma tecla apertada, ela não fica "presa"
 addEventListener('blur', () => teclas.clear());
 
@@ -483,10 +499,15 @@ $('tPegar').addEventListener('pointerdown', e => { e.preventDefault(); combate?.
 const botaoDefesa = $('tDefesa');
 botaoDefesa.addEventListener('pointerdown', e => { e.preventDefault(); teclas.add('ToqueDefesa'); });
 for (const ev of ['pointerup', 'pointercancel', 'pointerleave']) botaoDefesa.addEventListener(ev, () => teclas.delete('ToqueDefesa'));
+// ⚡ segurado: corrida super rápida (o bastão continua dando a direção)
+const botaoSuper = $('tSuper');
+botaoSuper.addEventListener('pointerdown', e => { e.preventDefault(); teclas.add('ToqueSuper'); });
+for (const ev of ['pointerup', 'pointercancel', 'pointerleave']) botaoSuper.addEventListener(ev, () => teclas.delete('ToqueSuper'));
 
 // controle (gamepad): analógico esquerdo anda, direito gira a câmera, A pula, B soca, Y chuta,
-// RB pega/solta, LT defende, X/RT correm, LB interage, Start pausa e Select abre os gráficos.
-let gpAntes = {}, gpEixoAntes = false;
+// RB pega/solta, LT defende, X/RT correm, L3 (clicar o analógico) liga a corrida super rápida (até
+// parar), LB interage, Start pausa e Select abre os gráficos.
+let gpAntes = {}, gpEixoAntes = false, gpSuper = false;
 function lerGamepad() {
   const gp = [...(navigator.getGamepads?.() || [])].find(Boolean);
   if (!gp) return;
@@ -514,6 +535,9 @@ function lerGamepad() {
   analogico.camX = ax(2); analogico.camY = ax(3);
   b(2) || b(7) ? teclas.add('GamepadDisparar') : teclas.delete('GamepadDisparar');
   b(6) ? teclas.add('GamepadDefender') : teclas.delete('GamepadDefender');
+  if (borda(10)) gpSuper = !gpSuper;
+  if (Math.hypot(ax(0), ax(1)) < 0.2 && !b(12) && !b(13) && !b(14) && !b(15)) gpSuper = false;
+  gpSuper ? teclas.add('GamepadSuper') : teclas.delete('GamepadSuper');
   if (estado === 'jogando' && !pausado) {
     if (borda(1)) combate?.pedir('combo');
     if (borda(3)) combate?.pedir('chute');
@@ -548,7 +572,7 @@ let correntes = []; // correntes de vento (lançadores calculados pela análise 
 const jogador = {
   pos: new THREE.Vector3(), vel: new THREE.Vector3(), noChao: false,
   tempoNoAr: 0, tempoPulo: 99, angulo: 0,
-  disparando: false, energia: 1, cansada: false, esperaEnergia: 0, pulou: false, aterrissou: false, velQueda: 0, veioDoTrampolim: false,
+  disparando: false, superCorrendo: false, energia: 1, cansada: false, esperaEnergia: 0, pulou: false, aterrissou: false, velQueda: 0, veioDoTrampolim: false,
   puloDuploUsado: false, cambalhota: -1, comecouCambalhota: false, // cambalhota: progresso 0..1, -1 = nenhuma
   lancado: false, seguro: new THREE.Vector3(), tempoSeguro: 0,
 };
@@ -970,16 +994,18 @@ function passoFisica(dt) {
   }
   // sprint gasta a barra de fôlego enquanto ela se move; sem correr, a barra recarrega
   const E = FISICA.energia;
-  const querCorrer = algumaTecla(T.disparar);
-  if (j.cansada && (j.energia >= 1 || (j.energia >= E.voltar && !querCorrer))) j.cansada = false;
-  j.disparando = querCorrer && !j.defendendo && !j.cansada;
-  if (j.disparando && desejado.lengthSq() > 0.0001) {
+  const querSuper = algumaTecla(T.superCorrer);
+  if (j.cansada && (j.energia >= 1 || (j.energia >= E.voltar && !querSuper))) j.cansada = false;
+  j.superCorrendo = querSuper && !j.defendendo && !j.cansada;
+  // pedir a super cansada (ou segurar Shift) é a corrida normal, que não gasta a barra
+  j.disparando = (querSuper || algumaTecla(T.disparar)) && !j.defendendo;
+  if (j.superCorrendo && desejado.lengthSq() > 0.0001) {
     j.energia -= dt / E.duracao; j.esperaEnergia = E.espera;
-    if (j.energia <= 0) { j.energia = 0; j.cansada = true; j.disparando = false; }
+    if (j.energia <= 0) { j.energia = 0; j.cansada = true; j.superCorrendo = false; }
   } else if ((j.esperaEnergia -= dt) <= 0) j.energia = Math.min(1, j.energia + dt / E.recarga);
   // defendendo ela anda devagar, de guarda
   const devagar = algumaTecla(T.devagar) && j.noChao;
-  const vmax = j.defendendo ? FISICA.velocidadeGuarda : j.planando ? FISICA.velocidadePlanando : j.disparando ? FISICA.velocidadeDisparada
+  const vmax = j.defendendo ? FISICA.velocidadeGuarda : j.planando ? FISICA.velocidadePlanando : j.superCorrendo ? FISICA.velocidadeSuper : j.disparando ? FISICA.velocidadeDisparada
     : !j.noChao && j.tempoNoAr > 0.25 ? FISICA.velocidadeAr : devagar ? FISICA.velocidadeDevagar : FISICA.velocidade;
 
   horiz.set(j.vel.x, 0, j.vel.z);
