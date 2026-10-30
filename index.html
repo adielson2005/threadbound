@@ -350,9 +350,24 @@
   .toque { transition: transform .08s, background .12s; }
   .toque:active { transform: scale(.92); }
   @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; animation-delay: 0s !important; transition-duration: .01ms !important; } }
+  /* ---------- menu inicial em dois passos: "menu" (título + opções), "jogar" (Continuar / Novo jogo,
+     ou a barra de carregamento se a ilha ainda estiver sendo montada) e "fim" (resumo do capítulo) ---------- */
+  #tela[data-modo="menu"] :is(.selo, .sub, #historia, .acoes),
+  #tela[data-modo="jogar"] :is(.selo, .sub, #historia, .menu-links),
+  #tela[data-modo="fim"] :is(#historia, .menu-links, #voltarMenu) { display: none !important; }
+  #tela[data-modo="menu"] .cartao, #tela[data-modo="jogar"] .cartao { justify-content: center; min-height: 100%; }
+  #tela .acoes { gap: 2px; }
+  #tela .acoes > * { animation: deslizar .32s cubic-bezier(.2, .8, .2, 1) backwards; }
+  #tela .acoes > :nth-child(4) { animation-delay: .05s; } #tela .acoes > :nth-child(5) { animation-delay: .1s; }
+  #tela .acoes > :last-child { animation-delay: .12s; }
+  #tela[data-modo="jogar"] #msg { font: 600 15px var(--titulo); color: var(--texto-2); }
+  #tela .acoes #barra { margin: 4px 0 10px; }
+  #tela .acoes #msg:empty { display: none; }
+  #voltarMenu { margin-top: 10px; }
+  #tela[data-modo="fim"] #msg { margin-bottom: 12px; }
 </style>
 <!-- bibliotecas na própria pasta (vendor/): three 0.165.0, three-mesh-bvh 0.7.6, meshoptimizer 0.21.0. O jogo roda sem internet (e dentro do APK) -->
-<script type="importmap">{"imports":{"three":"./vendor/three/build/three.module.js","three/addons/":"./vendor/three/examples/jsm/","three-mesh-bvh":"./vendor/three-mesh-bvh/build/index.module.js","meshoptimizer/simplifier":"./vendor/meshoptimizer/meshopt_simplifier.module.js","./src/agua.js":"./src/agua.js?v=e2a2da6b9b","./src/altos.js":"./src/altos.js?v=ac761e4342","./src/boneca.js":"./src/boneca.js?v=87f39b0066","./src/bonecaNova.js":"./src/bonecaNova.js?v=6925cd35b7","./src/cachoeira.js":"./src/cachoeira.js?v=f700bc46b9","./src/cambalhota.js":"./src/cambalhota.js?v=aff8debf26","./src/campanha.js":"./src/campanha.js?v=22d7123551","./src/canvasTextura.js":"./src/canvasTextura.js?v=8ddd89e18a","./src/capitulo.js":"./src/capitulo.js?v=5631f04f86","./src/casas.js":"./src/casas.js?v=bf5f443903","./src/ceu.js":"./src/ceu.js?v=8ffb931fd1","./src/chuva.js":"./src/chuva.js?v=6cf0295986","./src/colisao.js":"./src/colisao.js?v=ac6260ec0b","./src/combate.js":"./src/combate.js?v=acafc23595","./src/dia.js":"./src/dia.js?v=e05b6cc395","./src/distancia.js":"./src/distancia.js?v=9a5844420e","./src/estilo.js":"./src/estilo.js?v=0c453af42f","./src/fisica.js":"./src/fisica.js?v=7949a2cbcf","./src/graficos.js":"./src/graficos.js?v=ad366c9334","./src/historia.js":"./src/historia.js?v=21af753ccb","./src/ilha.js":"./src/ilha.js?v=b6d5e4d838","./src/inimigos.js":"./src/inimigos.js?v=95087f1816","./src/jogo.js":"./src/jogo.js?v=3acb0f377e","./src/lotes.js":"./src/lotes.js?v=f3831174bf","./src/mapa.js":"./src/mapa.js?v=6640d26460","./src/mundo.js":"./src/mundo.js?v=08560bc849","./src/nevoa.js":"./src/nevoa.js?v=9bccad8ac5","./src/objetos.js":"./src/objetos.js?v=243e276518","./src/oclusao.js":"./src/oclusao.js?v=a1ec74f05f","./src/particulas.js":"./src/particulas.js?v=efad11a94e","./src/pes.js":"./src/pes.js?v=9f8ed5d180","./src/praia.js":"./src/praia.js?v=700cd3c717","./src/praiaForma.js":"./src/praiaForma.js?v=79c406a618","./src/reparos.js":"./src/reparos.js?v=e805cead1a","./src/salvar.js":"./src/salvar.js?v=0d75e7e284","./src/simplificar.js":"./src/simplificar.js?v=a439e6c6ca","./src/suavizar.js":"./src/suavizar.js?v=042d8dcf4b","./src/terreno.js":"./src/terreno.js?v=30a71b0a42","./src/texturas.js":"./src/texturas.js?v=5b74c7049c"}}</script>
+<script type="importmap">{"imports":{"three":"./vendor/three/build/three.module.js","three/addons/":"./vendor/three/examples/jsm/","three-mesh-bvh":"./vendor/three-mesh-bvh/build/index.module.js","meshoptimizer/simplifier":"./vendor/meshoptimizer/meshopt_simplifier.module.js","./src/agua.js":"./src/agua.js?v=e2a2da6b9b","./src/altos.js":"./src/altos.js?v=ac761e4342","./src/boneca.js":"./src/boneca.js?v=87f39b0066","./src/bonecaNova.js":"./src/bonecaNova.js?v=6925cd35b7","./src/cachoeira.js":"./src/cachoeira.js?v=f700bc46b9","./src/cambalhota.js":"./src/cambalhota.js?v=aff8debf26","./src/campanha.js":"./src/campanha.js?v=22d7123551","./src/canvasTextura.js":"./src/canvasTextura.js?v=8ddd89e18a","./src/capitulo.js":"./src/capitulo.js?v=5631f04f86","./src/casas.js":"./src/casas.js?v=bf5f443903","./src/ceu.js":"./src/ceu.js?v=8ffb931fd1","./src/chuva.js":"./src/chuva.js?v=6cf0295986","./src/colisao.js":"./src/colisao.js?v=ac6260ec0b","./src/combate.js":"./src/combate.js?v=acafc23595","./src/dia.js":"./src/dia.js?v=e05b6cc395","./src/distancia.js":"./src/distancia.js?v=9a5844420e","./src/estilo.js":"./src/estilo.js?v=0c453af42f","./src/fisica.js":"./src/fisica.js?v=7949a2cbcf","./src/graficos.js":"./src/graficos.js?v=ad366c9334","./src/historia.js":"./src/historia.js?v=21af753ccb","./src/ilha.js":"./src/ilha.js?v=b6d5e4d838","./src/inimigos.js":"./src/inimigos.js?v=95087f1816","./src/jogo.js":"./src/jogo.js?v=7754ea169d","./src/lotes.js":"./src/lotes.js?v=f3831174bf","./src/mapa.js":"./src/mapa.js?v=6640d26460","./src/mundo.js":"./src/mundo.js?v=08560bc849","./src/nevoa.js":"./src/nevoa.js?v=9bccad8ac5","./src/objetos.js":"./src/objetos.js?v=243e276518","./src/oclusao.js":"./src/oclusao.js?v=a1ec74f05f","./src/particulas.js":"./src/particulas.js?v=efad11a94e","./src/pes.js":"./src/pes.js?v=9f8ed5d180","./src/praia.js":"./src/praia.js?v=700cd3c717","./src/praiaForma.js":"./src/praiaForma.js?v=79c406a618","./src/reparos.js":"./src/reparos.js?v=e805cead1a","./src/salvar.js":"./src/salvar.js?v=0d75e7e284","./src/simplificar.js":"./src/simplificar.js?v=a439e6c6ca","./src/suavizar.js":"./src/suavizar.js?v=042d8dcf4b","./src/terreno.js":"./src/terreno.js?v=30a71b0a42","./src/texturas.js":"./src/texturas.js?v=5b74c7049c"}}</script>
 </head>
 <body>
 <div id="hud">
@@ -371,7 +386,7 @@
 <div id="fala" class="vidro"><b></b><span></span></div>
 <div id="memoria" class="vidro"><h3>✦ Fragmento de memória</h3><p></p></div>
 <div id="bilhete"><div class="papel"><p></p><small>Enter ou E para fechar</small></div></div>
-<div id="tela">
+<div id="tela" data-modo="menu">
   <div class="cartao">
    <div class="lado-texto">
     <div class="cabecalho">
@@ -380,22 +395,25 @@
       <p class="sub">A Vila de Maré Alta</p>
     </div>
     <div id="historia"></div>
-    <p id="msg">Costurando a ilha…</p>
-    <div id="barra"><div></div></div>
    </div>
    <div class="lado-acoes">
-    <div class="acoes">
-      <button id="continuarJogo" class="botao principal">Continuar</button>
-      <button id="botao" class="botao principal">Começar</button>
-      <button id="continuar" class="botao secundario">Continuar explorando</button>
-    </div>
-    <p id="confirmarNovo">Seu progresso salvo será apagado. Toque em <b>Novo jogo</b> de novo para confirmar.</p>
+    <!-- menu: Jogar abre a escolha entre Continuar e Novo jogo -->
     <nav class="menu-links">
-      <button class="item-menu" data-painel="capitulos"><span>Capítulos</span></button>
-      <button class="item-menu" data-painel="config"><span>Configurações</span></button>
-      <button class="item-menu" id="abrir-graficos-menu"><span>Gráficos</span></button>
-      <button class="item-menu" data-painel="creditos"><span>Créditos</span></button>
+      <button class="item-menu" id="jogar">Jogar</button>
+      <button class="item-menu" data-painel="capitulos">Capítulos</button>
+      <button class="item-menu" data-painel="config">Configurações</button>
+      <button class="item-menu" id="abrir-graficos-menu">Gráficos</button>
+      <button class="item-menu" data-painel="creditos">Créditos</button>
     </nav>
+    <div class="acoes">
+      <p id="msg">Costurando a ilha…</p>
+      <div id="barra"><div></div></div>
+      <button id="continuarJogo" class="botao principal">Continuar</button>
+      <button id="botao" class="botao principal">Novo jogo</button>
+      <button id="continuar" class="botao secundario">Continuar explorando</button>
+      <p id="confirmarNovo">Seu progresso salvo será apagado. Toque em <b>Novo jogo</b> de novo para confirmar.</p>
+      <button class="voltar" id="voltarMenu"><kbd>Esc</kbd>Voltar</button>
+    </div>
    </div>
   </div>
   <div class="prompts"><span><kbd>↑</kbd><kbd>↓</kbd>Escolher</span><span><kbd>Enter</kbd>Confirmar</span></div>
@@ -481,7 +499,7 @@
       </div>
       <p id="perfil-pc"></p>
       <div id="aviso-aa">O antisserrilhado deste nível só muda ao abrir o jogo de novo.</div>
-      <p id="versao">versão 29/10/2026 04:33 · 3acb0f</p>
+      <p id="versao">versão 30/10/2026 00:02 · 7754ea</p>
     </div>
     <footer><button id="fechar-graficos" class="voltar"><kbd>Esc</kbd>Voltar</button></footer>
   </div>
@@ -525,6 +543,7 @@
     if (!script && !(e instanceof ErrorEvent)) return;
     const msg = document.getElementById('msg');
     if (!msg) return;
+    const tela = document.getElementById('tela'); if (tela) tela.dataset.modo = 'jogar';
     msg.textContent = 'Não foi possível carregar o jogo' + (e.message ? ': ' + e.message : script ? ' (' + e.target.src + ')' : '') + '. ';
     const b = document.createElement('button');
     b.className = 'botao secundario'; b.textContent = 'Recarregar';
@@ -532,6 +551,6 @@
     msg.appendChild(b);
   }, true);
 </script>
-<script type="module" src="src/jogo.js?v=3acb0f377e"></script>
+<script type="module" src="src/jogo.js?v=7754ea169d"></script>
 </body>
 </html>

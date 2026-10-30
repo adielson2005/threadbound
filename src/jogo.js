@@ -26,7 +26,7 @@ import { carregarCachoeira, posicionarCachoeiras } from './cachoeira.js';
 import { criarInimigos } from './inimigos.js';
 import { criarCampanha } from './campanha.js';
 import { criarCombate, GOLPES } from './combate.js';
-import { INTRO, AVISOS, GAMEOVER, CAPITULO, CHAMADA, FIM, NOMES_CAPITULOS, DESCRICOES_CAPITULOS } from './historia.js';
+import { AVISOS, GAMEOVER, CAPITULO, FIM, NOMES_CAPITULOS, DESCRICOES_CAPITULOS } from './historia.js';
 import { NIVEIS, nivelInicial, salvarNivel, detectarHardware, ajustarAoHardware } from './graficos.js';
 import { DIA } from './dia.js';
 import { criarDistancia } from './distancia.js';
@@ -379,7 +379,11 @@ addEventListener('keydown', e => {
   if (menuAberto) { if (e.code === 'Escape') abrirMenu(false); return; }
   // com um painel aberto (capítulos, configurações) as teclas ficam com ele; Esc fecha (abaixo)
   if (paineis.classList.contains('aberto')) return;
-  if (estado === 'menu' && (e.code === 'Enter' || e.code === 'Space')) { if (!emControle) reiniciar(); return; }
+  if ((estado === 'menu' || estado === 'carregando') && tela.dataset.modo !== 'fim') {
+    if ((e.code === 'Enter' || e.code === 'Space') && !emControle && tela.dataset.modo === 'menu') abrirJogar();
+    if (e.code === 'Escape' && tela.dataset.modo === 'jogar') voltarAoMenu();
+    return;
+  }
   if (estado === 'fim') return;
   if (estado === 'gameover') { if ((e.code === 'Enter' || e.code === 'Space') && !e.repeat) tentarDeNovo(); return; }
   if ((e.code === 'KeyE' || (e.code === 'Enter' && campanha?.lendo)) && !e.repeat) { campanha?.interagir(); return; }
@@ -597,6 +601,24 @@ function reiniciar() {
 }
 let campanhaTerminada = false, confirmandoNovo = false, proximoCapitulo = null;
 botao.addEventListener('click', reiniciar);
+
+// menu inicial em dois passos: Jogar abre Continuar / Novo jogo. Se a ilha ainda estiver sendo
+// montada, mostra a barra de carregamento no lugar, e as opções entram sozinhas quando ela acabar.
+function primeiraOpcaoJogar() {
+  return [$('continuarJogo'), botao, $('voltarMenu')].find(b => getComputedStyle(b).display !== 'none');
+}
+function abrirJogar() {
+  tela.dataset.modo = 'jogar';
+  primeiraOpcaoJogar()?.focus({ preventScroll: true, focusVisible: false });
+}
+function voltarAoMenu() {
+  tela.dataset.modo = 'menu';
+  confirmandoNovo = false; $('confirmarNovo').style.display = 'none';
+  $('jogar').focus({ preventScroll: true, focusVisible: false });
+}
+$('jogar').addEventListener('click', abrirJogar);
+$('voltarMenu').addEventListener('click', voltarAoMenu);
+$('jogar').focus({ preventScroll: true, focusVisible: false });
 // Continuar: refaz o progresso salvo (fragmentos, âncoras, cartas…) e volta ao último ponto seguro
 function continuarJogo() {
   // o último jogo salvo é de outro capítulo: abre a página dele, que continua sozinha
@@ -693,6 +715,7 @@ function terminarCapitulo(r) {
   mostrar(tela, () => { tela.style.display = 'flex'; });
   // "Capítulo 1 — A Oficina Esquecida": o número vai no selo, o nome no título
   const [numero, nome] = r.capitulo.split(' — ');
+  tela.dataset.modo = 'fim';
   tela.querySelector('.selo').textContent = `${numero} concluído`;
   tela.querySelector('h1').textContent = nome ?? r.capitulo;
   tela.querySelector('.sub').textContent = FIM.sub;
@@ -1600,13 +1623,14 @@ Promise.all([
 
     estado = 'menu';
     barra.parentElement.style.display = 'none';
-    $('historia').innerHTML = INTRO.map(l => `<p>${l}</p>`).join('');
-    msg.textContent = CHAMADA;
+    msg.textContent = '';
     const salvo = lerProgresso() || capituloSalvo();
-    botao.textContent = salvo ? 'Novo jogo' : 'Começar';
-    botao.className = salvo ? 'botao secundario' : 'botao principal';
+    botao.textContent = 'Novo jogo';
+    botao.className = 'botao principal';
     botao.style.display = 'block';
-    if (salvo) { $('continuarJogo').style.display = 'block'; $('continuarJogo').focus({ focusVisible: false }); } else botao.focus({ focusVisible: false });
+    if (salvo) $('continuarJogo').style.display = 'block';
+    // quem já apertou Jogar durante o carregamento vê as opções aparecerem com a primeira marcada
+    if (tela.dataset.modo === 'jogar') primeiraOpcaoJogar()?.focus({ preventScroll: true, focusVisible: false });
     window.__jogo = {
       jogador, personagem, camera, camera3p, mapa, terreno, correntes, renderer, cena, sol, medidor, altos, mundo, inimigos, campanha, agua, nevoa, cachoeiras, praia, ceu: ceuJogo, get combate() { return combate; },
       animacao: () => animAtual, estado: () => estado, nivel: () => nomeNivel, aplicarNivel, ocioso, get oclusao() { return oclusao; },
@@ -1616,5 +1640,6 @@ Promise.all([
   })
   .catch(err => {
     console.error(err);
+    tela.dataset.modo = 'jogar';
     msg.textContent = 'Não foi possível carregar o jogo: ' + err.message;
   });
