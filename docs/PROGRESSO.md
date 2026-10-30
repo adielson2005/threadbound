@@ -632,3 +632,24 @@ sem HUD durante as fases).
   (as animações dele são reiniciadas; antes já tinham rodado escondidas).
 - Medido (celular simulado, sem placa de vídeo): abertura → carregamento opaco o tempo todo → jogo
   pronto em ~18 s → carregamento some 0,7 s depois; nenhum quadro com o menu à mostra antes disso.
+
+## Celular / APK: menos trabalho para a GPU e sem ficar trocando de resolução
+
+Medido no perfil celular (Pixel 5 simulado, navegador sem placa de vídeo, então só números relativos):
+
+- **Uma passada de desenho em vez de três.** O celular usava FXAA: a cena era desenhada numa textura à
+  parte e depois filtrada na tela inteira (3 `render()` por quadro, 2 deles para texturas). Agora usa
+  o antisserrilhado nativo (MSAA), que a GPU de celular resolve na própria memória do chip quase de
+  graça: 1 `render()` por quadro, direto na tela (`graficos.js`, perfil celular).
+- **Resolução sem "caça".** Cada troca de resolução recria a tela na GPU (travadinha). A regra antiga
+  (−0,08 / +0,04, perto da meta) ficava subindo e descendo. `src/resolucao.js` anda em degraus de
+  0,25, desce depois de 2 s lentos, sobe só depois de 8 s na meta e lembra o degrau que falhou (a
+  espera para tentar de novo dobra a cada falha, até 10 min). Simulação de 5 min
+  (`node ferramentas/testar-resolucao.mjs`): trocas 22 → 5 (celular fraco), 29 → 4 (médio),
+  17 → 2 (bom), com o mesmo fps médio; no celular bom termina em 1,75 (antes 1,22), imagem mais nítida.
+- **Faixa de resolução do celular**: começa em 1,25 (antes 1,5) e vai de 1 a 1,75 pixel por pixel de
+  CSS (antes até 2): até ~1,0 milhão de pixels por quadro numa tela de 1080 × 2400 em vez de 1,4.
+- Por quadro no Low: 57 chamadas de desenho e ~146 mil triângulos (boneca 25 mil, mar 18,5 mil):
+  dentro do razoável para celular; não foi aí que mexi.
+- O APK já estava com aceleração de hardware e pausa o jogo em segundo plano.
+- Não testado num celular de verdade: o ganho real de fps precisa ser conferido no aparelho.
