@@ -36,10 +36,15 @@ import { fundirEstaticos } from './lotes.js';
 // ---------- Configuração ----------
 const FISICA = {
   gravidade: -32,
-  // velocidades escolhidas junto com a cadência das animações de correr (ver velocidadeNatural)
-  velocidade: 5.8,
-  velocidadeDisparada: 8, // segurando Shift
-  velocidadeDevagar: 1.5,   // segurando X: um passeio, na cadência natural da animação de andar
+  // velocidades escolhidas junto com a cadência das animações (ver velocidadeNatural: andar 1,43 m/s,
+  // correr 4,2 m/s nos clipes). Sem o sprint ela anda (antes ia a 5,8 m/s, sempre correndo)
+  velocidade: 2.1,          // andar firme
+  velocidadeDisparada: 8,   // sprint: segurando Shift, X no controle ou o bastão arrastado além da borda
+  velocidadeDevagar: 1.0,   // segurando X: um passeio
+  velocidadeGuarda: 1.4,    // defendendo
+  // no ar (pulo, ou caindo há mais de 0,25 s; o pulo já marca tempoNoAr = 1) ela ainda alcança a
+  // velocidade de antes: os vãos do mapa foram medidos com saltos a 5,8 m/s
+  velocidadeAr: 5.8,
   aceleracao: 45,
   aceleracaoAr: 14,
   pulo: 12.5,
@@ -962,7 +967,8 @@ function passoFisica(dt) {
   j.disparando = algumaTecla(T.disparar) && !j.defendendo;
   // defendendo ela anda devagar, de guarda
   const devagar = algumaTecla(T.devagar) && j.noChao;
-  const vmax = j.defendendo ? FISICA.velocidade * 0.35 : j.planando ? FISICA.velocidadePlanando : j.disparando ? FISICA.velocidadeDisparada : devagar ? FISICA.velocidadeDevagar : FISICA.velocidade;
+  const vmax = j.defendendo ? FISICA.velocidadeGuarda : j.planando ? FISICA.velocidadePlanando : j.disparando ? FISICA.velocidadeDisparada
+    : !j.noChao && j.tempoNoAr > 0.25 ? FISICA.velocidadeAr : devagar ? FISICA.velocidadeDevagar : FISICA.velocidade;
 
   horiz.set(j.vel.x, 0, j.vel.z);
   const temEntrada = desejado.lengthSq() > 0.0001;
@@ -1197,7 +1203,8 @@ function animarPersonagem(dt) {
     else if (viradaNoLugar) tocar('andar', { vel: 0.9, fade: 0.15 });
     else if (v < 0.4) tocar('parada', { fade: 0.35 });
     // velocidade de reprodução = velocidade real / velocidade natural do clipe (pés não escorregam)
-    else if (v < 2) tocar('andar', { vel: THREE.MathUtils.clamp(v / velAndar, 0.6, 2.2), fade: 0.25 });
+    // (até 2,9 m/s é andar: o passo normal, 2,1 m/s, usa a animação de andar um pouco mais rápida)
+    else if (v < 2.9) tocar('andar', { vel: THREE.MathUtils.clamp(v / velAndar, 0.6, 2.2), fade: 0.25 });
     // (até 2,6×: na corrida com Shift, 8 m/s, os pés acompanham o chão em vez de deslizar)
     else tocar('correr', { vel: THREE.MathUtils.clamp(v / velCorrer, 0.8, 2.6), fade: 0.25 });
   }
