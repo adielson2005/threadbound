@@ -5,7 +5,7 @@ da Vila de Maré Alta, acorda na praça vazia no dia em que os fios que prendem 
 se romper. A história tem **quatro capítulos jogáveis**: a Vila de Maré Alta, o Recife das Vozes, o
 Jardim Submerso e a Costura Final. Cada um abre quando o anterior termina.
 
-- **Jogar online:** https://adielson2005.github.io/threadbound/?v=22
+- **Jogar online:** https://adielson2005.github.io/threadbound/
 - **Roteiro (4 capítulos):** [docs/ROTEIRO.md](docs/ROTEIRO.md)
 - **Progresso do desenvolvimento:** [docs/PROGRESSO.md](docs/PROGRESSO.md)
 
