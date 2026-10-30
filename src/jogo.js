@@ -38,8 +38,12 @@ const FISICA = {
   gravidade: -32,
   // velocidades escolhidas junto com a cadência das animações (ver velocidadeNatural: andar 1,43 m/s,
   // correr 4,2 m/s nos clipes). Sem o sprint ela anda (antes ia a 5,8 m/s, sempre correndo)
-  velocidade: 2.1,          // andar firme
-  velocidadeDisparada: 8,   // sprint: segurando Shift, X no controle ou o bastão arrastado além da borda
+  velocidade: 2.7,          // andar firme
+  velocidadeDisparada: 6.5, // sprint: segurando Shift, X no controle ou o bastão arrastado além da borda
+  // fôlego do sprint (barra no HUD): ~5 s de corrida contínua; recarrega em ~3,5 s depois de 0,7 s sem
+  // correr. Zerado, ela fica cansada: volta a correr soltando o sprint (com 25% da barra) ou com a
+  // barra cheia (segurando o sprint, não fica correndo e cansando de novo a cada instante)
+  energia: { duracao: 5, recarga: 3.5, espera: 0.7, voltar: 0.25 },
   velocidadeDevagar: 1.0,   // segurando X: um passeio
   velocidadeGuarda: 1.4,    // defendendo
   // no ar (pulo, ou caindo há mais de 0,25 s; o pulo já marca tempoNoAr = 1) ela ainda alcança a
@@ -544,7 +548,7 @@ let correntes = []; // correntes de vento (lançadores calculados pela análise 
 const jogador = {
   pos: new THREE.Vector3(), vel: new THREE.Vector3(), noChao: false,
   tempoNoAr: 0, tempoPulo: 99, angulo: 0,
-  disparando: false, pulou: false, aterrissou: false, velQueda: 0, veioDoTrampolim: false,
+  disparando: false, energia: 1, cansada: false, esperaEnergia: 0, pulou: false, aterrissou: false, velQueda: 0, veioDoTrampolim: false,
   puloDuploUsado: false, cambalhota: -1, comecouCambalhota: false, // cambalhota: progresso 0..1, -1 = nenhuma
   lancado: false, seguro: new THREE.Vector3(), tempoSeguro: 0,
 };
@@ -553,7 +557,7 @@ function respawn(ponto) {
   const j = jogador;
   j.pos.copy(ponto ?? j.seguro);
   j.vel.set(0, 0, 0);
-  Object.assign(j, { noChao: false, lancado: false, puloDuploUsado: false, cambalhota: -1, comecouCambalhota: false, tempoNoAr: 0, aterrissou: false, veioDoTrampolim: true, morta: false, noVazio: false, impacto: 0, golpe: null, pegando: null, machucado: 0, defendendo: false });
+  Object.assign(j, { noChao: false, lancado: false, puloDuploUsado: false, cambalhota: -1, comecouCambalhota: false, tempoNoAr: 0, aterrissou: false, veioDoTrampolim: true, morta: false, noVazio: false, impacto: 0, golpe: null, pegando: null, machucado: 0, defendendo: false, energia: 1, cansada: false, esperaEnergia: 0 });
   if (personagem) { personagem.mixer.stopAllAction(); animAtual = null; tocar('parada'); }
 }
 
@@ -964,7 +968,15 @@ function passoFisica(dt) {
     const g = GOLPES[j.golpe.nome], f = j.golpe.t / j.golpe.duracao;
     if (f < g.impacto[1]) passoGolpe = g.avanco * (1 - f / g.impacto[1]);
   }
-  j.disparando = algumaTecla(T.disparar) && !j.defendendo;
+  // sprint gasta a barra de fôlego enquanto ela se move; sem correr, a barra recarrega
+  const E = FISICA.energia;
+  const querCorrer = algumaTecla(T.disparar);
+  if (j.cansada && (j.energia >= 1 || (j.energia >= E.voltar && !querCorrer))) j.cansada = false;
+  j.disparando = querCorrer && !j.defendendo && !j.cansada;
+  if (j.disparando && desejado.lengthSq() > 0.0001) {
+    j.energia -= dt / E.duracao; j.esperaEnergia = E.espera;
+    if (j.energia <= 0) { j.energia = 0; j.cansada = true; j.disparando = false; }
+  } else if ((j.esperaEnergia -= dt) <= 0) j.energia = Math.min(1, j.energia + dt / E.recarga);
   // defendendo ela anda devagar, de guarda
   const devagar = algumaTecla(T.devagar) && j.noChao;
   const vmax = j.defendendo ? FISICA.velocidadeGuarda : j.planando ? FISICA.velocidadePlanando : j.disparando ? FISICA.velocidadeDisparada
@@ -1498,6 +1510,19 @@ function aplicarOrcamento() {
   if (RESOLUCAO.atual < pisoResolucao()) { RESOLUCAO.atual = ajusteResolucao.atual = pisoResolucao(); renderer.setPixelRatio(RESOLUCAO.atual); redimensionarPos(); }
 }
 
+// barra de fôlego do sprint: só aparece quando não está cheia; anda por transform (sem redesenhar)
+const barraEnergia = $('energia'), preenchEnergia = barraEnergia?.firstElementChild;
+let energiaMostrada = -1;
+function mostrarEnergia() {
+  if (!barraEnergia) return;
+  const e = Math.round(jogador.energia * 200) / 200;
+  if (e === energiaMostrada && barraEnergia.classList.contains('cansada') === jogador.cansada) return;
+  energiaMostrada = e;
+  preenchEnergia.style.transform = `scaleX(${e})`;
+  barraEnergia.classList.toggle('cheia', e >= 1);
+  barraEnergia.classList.toggle('cansada', jogador.cansada);
+}
+
 // ---------- Loop ----------
 const relogio = new THREE.Clock();
 let acumulado = 0, tempoCena = 0;
@@ -1528,6 +1553,7 @@ renderer.setAnimationLoop(() => {
   if (estado === 'jogando' && mapa) {
     acumulado += dt;
     while (acumulado >= PASSO) { passoFisica(PASSO); acumulado -= PASSO; }
+    mostrarEnergia();
       if (jogador.morta) { tempoMorte -= dt; if (tempoMorte <= 0) mostrarGameOver(); }
   }
   mundo?.atualizar(dt, t);
