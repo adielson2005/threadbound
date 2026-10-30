@@ -7,7 +7,7 @@
 <!-- fontes da interface (sem internet, caem para a fonte do sistema) -->
 <link rel="icon" href="data:,">
 <link rel="stylesheet" href="vendor/fontes/fontes.css">
-<meta name="versao-site" content="2584f85b02">
+<meta name="versao-site" content="e5bee9058d">
 <script>
   // O GitHub Pages deixa o navegador reaproveitar esta página por até 10 minutos (e um endereço
   // que já foi aberto, como "?v=22", pode continuar vindo da memória). Aqui a página pergunta ao site,
@@ -164,12 +164,18 @@
   .resumo span { display: flex; flex-direction: column; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.4px; color: var(--texto-2); }
   .resumo b { font: 600 30px var(--titulo); color: #fff; letter-spacing: 0; }
   @media (max-width: 760px) {
-    #tela { align-items: flex-end; background-position: 30% center; }
+    #tela { align-items: flex-end; background-position: 72% center; /* a Brisa fica a 2/3 da capa */ }
     #tela::before { background: linear-gradient(180deg, rgba(10, 7, 14, 0.15) 0%, rgba(10, 7, 14, 0.75) 45%, rgba(10, 7, 14, 0.94) 100%); }
     .cartao { width: 100%; padding: 24px 24px calc(22px + env(safe-area-inset-bottom)); gap: 20px; }
     #tela h1 { font-size: 44px; }
     #historia { font-size: 12px; }
     .acoes .botao { font-size: 22px; } .item-menu { font-size: 19px; }
+  }
+  /* celular em pé: a capa ocupa a parte de cima (a Brisa a 2/3 da largura) e o menu fica embaixo,
+     no escuro, sem cobrir o rosto dela */
+  @media (max-width: 760px) and (orientation: portrait) {
+    #tela { background: url('assets/menu/capa.jpg') 72% 0 / auto 66% no-repeat, #0d0a12; }
+    #tela::before { background: linear-gradient(180deg, rgba(10, 7, 14, 0) 0%, rgba(10, 7, 14, 0) 42%, rgba(10, 7, 14, 0.7) 56%, #0d0a12 66%); }
   }
   /* enquanto uma tela estiver aberta, o HUD da partida some */
   body:has(#tela:not([style*="display: none"])) :is(#hud, #objetivo, #dica, #dicaTutorial, #fala, #interagir, #golpe, .toque) { opacity: 0 !important; visibility: hidden; }
@@ -521,7 +527,7 @@
       </div>
       <p id="perfil-pc"></p>
       <div id="aviso-aa">O antisserrilhado deste nível só muda ao abrir o jogo de novo.</div>
-      <p id="versao">versão 30/10/2026 00:07 · a3143e</p>
+      <p id="versao">versão 30/10/2026 00:28 · a3143e</p>
     </div>
     <footer><button id="fechar-graficos" class="voltar"><kbd>Esc</kbd>Voltar</button></footer>
   </div>
