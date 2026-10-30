@@ -664,3 +664,13 @@ Medido no perfil celular (Pixel 5 simulado, navegador sem placa de vídeo, entã
 - A troca andar/correr da animação passou de 2 para 2,9 m/s, para o passo normal usar a de andar.
 - Medido: andando 2,1 m/s ("andar"); sprint 6+ m/s ("correr"); soltar o sprint volta a 2,1; pulo
   andando chega a 5,8 m/s no ar e volta a 2,1 ao pousar.
+
+### Ajuste: andar mais rápido, sprint menor e barra de fôlego
+
+- Andar: 2,1 → 2,7 m/s. Sprint: 8 → 6,5 m/s.
+- Barra de fôlego do sprint (embaixo dos carretéis; some quando cheia, vermelha quando cansada):
+  esvazia em ~5 s de sprint em movimento, recarrega em ~3,5 s depois de 0,7 s sem correr. Zerada,
+  a Brisa cansa e volta a andar; só corre de novo soltando o sprint (com 25% da barra) ou com a barra
+  cheia. A barra anda por `transform: scaleX` e só é atualizada quando o valor muda.
+- Medido: andando 2,7 m/s; sprint 6,5 m/s com a barra descendo de 1 a 0; ao zerar, cansada e
+  andando; soltando, recarrega até 1 e a barra some.
