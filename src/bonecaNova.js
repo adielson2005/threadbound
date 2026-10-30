@@ -179,7 +179,9 @@ export function criarCabelo(cadeias, ossos, opcoes = {}) {
   const CAPSULAS = [
     ['Hips', 'Neck', 0.155, 0, false], ['Head', 'HeadTop_End', 0.13, 0.25, false],
     ...['Left', 'Right'].flatMap(l => [
-      [`${l}Arm`, `${l}ForeArm`, 0.075], [`${l}ForeArm`, `${l}Hand`, 0.055], [`${l}Hand`, `${l}HandMiddle1`, 0.05],
+      // (braço e antebraço um pouco mais grossos: balançando para trás na corrida, o braço entrava no
+      // volume do cabelo, que é mais largo que a linha dos ossos)
+      [`${l}Arm`, `${l}ForeArm`, 0.09], [`${l}ForeArm`, `${l}Hand`, 0.07], [`${l}Hand`, `${l}HandMiddle1`, 0.05],
     ]),
   // (tronco e cabeça já com a folga da pose de repouso; nos membros soma a espessura da mecha)
   ].map(([a, b, raio, corte = 0, grossa = true]) => ({ a: osso(a), b: osso(b), raio: raio + (grossa ? espessura : 0), corte, cabeca: a === 'Head', pa: new THREE.Vector3(), pb: new THREE.Vector3() }))

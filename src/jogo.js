@@ -1408,10 +1408,10 @@ function posturaViva(dt, v) {
   const coluna = rig.papeis.coluna.map(n => rig.ossos[n]);
   for (const o of coluna) { girarOssoMundo(o, lateral, postura.frente / coluna.length); girarOssoMundo(o, frente, postura.lado / coluna.length); }
   gestoOcioso(dt, v, livre, frente, lateral);
-  // cabeça: devolve metade da inclinação e olha o alvo
+  // cabeça: devolve a inclinação do tronco (o olhar fica no horizonte, não no chão) e olha o alvo
   const cabeca = rig.ossos[rig.papeis.cabeca];
   if (!cabeca) return;
-  girarOssoMundo(cabeca, lateral, -postura.frente * 0.5);
+  girarOssoMundo(cabeca, lateral, -postura.frente);
   let alvoYaw = 0, alvoPitch = 0;
   const alvo = livre || j.noChao ? alvoDoOlhar() : null;
   if (alvo) {
