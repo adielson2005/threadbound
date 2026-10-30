@@ -684,3 +684,18 @@ Medido no perfil celular (Pixel 5 simulado, navegador sem placa de vídeo, entã
   barra) ou com a barra cheia.
 - Medido: andar 2,7; Shift 4,6 com a barra cheia depois de 6 s; Shift 2× 7,2 com a barra descendo;
   ⚡ 7,2. No celular deitado a fala e a dica ficaram mais estreitas para não cobrir o ⚡.
+
+## Coluna reta ao andar e correr; cabelo nas costas
+
+- Problema (filmado de trás e de lado, andando e correndo): as animações de andar e correr vieram de
+  outro esqueleto e, na Brisa, arqueavam as costas para trás (barriga para a frente) e torciam a bacia
+  e a coluna, com o tronco tombando de um lado para o outro a cada passo, e o cabelo junto; o braço,
+  balançando para trás, entrava no cabelo.
+- Agora, depois da animação (`estabilizarTronco` em `jogo.js`), a bacia volta 45% e a coluna 65% do
+  caminho para a postura reta da boneca; andando, pescoço e cabeça também (60%), porque compensavam o
+  arco; correndo não, porque a animação já levanta a cabeça contra a inclinação. A inclinação para a
+  frente vem só da corrida (zero andando, ~0,07 rad correndo, ~0,16 na super), e a cabeça a
+  compensa inteira (olhar no horizonte).
+- Cabelo: as cápsulas dos braços que afastam as mechas ficaram mais grossas (braço 0,075 → 0,09,
+  antebraço 0,055 → 0,07); com o tronco firme, o cabelo cai reto nas costas em vez de balançar.
+- Conferido em filmagens antes/depois com o relógio virtual (de trás e de lado, andando e correndo).

@@ -1250,7 +1250,7 @@ function animarPersonagem(dt) {
   // clipe atual não anima (a animação parada não mexe na coluna) acumulariam o giro de cada quadro
   for (const osso of ossosPorCima()) osso.quaternion.copy(personagem.rig.ligacao.get(osso.name).q);
   personagem.mixer.update(dt);
-  estabilizarTronco(dt, (animAtual === 'andar' || animAtual === 'correr') && j.noChao && !j.golpe);
+  estabilizarTronco(dt, (animAtual === 'andar' || animAtual === 'correr') && j.noChao && !j.golpe, animAtual === 'andar');
   // impulso com as pernas, grupado no ar ("bola") e abertura para cair (por cima da animação)
   aplicarCambalhota(personagem.rig, j.cambalhota);
   // planando: braços abertos para cima segurando o ar, corpo arqueado, pernas soltas balançando
@@ -1290,18 +1290,20 @@ let pesoPes = 0, pesoPlanar = 0;
 // barriga para a frente; de trás, o tronco tombando de um lado para o outro a cada passo (e o cabelo
 // junto). Depois da animação, a bacia e a coluna voltam boa parte do caminho para a postura reta da
 // boneca; a inclinação para a frente da corrida vem da postura viva, proporcional à velocidade.
-// (pescoço e cabeça também: na animação eles se inclinavam para compensar o arco das costas e, com
-// as costas retas, a cabeça ficava olhando para o chão)
+// (pescoço e cabeça também, só andando: na animação de andar eles se inclinavam para compensar o
+// arco das costas e, com as costas retas, a cabeça ficava olhando para o chão; na de correr a cabeça
+// já sobe para compensar a inclinação do corpo, e endireitá-la escondia o rosto)
 const TRONCO = { bacia: 0.45, coluna: 0.65, cabeca: 0.6 };
-let pesoTronco = 0;
-function estabilizarTronco(dt, ativo) {
+let pesoTronco = 0, pesoCabeca = 0;
+function estabilizarTronco(dt, ativo, andando) {
   pesoTronco += ((ativo ? 1 : 0) - pesoTronco) * Math.min(1, dt * 8);
+  pesoCabeca += ((ativo && andando ? 1 : 0) - pesoCabeca) * Math.min(1, dt * 6);
   if (pesoTronco < 0.01) return;
   const { ossos, papeis: P, ligacao } = personagem.rig;
   const reto = (o, k) => { const l = o && ligacao.get(o.name); if (l) o.quaternion.slerp(l.q, k * pesoTronco); };
   reto(ossos[P.hips], TRONCO.bacia);
   for (const n of P.coluna) reto(ossos[n], TRONCO.coluna);
-  reto(ossos[P.pescoco], TRONCO.cabeca); reto(ossos[P.cabeca], TRONCO.cabeca);
+  if (pesoTronco > 0.01) { const k = TRONCO.cabeca * pesoCabeca / pesoTronco; reto(ossos[P.pescoco], k); reto(ossos[P.cabeca], k); }
 }
 let _ossosPorCima = null;
 function ossosPorCima() {
