@@ -7,6 +7,28 @@
 <!-- fontes da interface (sem internet, caem para a fonte do sistema) -->
 <link rel="icon" href="data:,">
 <link rel="stylesheet" href="vendor/fontes/fontes.css">
+<meta name="versao-site" content="2584f85b02">
+<script>
+  // O GitHub Pages deixa o navegador reaproveitar esta página por até 10 minutos (e um endereço
+  // que já foi aberto, como "?v=22", pode continuar vindo da memória). Aqui a página pergunta ao site,
+  // sem cache, qual é a versão atual (versao.txt); se for outra, abre de novo com "?v=<versão>", que
+  // é um endereço que o navegador nunca viu. Uma vez só: se já está nesse endereço, não repete.
+  (() => {
+    const atual = document.querySelector('meta[name="versao-site"]')?.content;
+    if (!atual || !/^https?:$/.test(location.protocol)) return;
+    fetch('versao.txt?t=' + Date.now(), { cache: 'no-store' })
+      .then(r => (r.ok ? r.text() : ''))
+      .then(v => {
+        v = v.trim();
+        if (!/^[0-9a-f]{10}$/.test(v) || v === atual) return;
+        const u = new URL(location.href);
+        if (u.searchParams.get('v') === v) return;
+        u.searchParams.set('v', v);
+        location.replace(u);
+      })
+      .catch(() => {});
+  })();
+</script>
 <style>
   /* ---------- Interface: no estilo dos jogos de aventura que deixam o cenário falar (Zelda: Breath of
      the Wild, Unravel): sem caixas de vidro nem degradês. Menus são listas de texto sobre a cena,
@@ -499,7 +521,7 @@
       </div>
       <p id="perfil-pc"></p>
       <div id="aviso-aa">O antisserrilhado deste nível só muda ao abrir o jogo de novo.</div>
-      <p id="versao">versão 30/10/2026 00:04 · a3143e</p>
+      <p id="versao">versão 30/10/2026 00:07 · a3143e</p>
     </div>
     <footer><button id="fechar-graficos" class="voltar"><kbd>Esc</kbd>Voltar</button></footer>
   </div>
