@@ -653,3 +653,14 @@ Medido no perfil celular (Pixel 5 simulado, navegador sem placa de vídeo, entã
   dentro do razoável para celular; não foi aí que mexi.
 - O APK já estava com aceleração de hardware e pausa o jogo em segundo plano.
 - Não testado num celular de verdade: o ganho real de fps precisa ser conferido no aparelho.
+
+## Velocidade: andar por padrão, rápido só no sprint
+
+- Sem o sprint a Brisa anda a 2,1 m/s com a animação de andar (antes ia a 5,8 m/s, sempre correndo).
+  Rápido (até 8 m/s, animação de correr) só no sprint: Shift, X/RT no controle, ou o bastão arrastado
+  além da borda no celular. X no teclado continua sendo o passeio (1 m/s); defendendo, 1,4 m/s.
+- No ar (pulo, ou caindo há mais de 0,25 s) ela ainda alcança 5,8 m/s: os vãos do mapa foram medidos
+  com saltos nessa velocidade e continuam alcançáveis pulando andando.
+- A troca andar/correr da animação passou de 2 para 2,9 m/s, para o passo normal usar a de andar.
+- Medido: andando 2,1 m/s ("andar"); sprint 6+ m/s ("correr"); soltar o sprint volta a 2,1; pulo
+  andando chega a 5,8 m/s no ar e volta a 2,1 ao pousar.

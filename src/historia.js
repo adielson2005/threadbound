@@ -70,7 +70,7 @@ const CARTAS_1 = {
 // Contextual tutorials (each shows once)
 const DICAS_1 = {
   andar: 'W A S D (ou setas) para andar · mova o mouse para olhar em volta',
-  correr: 'Segure Shift para correr mais rápido',
+  correr: 'Segure Shift para correr',
   pular: 'Espaço para pular · no ar, Espaço de novo dá um impulso · segure Espaço para planar',
   borda: 'Pule contra uma borda e continue empurrando: Brisa se puxa para cima',
   planar: 'Caindo? Segure Espaço para planar devagar até o chão',
