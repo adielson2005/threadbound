@@ -587,3 +587,16 @@ sem HUD durante as fases).
 - Na pausa e com uma tela aberta, o HUD (fala, dicas, objetivo, botões de toque) sai de baixo das opções.
 - Testado (Pixel 5 simulado): cada tela some de fato depois do esmaecer, reabrir no meio a mantém
   aberta, Esc fecha; sem erros no console.
+
+### Menus sem travar, transições rápidas e seleção única
+
+- Com a capa do menu inicial (ou do fim de capítulo) por cima, o jogo não é atualizado nem desenhado
+  (antes desenhava a cena inteira escondida atrás da capa, disputando a máquina com a interface).
+  Na pausa e com janelas por cima do jogo parado, desenha só os quadros do fundo escurecido e para;
+  volta a desenhar ao mudar o tamanho da janela ou o nível de gráficos. Medido (navegador sem placa de
+  vídeo): 0 quadros em 2 s no menu, 1 na pausa.
+- Animações cerca de 55% mais curtas (entradas 0,1–0,2 s, cascata mais rápida, fechar em 0,08 s, a
+  capa some em 0,15 s).
+- Seleção: uma opção marcada por vez (a que tem o foco). O mouse marca ao passar por qualquer ponto da
+  linha (antes só sobre o texto, e o marcador podia aparecer em duas opções); o dedo marca no toque,
+  antes de soltar. Controle: direcional ou analógico passam pelas opções, A confirma, B volta.
