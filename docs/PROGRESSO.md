@@ -600,3 +600,25 @@ sem HUD durante as fases).
 - Seleção: uma opção marcada por vez (a que tem o foco). O mouse marca ao passar por qualquer ponto da
   linha (antes só sobre o texto, e o marcador podia aparecer em duas opções); o dedo marca no toque,
   antes de soltar. Controle: direcional ou analógico passam pelas opções, A confirma, B volta.
+
+## Abertura com a logo AA e tela de carregamento
+
+- Ao abrir o jogo: logo "AA" animada (~2,6 s; toque ou tecla pula). As quatro pernas dos dois A
+  crescem uma a uma; uma agulha puxa a linha dourada que é a barra dos dois A, passando por cima e por
+  baixo das pernas como uma costura; o nó aparece na ponta e "apresenta" surge embaixo.
+- Depois, se o jogo ainda estiver carregando, a tela de carregamento (carretel girando, barra e etapa:
+  "Costurando a ilha…", "Preparando o mapa…", "Preparando os gráficos…"); quando o jogo avisa que está
+  pronto (evento `jogo-pronto`), ela esmaece e o menu aparece. Em erro, as duas saem e a mensagem com
+  "Recarregar" fica visível.
+- Sem travar: tudo animado só com transform e opacidade (o navegador anima isso fora da linha
+  principal, que fica ocupada montando o jogo); a barra anda por `transform: scaleX`. Antes do passo
+  mais pesado (compilar os shaders) o carregamento espera um quadro para mostrar a etapa.
+
+### Logo e carregamento mais minimalistas
+
+- Logo refeita: monograma "AA" geométrico, os dois A como uma única linha contínua (um fio) em traço
+  fino, pontas retas, base cortada reta, sem brilho; uma barra dourada fina serve aos dois. Aparece por
+  uma cortina que corre para a direita, a barra se estende e "apresenta" surge (~2,6 s; pula com toque
+  ou tecla). Só transform e opacidade.
+- Carregamento: fundo liso, o nome do jogo, uma linha de progresso de 1 px em dourado e, embaixo, a
+  etapa e a porcentagem em letras pequenas (antes: capa escurecida, carretel girando e barra grossa).
