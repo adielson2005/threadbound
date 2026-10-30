@@ -1293,7 +1293,10 @@ let pesoPes = 0, pesoPlanar = 0;
 // (pescoço e cabeça também, só andando: na animação de andar eles se inclinavam para compensar o
 // arco das costas e, com as costas retas, a cabeça ficava olhando para o chão; na de correr a cabeça
 // já sobe para compensar a inclinação do corpo, e endireitá-la escondia o rosto)
-const TRONCO = { bacia: 0.45, coluna: 0.65, cabeca: 0.6 };
+// (bacia quase toda: medido de lado, a coluna em si fica reta, a menos de 1 cm da linha bacia–pescoço;
+// o que dava a "barriga para a frente" era a bacia girada para trás pela animação, levando a saia para a
+// frente e o peito para trás)
+const TRONCO = { bacia: 0.9, coluna: 0.85, cabeca: 0.6 };
 let pesoTronco = 0, pesoCabeca = 0;
 function estabilizarTronco(dt, ativo, andando) {
   pesoTronco += ((ativo ? 1 : 0) - pesoTronco) * Math.min(1, dt * 8);
@@ -1403,8 +1406,9 @@ function posturaViva(dt, v) {
   const yaw = raiz.rotation.y;
   if (postura.yawAnt !== null) { let d = yaw - postura.yawAnt; d = Math.atan2(Math.sin(d), Math.cos(d)); postura.giro += (d / dt - postura.giro) * Math.min(1, dt * 8); }
   postura.yawAnt = yaw;
-  // (andando, reta; correndo ~0,07 rad, na corrida super rápida ~0,16: o corpo vai junto com o passo)
-  const alvoFrente = livre ? THREE.MathUtils.clamp(postura.acel * 0.018 + Math.max(0, v - 2.6) * 0.035, -0.14, 0.24) : 0;
+  // (andando ~0,08 rad, como ela fica parada; correndo ~0,15, na corrida super rápida ~0,24: o corpo
+  // vai junto com o passo)
+  const alvoFrente = livre ? THREE.MathUtils.clamp(postura.acel * 0.018 + (v > 0.5 ? 0.08 : 0) + Math.max(0, v - 2.6) * 0.035, -0.14, 0.26) : 0;
   const alvoLado = livre ? THREE.MathUtils.clamp(-postura.giro * v * 0.02, -0.2, 0.2) : 0;
   postura.frente += (alvoFrente - postura.frente) * Math.min(1, dt * 5);
   postura.lado += (alvoLado - postura.lado) * Math.min(1, dt * 5);
