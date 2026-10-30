@@ -729,7 +729,7 @@ function terminarCapitulo(r) {
   proximoCapitulo = r.numero < TOTAL_CAPITULOS ? r.numero + 1 : 1;
   botao.textContent = r.numero < TOTAL_CAPITULOS ? 'Próximo capítulo ▶' : 'Jogar desde o começo';
   botao.className = 'botao principal';
-  $('continuar').style.display = 'block';
+  $('continuar').style.display = 'flex';
 }
 
 function alternarPausa() {
@@ -1627,8 +1627,8 @@ Promise.all([
     const salvo = lerProgresso() || capituloSalvo();
     botao.textContent = 'Novo jogo';
     botao.className = 'botao principal';
-    botao.style.display = 'block';
-    if (salvo) $('continuarJogo').style.display = 'block';
+    botao.style.display = 'flex';
+    if (salvo) $('continuarJogo').style.display = 'flex';
     // quem já apertou Jogar durante o carregamento vê as opções aparecerem com a primeira marcada
     if (tela.dataset.modo === 'jogar') primeiraOpcaoJogar()?.focus({ preventScroll: true, focusVisible: false });
     window.__jogo = {
