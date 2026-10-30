@@ -1566,7 +1566,15 @@ renderer.setAnimationLoop(() => {
 
 // ---------- Carregamento ----------
 const progresso = { personagem: 0, mapa: 0 };
-const mostrarProgresso = () => { barra.style.width = `${(progresso.personagem * 0.5 + progresso.mapa * 0.5) * 100}%`; };
+// barra do menu e da tela de carregamento (index.html): os downloads valem até 70%, a montagem do
+// mapa o resto (a barra da tela de carregamento anda por transform, sem redesenhar a página)
+const progressoCarga = f => document.documentElement.style.setProperty('--progresso', Math.max(0.03, Math.min(1, f)).toFixed(3));
+const textoCarga = t => { const el = $('textoCarga'); if (el) el.textContent = t; };
+const mostrarProgresso = () => {
+  const f = progresso.personagem * 0.5 + progresso.mapa * 0.5;
+  barra.style.width = `${f * 100}%`;
+  progressoCarga(f * 0.7);
+};
 atualizarMenu();
 Promise.all([
   criarBoneca(renderer, nivel, e => { if (e.total) { progresso.personagem = e.loaded / e.total; mostrarProgresso(); } }),
@@ -1577,6 +1585,7 @@ Promise.all([
 ])
   .then(async ([p, m, cach]) => {
     msg.textContent = 'Preparando o mapa…';
+    textoCarga('Preparando o mapa…'); progressoCarga(0.75);
     personagem = p; mapa = m;
     if (p.velocidades.andar > 0.2) velAndar = p.velocidades.andar;
     if (p.velocidades.correr > 0.5) velCorrer = p.velocidades.correr;
@@ -1649,6 +1658,10 @@ Promise.all([
     camera3p.yaw = Math.atan2(jogador.pos.x, jogador.pos.z);
     camera3p.alvo.copy(jogador.pos);
     tocar('parada');
+    // a tela de carregamento mostra a etapa nova antes do passo mais pesado (o navegador desenha a
+    // interface entre um quadro e outro)
+    textoCarga('Preparando os gráficos…'); progressoCarga(0.88);
+    await new Promise(r => requestAnimationFrame(() => setTimeout(r, 0)));
       // compila os shaders e sobe todos os níveis de detalhe do mapa para a GPU antes de começar
     // (evita travadinhas na primeira vez que algo aparece ou quando a câmera vira)
     // compila TODOS os materiais, inclusive os que ainda estão escondidos (ponte de luz, chuva,
@@ -1677,6 +1690,8 @@ Promise.all([
     if (salvo) $('continuarJogo').style.display = 'flex';
     // quem já apertou Jogar durante o carregamento vê as opções aparecerem com a primeira marcada
     if (tela.dataset.modo === 'jogar') primeiraOpcaoJogar()?.focus({ preventScroll: true, focusVisible: false });
+    progressoCarga(1); textoCarga('Pronto');
+    dispatchEvent(new Event('jogo-pronto'));
     window.__jogo = {
       jogador, personagem, camera, camera3p, mapa, terreno, correntes, renderer, cena, sol, medidor, altos, mundo, inimigos, campanha, agua, nevoa, cachoeiras, praia, ceu: ceuJogo, get combate() { return combate; },
       animacao: () => animAtual, estado: () => estado, nivel: () => nomeNivel, aplicarNivel, ocioso, get oclusao() { return oclusao; },
@@ -1685,6 +1700,7 @@ Promise.all([
     if (new URLSearchParams(location.search).has('continuar') && lerProgresso()) continuarJogo();
   })
   .catch(err => {
+    dispatchEvent(new Event('jogo-erro'));
     console.error(err);
     tela.dataset.modo = 'jogar';
     msg.textContent = 'Não foi possível carregar o jogo: ' + err.message;
