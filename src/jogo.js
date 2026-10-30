@@ -217,7 +217,10 @@ function atualizarMancha() {
   mancha.material.opacity = Math.max(0.15, 1 - altura * 0.1);
 }
 
+// quadros a desenhar com o jogo parado (pausa, painéis): ver o laço principal
+let quadrosParado = 0;
 addEventListener('resize', () => {
+  quadrosParado = 2; // o canvas novo começa vazio: redesenha mesmo com o jogo parado
   camera.aspect = innerWidth / innerHeight;
   camera.updateProjectionMatrix();
   renderer.setSize(innerWidth, innerHeight);
@@ -232,9 +235,9 @@ const dica = $('dica'), escuro = $('escuro'), painel = $('graficos');
 
 // ---------- Telas que abrem e fecham com animação ----------
 // abrir: a tela aparece (display) e o CSS a anima entrando (opacidade e deslize; nada de desfoque,
-// que pesa no celular). fechar: classe "saindo" esmaece em 0,16 s e só então a tela some. Reabrir
+// que pesa no celular). fechar: classe "saindo" esmaece em 0,08 s e só então a tela some. Reabrir
 // no meio do esmaecer cancela o fechamento.
-function sumir(el, esconder, ms = 160) {
+function sumir(el, esconder, ms = 80) {
   clearTimeout(el._sumir);
   if (getComputedStyle(el).display === 'none') { esconder(); return; }
   el.classList.add('saindo');
@@ -279,6 +282,7 @@ async function aplicarNivel(nome) {
   if (personagem) await aplicarQualidadeBoneca(personagem, renderer, nivel);
   aplicarEfeitos();
   configurarSombra();
+  quadrosParado = 3; // na pausa o fundo mostra o modo novo
 }
 
 // o céu físico do High ilumina por reflexo (IBL) só os materiais PBR; com material simples
@@ -470,12 +474,29 @@ for (const ev of ['pointerup', 'pointercancel', 'pointerleave']) botaoDefesa.add
 
 // controle (gamepad): analógico esquerdo anda, direito gira a câmera, A pula, B soca, Y chuta,
 // RB pega/solta, LT defende, X/RT correm, LB interage, Start pausa e Select abre os gráficos.
-let gpAntes = {};
+let gpAntes = {}, gpEixoAntes = false;
 function lerGamepad() {
   const gp = [...(navigator.getGamepads?.() || [])].find(Boolean);
   if (!gp) return;
   const ax = i => (Math.abs(gp.axes[i] || 0) > 0.15 ? gp.axes[i] : 0), b = i => !!gp.buttons[i]?.pressed;
   const borda = i => b(i) && !gpAntes[i];
+  // com uma tela de menu por cima: direcional ou analógico passam pelas opções, A confirma, B volta
+  const camada = telaDeCima();
+  if (camada) {
+    const eixo = gp.axes[1] || 0, inclinado = Math.abs(eixo) > 0.6;
+    const cima = borda(12) || (inclinado && eixo < 0 && !gpEixoAntes), baixo = borda(13) || (inclinado && eixo > 0 && !gpEixoAntes);
+    gpEixoAntes = inclinado;
+    if (cima || baixo) moverSelecao(camada, baixo ? 1 : -1);
+    if (borda(0)) {
+      const foco = document.activeElement;
+      if (foco && foco !== document.body && camada.contains(foco)) foco.click();
+      else if (camada === tela && tela.dataset.modo === 'menu') abrirJogar();
+    }
+    if (borda(1)) dispatchEvent(new KeyboardEvent('keydown', { code: 'Escape', key: 'Escape' }));
+    if (borda(9)) alternarPausa();
+    gpAntes = Object.fromEntries(gp.buttons.map((x, i) => [i, x.pressed]));
+    return;
+  }
   analogico.x = ax(0) || (b(15) ? 1 : 0) - (b(14) ? 1 : 0);
   analogico.y = -ax(1) || (b(12) ? 1 : 0) - (b(13) ? 1 : 0);
   analogico.camX = ax(2); analogico.camY = ax(3);
@@ -593,7 +614,7 @@ function reiniciar() {
   const primeiraVez = estado === 'menu';
   estado = 'jogando';
   pausado = false;
-  sumir(tela, () => { tela.style.display = 'none'; }, 320);
+  sumir(tela, () => { tela.style.display = 'none'; }, 150);
   // tira o foco do botão: senão o Espaço (pulo) "clicaria" nele de novo
   botao.blur();
   teclas.clear();
@@ -629,7 +650,7 @@ function continuarJogo() {
   const p = new THREE.Vector3().fromArray(s.checkpoint ?? terreno.nascimento.toArray());
   respawn(p); jogador.seguro.copy(p);
   estado = 'jogando'; pausado = false;
-  sumir(tela, () => { tela.style.display = 'none'; }, 320);
+  sumir(tela, () => { tela.style.display = 'none'; }, 150);
   $('continuarJogo').blur(); teclas.clear();
   campanha.iniciar({ continuando: true });
 }
@@ -713,7 +734,7 @@ $('cfgSens').addEventListener('input', e => { config.sensibilidade = +e.target.v
 $('cfgTexto').addEventListener('change', e => { config.texto = +e.target.value; aplicarConfig(); });
 $('cfgTremor').addEventListener('change', e => { config.tremor = e.target.checked; aplicarConfig(); });
 aplicarConfig();
-$('continuar').addEventListener('click', () => { sumir(tela, () => { tela.style.display = 'none'; }, 320); estado = 'jogando'; $('continuar').style.display = 'none'; $('continuar').blur(); teclas.clear(); });
+$('continuar').addEventListener('click', () => { sumir(tela, () => { tela.style.display = 'none'; }, 150); estado = 'jogando'; $('continuar').style.display = 'none'; $('continuar').blur(); teclas.clear(); });
 
 function terminarCapitulo(r) {
   campanhaTerminada = true;
@@ -745,7 +766,7 @@ function alternarPausa() {
   if (pausado) mostrar(telaPausa, () => { telaPausa.style.display = 'flex'; });
   else sumir(telaPausa, () => { telaPausa.style.display = 'none'; });
   if (pausado) $('pausaContinuar').focus({ preventScroll: true, focusVisible: false });
-  else { fecharPaineis(); abrirMenu(false); }
+  else { fecharPaineis(); abrirMenu(false); document.activeElement?.blur(); }
   pedidoPulo = false;
   if (pausado) document.exitPointerLock?.();
 }
@@ -760,22 +781,31 @@ function telaDeCima() {
   if (tela.style.display !== 'none') return tela;
   return null;
 }
+function moverSelecao(camada, passo) {
+  const itens = [...camada.querySelectorAll('button, input, select, a')].filter(b => b.offsetParent && !b.disabled);
+  if (!itens.length) return false;
+  const i = itens.indexOf(document.activeElement);
+  const prox = i < 0 ? (passo > 0 ? 0 : itens.length - 1) : (i + passo + itens.length) % itens.length;
+  itens[prox].focus({ preventScroll: false, focusVisible: false });
+  return true;
+}
 addEventListener('keydown', e => {
   if (e.code !== 'ArrowUp' && e.code !== 'ArrowDown') return;
   const camada = telaDeCima();
-  if (!camada) return;
-  const itens = [...camada.querySelectorAll('button, input, select')].filter(b => b.offsetParent && !b.disabled);
-  if (!itens.length) return;
-  e.preventDefault();
-  const i = itens.indexOf(document.activeElement);
-  const prox = i < 0 ? 0 : (i + (e.code === 'ArrowDown' ? 1 : -1) + itens.length) % itens.length;
-  itens[prox].focus({ preventScroll: false, focusVisible: false });
+  if (camada && moverSelecao(camada, e.code === 'ArrowDown' ? 1 : -1)) e.preventDefault();
 }, true);
-addEventListener('pointerover', e => {
+// a opção marcada é sempre uma só (a que tem o foco): o mouse marca ao passar por cima (a linha
+// inteira conta, não só o texto) e o dedo marca no toque, antes de soltar
+const OPCAO = '.item-menu, .botao, .aba, .voltar, [data-nivel], .capitulos li button, .instagram, .opcao input, .opcao select';
+addEventListener('pointermove', e => {
   if (e.pointerType !== 'mouse') return;
-  const b = e.target.closest?.('.item-menu, .botao, .aba, .voltar, [data-nivel]');
+  const b = e.target.closest?.(OPCAO);
   if (b && b !== document.activeElement) b.focus({ preventScroll: true, focusVisible: false });
-});
+}, { passive: true });
+addEventListener('pointerdown', e => {
+  const b = e.target.closest?.(OPCAO);
+  if (b && b !== document.activeElement) b.focus({ preventScroll: true, focusVisible: false });
+}, { passive: true });
 
 // menu de pausa: continuar, configurações, gráficos, controles e voltar ao menu principal
 const telaPausa = $('pausa');
@@ -1471,12 +1501,21 @@ let acumulado = 0, tempoCena = 0;
 // sem placa de vídeo a CPU também desenha a tela: a física roda a 60 passos/s em vez de 120
 // (no celular também: a CPU do aparelho fica para o desenho, e 60 passos/s já acompanham a tela)
 const PASSO = hardware.perfil === 'semPlaca' || hardware.perfil === 'celular' ? 1 / 60 : 1 / 120;
+let estavaParado = false;
 renderer.setAnimationLoop(() => {
   const dtBruto = relogio.getDelta();
+  lerGamepad();
+  // Menus sem travar: com a capa do menu inicial (ou do fim de capítulo) por cima, o jogo não
+  // aparece, então não é atualizado nem desenhado e a interface fica com a máquina toda. Na pausa e
+  // nas janelas por cima do jogo parado, desenha só os quadros do fundo escurecido e para (volta a
+  // desenhar se a janela mudar de tamanho ou o nível de gráficos trocar).
+  if (tela.style.display !== 'none' && !tela.classList.contains('saindo')) return;
+  const parado = pausado || menuAberto;
+  if (parado && !estavaParado) quadrosParado = Math.max(quadrosParado, 2);
+  estavaParado = parado;
+  if (parado) { if (quadrosParado <= 0) return; quadrosParado--; }
   medirDesempenho(dtBruto);
   const dtReal = Math.min(dtBruto, 0.05);
-  lerGamepad();
-  const parado = pausado || menuAberto;
   // golpe que acerta "pesa": o tempo quase para por um instante (hitstop)
   const dt = parado ? 0 : dtReal * ((combate?.hitstop ?? 0) > 0 ? 0.08 : 1);
   if (!parado) combate?.avancarHitstop(dtReal); // o hitstop conta em tempo real
