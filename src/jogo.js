@@ -1290,7 +1290,9 @@ let pesoPes = 0, pesoPlanar = 0;
 // barriga para a frente; de trás, o tronco tombando de um lado para o outro a cada passo (e o cabelo
 // junto). Depois da animação, a bacia e a coluna voltam boa parte do caminho para a postura reta da
 // boneca; a inclinação para a frente da corrida vem da postura viva, proporcional à velocidade.
-const TRONCO = { bacia: 0.45, coluna: 0.65 };
+// (pescoço e cabeça também: na animação eles se inclinavam para compensar o arco das costas e, com
+// as costas retas, a cabeça ficava olhando para o chão)
+const TRONCO = { bacia: 0.45, coluna: 0.65, cabeca: 0.6 };
 let pesoTronco = 0;
 function estabilizarTronco(dt, ativo) {
   pesoTronco += ((ativo ? 1 : 0) - pesoTronco) * Math.min(1, dt * 8);
@@ -1299,6 +1301,7 @@ function estabilizarTronco(dt, ativo) {
   const reto = (o, k) => { const l = o && ligacao.get(o.name); if (l) o.quaternion.slerp(l.q, k * pesoTronco); };
   reto(ossos[P.hips], TRONCO.bacia);
   for (const n of P.coluna) reto(ossos[n], TRONCO.coluna);
+  reto(ossos[P.pescoco], TRONCO.cabeca); reto(ossos[P.cabeca], TRONCO.cabeca);
 }
 let _ossosPorCima = null;
 function ossosPorCima() {
