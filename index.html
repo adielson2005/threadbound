@@ -7,7 +7,7 @@
 <!-- fontes da interface (sem internet, caem para a fonte do sistema) -->
 <link rel="icon" href="data:,">
 <link rel="stylesheet" href="vendor/fontes/fontes.css">
-<meta name="versao-site" content="8b4f52ef8b">
+<meta name="versao-site" content="e04e7789b8">
 <script>
   // O GitHub Pages deixa o navegador reaproveitar esta página por até 10 minutos (e um endereço
   // que já foi aberto, como "?v=22", pode continuar vindo da memória). Aqui a página pergunta ao site,
@@ -435,12 +435,12 @@
 
   /* ---------- carregamento: o nome do jogo, uma linha fina de progresso e a etapa com a porcentagem ---------- */
   #carregamento { display: none; z-index: 29; }
-  #carregamento.ativo { display: flex; animation: aparecer .3s ease-out; }
+  #carregamento.ativo { display: flex; }
   .conteudo-carga { display: flex; flex-direction: column; align-items: stretch; width: min(300px, 72vw); gap: 18px; }
   #carregamento h2 { margin: 0; text-align: center; font: 600 28px var(--titulo); letter-spacing: 1px; color: #f6f2ea; }
   .progresso { height: 1px; background: rgba(246, 242, 234, 0.14); overflow: hidden; }
   .progresso i { display: block; height: 100%; background: var(--ouro); transform-origin: 0 50%; transform: scaleX(var(--progresso, 0.02));
-    transition: transform .4s ease-out; will-change: transform; }
+    transition: transform .6s cubic-bezier(.4, 0, .2, 1); will-change: transform; }
   .conteudo-carga p { display: flex; justify-content: space-between; margin: -8px 0 0; font: 600 10px var(--fonte); letter-spacing: 2px; text-transform: uppercase; color: rgba(246, 242, 234, 0.45); }
   #porcentoCarga { font-variant-numeric: tabular-nums; color: rgba(246, 242, 234, 0.7); }
 </style>
@@ -471,25 +471,40 @@
   </div>
 </div>
 <script>
-  // Abertura → carregamento → menu. A logo dura ~2,6 s (toque ou tecla pula); se o jogo já estiver
-  // pronto, vai direto ao menu, senão mostra o carregamento até o jogo avisar "jogo-pronto".
+  // Abertura → carregamento → menu, uma tela de cada vez: o carregamento já fica por baixo da logo,
+  // opaco (nada do menu aparece na troca); a logo esmaece por cima dele. O carregamento fica pelo
+  // menos CARGA_MIN ms na tela e, quando o jogo avisa "jogo-pronto", a barra completa, "Pronto"
+  // aparece por um instante e só então ele esmaece e mostra o menu. Toque ou tecla pula só a logo.
   (() => {
+    const CARGA_MIN = 3000, DEPOIS_DE_PRONTO = 700;
     const abertura = document.getElementById('abertura'), carga = document.getElementById('carregamento');
-    let pronto = false, aberturaAcabou = false;
+    let pronto = false, inicioCarga = 0, saindo = false;
     const fechar = el => { el.classList.add('fora'); setTimeout(() => { el.style.display = 'none'; }, 320); };
+    carga.classList.add('ativo');
+    const tentarFecharCarga = () => {
+      if (!pronto || !inicioCarga || saindo) return;
+      saindo = true;
+      const falta = Math.max(DEPOIS_DE_PRONTO, CARGA_MIN - (performance.now() - inicioCarga));
+      setTimeout(() => {
+        // o menu entra animado agora (as animações dele já tinham rodado escondidas por baixo)
+        const t = document.getElementById('tela'), antes = t.style.display;
+        if (antes !== 'none') { t.style.display = 'none'; void t.offsetHeight; t.style.display = antes; }
+        fechar(carga);
+      }, falta);
+    };
     const seguir = () => {
-      if (aberturaAcabou) return;
-      aberturaAcabou = true;
+      if (inicioCarga) return;
+      inicioCarga = performance.now();
       fechar(abertura);
-      if (pronto) fechar(carga); else carga.classList.add('ativo');
+      tentarFecharCarga();
     };
     const tempo = setTimeout(seguir, 2600);
     const pular = () => { clearTimeout(tempo); seguir(); };
     abertura.addEventListener('pointerdown', pular);
-    addEventListener('keydown', function tecla() { if (!aberturaAcabou) pular(); removeEventListener('keydown', tecla); });
-    addEventListener('jogo-pronto', () => { pronto = true; if (aberturaAcabou) fechar(carga); });
+    addEventListener('keydown', function tecla() { if (!inicioCarga) pular(); removeEventListener('keydown', tecla); });
+    addEventListener('jogo-pronto', () => { pronto = true; tentarFecharCarga(); });
     // erro ao carregar: as telas saem e a mensagem do menu (com "Recarregar") aparece
-    addEventListener('jogo-erro', () => { clearTimeout(tempo); aberturaAcabou = true; fechar(abertura); fechar(carga); });
+    addEventListener('jogo-erro', () => { clearTimeout(tempo); inicioCarga = inicioCarga || 1; saindo = true; fechar(abertura); fechar(carga); });
     window.__fecharCarga = () => dispatchEvent(new Event('jogo-erro'));
   })();
 </script>
@@ -624,7 +639,7 @@
       </div>
       <p id="perfil-pc"></p>
       <div id="aviso-aa">O antisserrilhado deste nível só muda ao abrir o jogo de novo.</div>
-      <p id="versao">versão 30/10/2026 02:40 · e93819</p>
+      <p id="versao">versão 30/10/2026 02:46 · e93819</p>
     </div>
     <footer><button id="fechar-graficos" class="voltar"><kbd>Esc</kbd>Voltar</button></footer>
   </div>

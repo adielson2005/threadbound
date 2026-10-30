@@ -622,3 +622,13 @@ sem HUD durante as fases).
   ou tecla). Só transform e opacidade.
 - Carregamento: fundo liso, o nome do jogo, uma linha de progresso de 1 px em dourado e, embaixo, a
   etapa e a porcentagem em letras pequenas (antes: capa escurecida, carretel girando e barra grossa).
+
+### Uma tela de cada vez na abertura
+
+- O carregamento agora já fica, opaco, por baixo da logo desde o início; a logo esmaece por cima dele
+  (antes as duas esmaeciam juntas e o menu aparecia por um instante entre elas).
+- O carregamento fica no mínimo 3 s na tela; quando o jogo fica pronto, a barra completa (transição
+  de 0,6 s), "Pronto" e 100% ficam 0,7 s, e só então ele esmaece. O menu entra animado nesse momento
+  (as animações dele são reiniciadas; antes já tinham rodado escondidas).
+- Medido (celular simulado, sem placa de vídeo): abertura → carregamento opaco o tempo todo → jogo
+  pronto em ~18 s → carregamento some 0,7 s depois; nenhum quadro com o menu à mostra antes disso.
