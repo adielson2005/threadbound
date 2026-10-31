@@ -8,6 +8,7 @@ import { carregarMapa, aplicarQualidadeMapa, atualizarLodPorVisao, aquecerMapa, 
 import { gerarIlha } from './ilha.js';
 import { criarChuva } from './chuva.js';
 import { criarOclusao } from './oclusao.js';
+import { criarSombraBoneca } from './sombraBoneca.js';
 import { criarParticulas } from './particulas.js';
 import { lerProgresso, salvarProgresso, apagarProgresso, lerConfig, salvarConfig, lerConcluidos, ultimoCapitulo } from './salvar.js';
 import { CAPITULO_ATUAL, TOTAL_CAPITULOS, CONFIG, urlCapitulo } from './capitulo.js';
@@ -160,7 +161,8 @@ let praia = null; // ilha de areia no mar, sob a ilha
 let modeloCachoeira = null, cachoeiras = null;
 // Sombra do mapa: calculada uma vez só, cobrindo o mapa inteiro, a partir da malha completa.
 // O three.js filtra quem projeta sombra pelas camadas da câmera principal, então a camada
-// dessa malha é ligada só no quadro do cálculo. A personagem usa sombra-mancha.
+// dessa malha é ligada só no quadro do cálculo. A personagem tem a sombra dela (sombraBoneca.js),
+// desenhada a cada quadro, e uma mancha suave de contato embaixo dos pés.
 const sol = new THREE.DirectionalLight('#fff0d4', 3.1); // sol de fim de manhã, levemente dourado
 sol.shadow.bias = -0.0005;
 sol.shadow.normalBias = 0.05;
@@ -228,8 +230,10 @@ function atualizarMancha() {
   mancha.position.copy(h.point).addScaledVector(h.face.normal, 0.04);
   mancha.quaternion.setFromUnitVectors(frenteZ, h.face.normal);
   const altura = jogador.pos.y - h.point.y;
-  mancha.scale.setScalar(Math.max(0.35, 1 - altura * 0.08));
-  mancha.material.opacity = Math.max(0.15, 1 - altura * 0.1);
+  // com a sombra de verdade, a mancha vira só o escurecido de contato logo embaixo dos pés
+  const contato = sombraBoneca?.ligada ? 0.6 : 1;
+  mancha.scale.setScalar(Math.max(0.35, 1 - altura * 0.08) * contato);
+  mancha.material.opacity = Math.max(0.15, 1 - altura * 0.1) * (contato < 1 ? Math.max(0, 1 - altura * 1.5) * 0.7 : 1);
 }
 
 // quadros a desenhar com o jogo parado (pausa, painéis): ver o laço principal
@@ -325,6 +329,7 @@ function aplicarEfeitos() {
   if (cachoeiras) cachoeiras.aplicarMaterial(modeloCachoeira.materialPara(nomeNivel, nivel.materialSimples));
   if (!usaFXAA()) suavizacao.liberar();
   redimensionarPos();
+  sombraBoneca?.receberEm(cena, personagem?.raiz); // materiais trocados pelo modo novo
 }
 // High: pós-processamento dos efeitos (MSAA + SMAA). Low: FXAA. Medium: MSAA do próprio contexto.
 const suavizacao = criarSuavizacao(renderer, cena, camera);
@@ -562,6 +567,7 @@ function entradaMovimento() {
 
 // ---------- Mundo (preenchido ao carregar) ----------
 let mapa = null, terreno = null, personagem = null;
+let sombraBoneca = null; const _centroSombra = new THREE.Vector3();
 let mundo = null, inimigos = null, campanha = null, combate = null, oclusao = null;
 const distancia = criarDistancia(); // objetos pequenos só são desenhados perto da câmera
 let estado = 'carregando'; // carregando | menu | jogando | fim
@@ -1689,6 +1695,7 @@ renderer.setAnimationLoop(() => {
   altos?.atualizar(dt, t, jogador.pos);
   // a janela na folhagem acompanha o meio do corpo da Brisa
   particulas.atualizar(t, jogador.pos, ceuJogo.estado.noite, chuva.intensidade, !!altos?.ativo, renderer.getDrawingBufferSize(_tamTela).y);
+  sombraBoneca?.atualizar(_centroSombra.copy(jogador.pos).setY(jogador.pos.y + 0.85), !!personagem?.raiz.visible && !!chaoAbaixo);
   if (assarSombra) {
     assarSombra = false;
     renderer.shadowMap.needsUpdate = true;
@@ -1793,6 +1800,12 @@ Promise.all([
       p.acoes[nome].clampWhenFinished = true;
     }
     cena.add(p.raiz);
+    // sombra de verdade da Brisa (sem placa de vídeo, a CPU desenha cada pixel: fica só a mancha)
+    if (hardware.perfil !== 'semPlaca') {
+      sombraBoneca = criarSombraBoneca({ renderer, cena, dirSol: new THREE.Vector3(0.55, 0.75, 0.4) });
+      sombraBoneca.marcar(p.raiz);
+      sombraBoneca.receberEm(cena, p.raiz);
+    }
     jogador.seguro.copy(terreno.nascimento);
     respawn(terreno.nascimento);
     camera3p.yaw = Math.atan2(jogador.pos.x, jogador.pos.z);

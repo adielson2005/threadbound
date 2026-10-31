@@ -183,25 +183,25 @@ function casa(rnd, { largura = 5, fundo = 4.6, caida = false, corParede = 0, cor
   if (caida) {
     // vigas caídas lá dentro e telhas pelo chão
     const viga = caixa(0.18, 0.18, fundo * 0.9, A.madeiraEscura, largura * 0.2, 0.9, 0.2); viga.rotation.x = 0.35; viga.rotation.z = 0.5; g.add(viga);
-    for (let k = 0; k < 4; k++) { const t = caixa(0.9, 0.08, 0.6, tel, (rnd() - 0.2) * largura * 0.5, 0.3, (rnd() - 0.5) * fundo * 0.6, false); t.rotation.set(rnd() * 0.6, rnd() * 3, rnd() * 0.5); g.add(t); }
+    for (let k = 0; k < 4; k++) { const t = caixa(0.9, 0.08, 0.6, tel, (rnd() - 0.2) * largura * 0.5, 0.3, (rnd() - 0.5) * fundo * 0.6); t.rotation.set(rnd() * 0.6, rnd() * 3, rnd() * 0.5); g.add(t); }
   }
   // chaminé
   g.add(caixa(0.6, 2.2, 0.6, A.pedra, -largura * 0.28, y0 + hp + alturaTelhado * 0.55, -fundo * 0.2));
   // porta entreaberta, presa na dobradiça
-  const porta = caixa(1.05, 2.0, 0.06, A.madeira, 0.52, 1.0, 0, false);
+  const porta = caixa(1.05, 2.0, 0.06, A.madeira, 0.52, 1.0, 0);
   const dobradica = new THREE.Group(); dobradica.add(porta); dobradica.position.set(-0.4 - 0.57, y0, fundo / 2 + 0.05); dobradica.rotation.y = -1.1 - rnd() * 0.5; g.add(dobradica);
   // janelas: moldura e uma veneziana pendurada
   for (const [x, z, ry] of [[largura * 0.3, fundo / 2 + 0.12, 0], [0.6, -fundo / 2 - 0.12, Math.PI]]) {
-    const v = caixa(0.5, 0.95, 0.05, A.madeiraEscura, 0, 0, 0, false);
+    const v = caixa(0.5, 0.95, 0.05, A.madeiraEscura, 0, 0, 0);
     v.position.set(x + 0.7, y0 + 1.4, z); v.rotation.y = ry + 0.4; v.rotation.z = rnd() < 0.5 ? 0.3 : 0; g.add(v);
   }
   // por dentro: cama, mesa, banco e uma estante (o que ficou de quem morava ali)
   g.add(caixa(1.0, 0.35, 2.0, A.madeira, largura / 2 - 0.75, y0 + 0.2, -fundo / 2 + 1.2));
-  g.add(caixa(0.9, 0.12, 1.8, A.tecido[Math.floor(rnd() * 3)], largura / 2 - 0.75, y0 + 0.43, -fundo / 2 + 1.2, false));
+  g.add(caixa(0.9, 0.12, 1.8, A.tecido[Math.floor(rnd() * 3)], largura / 2 - 0.75, y0 + 0.43, -fundo / 2 + 1.2));
   g.add(caixa(1.2, 0.08, 0.8, A.madeira, -largura / 2 + 1.1, y0 + 0.78, -0.2));
-  for (const [x, z] of [[-0.5, -0.32], [0.5, -0.32], [-0.5, 0.32], [0.5, 0.32]]) g.add(caixa(0.07, 0.75, 0.07, A.madeira, -largura / 2 + 1.1 + x, y0 + 0.38, -0.2 + z, false));
+  for (const [x, z] of [[-0.5, -0.32], [0.5, -0.32], [-0.5, 0.32], [0.5, 0.32]]) g.add(caixa(0.07, 0.75, 0.07, A.madeira, -largura / 2 + 1.1 + x, y0 + 0.38, -0.2 + z));
   g.add(caixa(0.9, 1.6, 0.35, A.madeiraEscura, -largura / 2 + 0.55, y0 + 0.8, -fundo / 2 + 0.45));
-  g.add(caixa(0.55, 0.45, 0.35, A.madeira, -largura / 2 + 1.1, y0 + 0.22, 0.5, false));
+  g.add(caixa(0.55, 0.45, 0.35, A.madeira, -largura / 2 + 1.1, y0 + 0.22, 0.5));
   return g;
 }
 
@@ -243,7 +243,7 @@ export function construirVila({ centro, raio, alturaEm, rnd, nomes, antiga = fal
       const agua = new THREE.Mesh(new THREE.CircleGeometry(0.75, 14), A.escuro); agua.rotation.x = -Math.PI / 2; agua.position.y = 0.81;
       p.add(borda, agua);
       for (const sx of [-0.85, 0.85]) p.add(caixa(0.12, 1.9, 0.12, A.madeiraEscura, sx, 0.95, 0));
-      p.add(caixa(1.9, 0.1, 0.1, A.madeiraEscura, 0, 1.85, 0, false));
+      p.add(caixa(1.9, 0.1, 0.1, A.madeiraEscura, 0, 1.85, 0));
       grupo.add(p); }
     { const [x1, z1] = em(3.2, raio * 0.55), [x2, z2] = em(3.65, raio * 0.55);
       const y1 = noChao(x1, z1), y2 = noChao(x2, z2);
@@ -299,24 +299,29 @@ export function construirFarol({ centro, alturaEm, rnd, evitar }) {
   }
   const topo = 0.8 + H;
   const galeria = new THREE.Mesh(new THREE.CylinderGeometry(2.3, 2.3, 0.25, 14), A.pedra); galeria.position.y = topo; galeria.userData.solido = true; g.add(galeria);
-  for (let k = 0; k < 16; k++) { const a = (k / 16) * Math.PI * 2; g.add(caixa(0.07, 0.9, 0.07, A.madeiraEscura, Math.cos(a) * 2.15, topo + 0.55, Math.sin(a) * 2.15, false)); }
-  const corrimao = new THREE.Mesh(new THREE.TorusGeometry(2.15, 0.05, 6, 32), A.madeiraEscura); corrimao.rotation.x = Math.PI / 2; corrimao.position.y = topo + 1.0; g.add(corrimao);
+  // parapeito sólido (não dá para cair do mirante), aberto só onde a escada chega
+  const DEGRAU = 0.22, nDegraus = Math.ceil((topo + 0.12 - 0.8) / DEGRAU), r = 2.85, ANG0 = Math.PI * 0.75;
+  const chegada = ANG0 + (nDegraus - 1) * 0.52 / r, VAO = 0.95;
+  const fora = a => Math.abs(Math.atan2(Math.sin(a - chegada), Math.cos(a - chegada))) > VAO / 2 + 0.05;
+  for (let k = 0; k < 16; k++) { const a = (k / 16) * Math.PI * 2; if (fora(a)) g.add(caixa(0.07, 0.9, 0.07, A.madeiraEscura, Math.cos(a) * 2.15, topo + 0.55, Math.sin(a) * 2.15)); }
+  // (o arco do toro começa no ângulo chegada + VAO/2, no mesmo sentido dos postes)
+  const corrimao = new THREE.Mesh(new THREE.TorusGeometry(2.15, 0.05, 6, 30, Math.PI * 2 - VAO).rotateX(Math.PI / 2).rotateY(-(chegada + VAO / 2)), A.madeiraEscura);
+  corrimao.position.y = topo + 1.0; corrimao.userData.solido = true; g.add(corrimao);
   const lanterna = new THREE.Mesh(new THREE.CylinderGeometry(1.2, 1.2, 1.8, 10, 1, true), A.vidro); lanterna.position.y = topo + 1.05; g.add(lanterna);
   // escada em espiral por fora da torre até a galeria (o mirante, área secreta): degraus de 22 cm,
   // que a cápsula sobe andando; o raio é o da borda da galeria, para a cabeça não bater nela no fim
-  const DEGRAU = 0.22, nDegraus = Math.ceil((topo + 0.12 - 0.8) / DEGRAU), r = 2.85;
-  let angDegrau = Math.PI * 0.75;
+  let angDegrau = ANG0;
   for (let k = 1; k <= nDegraus; k++) {
     const y = 0.8 + k * DEGRAU;
     const d = caixa(1.05, DEGRAU, 0.62, A.madeira, Math.cos(angDegrau) * r, y - DEGRAU / 2, Math.sin(angDegrau) * r);
     d.rotation.y = -angDegrau; g.add(d);
-    // um poste de corrimão a cada três degraus (não bloqueia: só enfeite)
-    if (k % 3 === 0) g.add(caixa(0.06, 0.9, 0.06, A.madeiraEscura, Math.cos(angDegrau) * (r + 0.48), y + 0.45, Math.sin(angDegrau) * (r + 0.48), false));
+    // um poste de corrimão a cada três degraus, na beira de fora (sólido: fica além da pisada)
+    if (k % 3 === 0) g.add(caixa(0.06, 0.9, 0.06, A.madeiraEscura, Math.cos(angDegrau) * (r + 0.48), y + 0.45, Math.sin(angDegrau) * (r + 0.48)));
     angDegrau += 0.52 / r; // meio metro de pisada por degrau
   }
   const cupula = new THREE.Mesh(new THREE.ConeGeometry(1.55, 1.5, 10), A.vermelho); cupula.position.y = topo + 2.7; g.add(cupula);
   // porta de ferro (fechada) e casinha do faroleiro
-  g.add(caixa(1.0, 1.9, 0.12, A.madeiraEscura, 0, 1.75, 2.27, false));
+  g.add(caixa(1.0, 1.9, 0.12, A.madeiraEscura, 0, 1.75, 2.27));
   const cabana = casa(rnd, { largura: 4, fundo: 3.6, corParede: 1, corTelhado: 1 });
   cabana.position.set(6.2, 0, -1.5); cabana.rotation.y = -Math.PI / 2;
   g.add(cabana);
@@ -364,14 +369,14 @@ export function construirRuinas({ centro, alturaEm, rnd, evitar }) {
     const col = new THREE.Mesh(new THREE.CylinderGeometry(0.45, 0.52, h, 10), A.pedraClara); col.position.set(x, y + h / 2, z); col.userData.solido = true; col.castShadow = true; g.add(col);
     g.add(Object.assign(caixa(1.3, 0.35, 1.3, A.pedra, x, y + 0.17, z)));
     if (inteira) g.add(caixa(1.3, 0.4, 1.3, A.pedra, x, y + h + 0.2, z));
-    else { const lasca = new THREE.Mesh(new THREE.ConeGeometry(0.45, 0.7, 6), A.pedraClara); lasca.position.set(x + 0.1, y + h + 0.3, z); lasca.rotation.z = 0.5; g.add(lasca); }
+    else { const lasca = new THREE.Mesh(new THREE.ConeGeometry(0.45, 0.7, 6), A.pedraClara); lasca.position.set(x + 0.1, y + h + 0.3, z); lasca.rotation.z = 0.5; lasca.userData.solido = true; g.add(lasca); }
     // pedaço caído ao lado
     if (!inteira && rnd() < 0.6) { const p = new THREE.Mesh(new THREE.CylinderGeometry(0.45, 0.45, 1.6, 10), A.pedraClara); p.rotation.z = Math.PI / 2; p.rotation.y = rnd() * 3; p.position.set(x * 0.86, y + 0.45, z * 0.86); p.userData.solido = true; g.add(p); }
   }
   // arco de entrada voltado para a ilha principal
   const arco = new THREE.Group();
   for (const lado of [-1, 1]) arco.add(caixa(0.9, 4.2, 0.9, A.pedra, lado * 1.8, 2.1, 0));
-  const meia = new THREE.Mesh(new THREE.TorusGeometry(1.8, 0.45, 8, 16, Math.PI), A.pedra); meia.position.y = 4.2; arco.add(meia);
+  const meia = new THREE.Mesh(new THREE.TorusGeometry(1.8, 0.45, 8, 16, Math.PI), A.pedra); meia.position.y = 4.2; meia.userData.solido = true; arco.add(meia);
   // de lado para quem chega da ilha principal (o meio da ilhota fica livre)
   const dirPrincipal = Math.atan2(-centro.x, -centro.z) + Math.PI / 2;
   arco.position.set(Math.sin(dirPrincipal) * (R + 3.5), (alturaEm(centro.x + Math.sin(dirPrincipal) * (R + 3.5), centro.z + Math.cos(dirPrincipal) * (R + 3.5)) ?? centro.y) - centro.y, Math.cos(dirPrincipal) * (R + 3.5));
@@ -660,7 +665,7 @@ export function construirGruta({ centro, alturaEm, rnd, nome }) {
       const uv2 = new Float32Array(n2.count * 2), pp = gp.attributes.position;
       for (let i = 0; i < n2.count; i++) { uv2[i * 2] = (pp.getX(i) + pp.getZ(i)) * 0.6; uv2[i * 2 + 1] = pp.getY(i) * 0.6; }
       gp.setAttribute('uv', new THREE.BufferAttribute(uv2, 2));
-      const m = new THREE.Mesh(gp, rocha.material); m.castShadow = m.receiveShadow = true;
+      const m = new THREE.Mesh(gp, rocha.material); m.castShadow = m.receiveShadow = true; m.userData.solido = true;
       rocha.add(m);
     }
   }
@@ -699,12 +704,12 @@ export function construirCais({ inicio, direcao, alturaEm, rnd }) {
   }
   for (let k = 0; k <= COMP; k += 3.5) for (const lado of [-1, 1]) {
     const e = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.14, 6, 7), A.madeiraEscura); e.position.set(lado * 1.0, y - 3, k); e.userData.solido = true; e.castShadow = true; g.add(e);
-    g.add(caixa(0.08, 0.9, 0.08, A.madeiraEscura, lado * 1.05, y + 0.45, k, false));
+    g.add(caixa(0.08, 0.9, 0.08, A.madeiraEscura, lado * 1.05, y + 0.45, k));
   }
   // um barco a remo amarrado na ponta, na água
   const barco = new THREE.Group();
-  for (const lado of [-1, 1]) { const t = caixa(0.08, 0.4, 2.4, A.madeira, lado * 0.45, 0.2, 0, false); t.rotation.z = -lado * 0.25; barco.add(t); }
-  barco.add(caixa(0.75, 0.06, 2.2, A.madeira, 0, 0.03, 0, false));
+  for (const lado of [-1, 1]) { const t = caixa(0.08, 0.4, 2.4, A.madeira, lado * 0.45, 0.2, 0); t.rotation.z = -lado * 0.25; barco.add(t); }
+  barco.add(caixa(0.75, 0.06, 2.2, A.madeira, 0, 0.03, 0));
   barco.position.set(1.9, y - 0.6, COMP - 1.5); barco.rotation.set(0.05, 0.2, 0.1); g.add(barco);
   fundirEstaticos(g);
   const cache = new Map();

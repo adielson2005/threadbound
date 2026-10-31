@@ -505,7 +505,8 @@ const MODELOS = {
   arbusto(rnd, longe) {
     const peca = new Peca(), r = 0.7 + rnd() * 0.4;
     copa(peca, rnd, new THREE.Vector3(0, r * 0.65, 0), new THREE.Vector3(r * 1.2, r * 0.75, r * 1.2), longe ? 4 : 10, 1.0, rnd() < 0.5 ? [0.75, 0.9, 0.7] : [0.9, 1.0, 0.78], longe);
-    return { geo: peca.geometria() };
+    // os galhos de dentro seguram: a ponta das folhas cede (a cápsula entra um pouco), o miolo não
+    return { geo: peca.geometria(), colisor: new THREE.CylinderGeometry(r * 0.55, r * 0.65, r * 1.2, 7).translate(0, r * 0.6, 0) };
   },
   capim(rnd, longe) {
     if (longe) return { geo: null };
@@ -550,7 +551,7 @@ const MODELOS = {
       if (n2[i * 3 + 1] > 0.7) { const m = (n2[i * 3 + 1] - 0.7) / 0.3; cor[i * 3] = misturar(cor[i * 3], MUSGO[0], m * 0.8); cor[i * 3 + 1] = misturar(cor[i * 3 + 1], MUSGO[1], m * 0.8); cor[i * 3 + 2] = misturar(cor[i * 3 + 2], MUSGO[2], m * 0.8); }
     }
     tmp.dispose();
-    return { geo: peca.geometria(), colisor: r > 0.5 ? g : null };
+    return { geo: peca.geometria(), colisor: g }; // até as pequenas: a baixa a cápsula sobe como degrau
   },
   // ---- Cap. 2 (recife) e Cap. 3 (fundo do mar seco) ----
   // coral ramificado: galhos afinando, que se dividem em dois; petrificado = cor de pedra, parado
@@ -573,7 +574,7 @@ const MODELOS = {
     const escala = grande ? 1.9 : 1;
     for (let k = 0, n = 1 + Math.floor(rnd() * 3); k < n; k++)
       galho(new THREE.Vector3((rnd() - 0.5) * 0.6, 0, (rnd() - 0.5) * 0.6), new THREE.Vector3((rnd() - 0.5) * 0.5, 1, (rnd() - 0.5) * 0.5).normalize(), 0.7 * escala, 0.13 * escala, 1);
-    return { geo: peca.geometria(), colisor: grande ? new THREE.CylinderGeometry(0.3, 0.4, 1.6, 6).translate(0, 0.8, 0) : null };
+    return { geo: peca.geometria(), colisor: grande ? new THREE.CylinderGeometry(0.3, 0.4, 1.6, 6).translate(0, 0.8, 0) : new THREE.CylinderGeometry(0.18, 0.24, 0.9, 6).translate(0, 0.45, 0) };
   },
   // alga: fitas altas e onduladas que balançam; petrificada = coluna de calcário, parada
   alga(rnd, longe, petrificada = false) {

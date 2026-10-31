@@ -722,3 +722,36 @@ Medido no perfil celular (Pixel 5 simulado, navegador sem placa de vídeo, entã
 - Da animação volta só o giro em volta do eixo vertical (ombros e quadril girando em sentidos opostos
   a cada passada): 45% correndo, 25% andando, decomposto por swing–twist em relação à pose de
   repouso, sem o arco das costas nem o tombo para os lados.
+
+### Física: nada de atravessar objetos
+
+- Levantamento no próprio jogo (Playwright): para cada objeto visível, os pontos na altura do corpo
+  (0,15–1,6 m acima do chão) que ficam a mais de 20 cm da malha de colisão. Viraram sólidos:
+  - nas casas: porta entreaberta, venezianas, pernas da mesa, baú, cobertor, telhas caídas e a
+    trave do poço;
+  - no farol: porta, postes e corrimão do mirante (agora não dá para cair de lá), com uma abertura
+    onde a escada chega, e os postes da escada;
+  - no cais: postes e o barco;
+  - nas ruínas: o arco e as lascas das colunas; na gruta: as pedras da boca;
+  - na natureza: todas as pedras (as pequenas também: as baixas a cápsula sobe como degrau), o
+    miolo dos arbustos (só a ponta das folhas cede) e os corais pequenos.
+- A colisão com os Retalhos já existia (`empurrarInimigos`): medido, ela para a ~0,75 m do centro
+  deles, antes e agora.
+- Objetos soltos (galho, agulha) arremessados rápido podiam pular um poste ou uma tábua fina num
+  subpasso: o caminho de cada ponto é conferido com um raio na BVH e ele para antes do que bateu.
+- Testado com caminho automático, na versão anterior e nesta: entra pela porta na Casa dos Barcos e
+  na Casa das Redes nas duas; nas outras o caminho do teste não acha a porta nas duas (limite do
+  teste, não da colisão). A subida do farol até a carta, com o parapeito novo, ainda está sendo
+  conferida.
+
+### Sombra de verdade da Brisa
+
+- `sombraBoneca.js`: a cada quadro o corpo dela (numa camada própria) é desenhado do ponto de vista
+  do sol num mapa de profundidade de 512² que cobre 2,7 m em volta dela. O chão, as casas, as pedras
+  e as árvores leem esse mapa e cortam só a luz do sol onde o corpo está entre o ponto e o sol
+  (PCF 3 × 3, borda macia). A sombra tem a forma dela, mexe braços, pernas e cabelo, e cai certa em
+  degraus e paredes; com a profundidade, nada acima dela (um telhado) recebe sombra.
+- A mancha redonda virou só o escurecido de contato embaixo dos pés.
+- Vale em Low, Medium e High e no celular (no celular conferido no Low, com material simples). No
+  PC sem placa de vídeo fica só a mancha. Custo: uma passada a mais só com a malha dela, num mapa
+  pequeno. Não foi medido em celular de verdade.
