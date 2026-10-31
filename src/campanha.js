@@ -107,6 +107,7 @@ export function criarCampanha({ cena, mapa, mundo, inimigos, jogador, respawn, c
     if (est.etapa === 'inicio') txt = OBJETIVOS.inicio;
     else if (est.etapa === 'ancoras') txt = OBJETIVOS.ancoras(restauradas, mundo.ancoras.length);
     else if (est.etapa === 'coracao') txt = OBJETIVOS.coracao;
+    else if (est.etapa === 'chefe') txt = OBJETIVOS.chefe;
     else if (est.etapa === 'bilhete') txt = OBJETIVOS.bilhete;
     else txt = OBJETIVOS.fim;
     // details of the nearest unfinished anchor
@@ -197,7 +198,7 @@ export function criarCampanha({ cena, mapa, mundo, inimigos, jogador, respawn, c
     aviso(AVISOS.ancoraRestaurada);
     falar(FALAS.ancoraRestaurada[Math.min(n, 3) - 1]);
     est.tempoTremor = 30 + n * 25;
-    if (n === mundo.ancoras.length) { est.etapa = 'coracao'; dica('coracao'); }
+    if (n === mundo.ancoras.length) { est.etapa = chefe ? 'chefe' : 'coracao'; dica('coracao'); }
     salvar();
   }
   function restaurarCoracao() {
@@ -228,6 +229,7 @@ export function criarCampanha({ cena, mapa, mundo, inimigos, jogador, respawn, c
   function atualizar(dt, t) {
     // dialogue timing
     if (est.falaAtual) { est.falaTempo -= dt; if (est.falaTempo <= 0) proximaFala(); }
+    vigiarChefe();
 
     // fragments
     const corpo = jogador.pos.clone().add(new THREE.Vector3(0, 0.8, 0));
@@ -308,7 +310,7 @@ export function criarCampanha({ cena, mapa, mundo, inimigos, jogador, respawn, c
       cristais: mundo.ancoras.flatMap((a, i) => a.cristais.flatMap((c, k) => (c.quebrado ? [[i, k]] : []))),
       purificados: inimigos.lista.flatMap((e, i) => (e.ativo ? [] : [i])),
       cartas: cartas.filter(c => c.lida).map(c => c.nome),
-      concluido: !!est.concluido,
+      concluido: !!est.concluido, chefeVencido: !!est.chefeVencido,
     };
   }
   function salvar() { aoSalvar?.(exportar()); }
@@ -324,6 +326,8 @@ export function criarCampanha({ cena, mapa, mundo, inimigos, jogador, respawn, c
     if (est.etapa === 'final') est.etapa = 'bilhete';
     if (est.etapa === 'fim') mundo.coracao.bilhete.visible = false;
     est.concluido = !!s.concluido || (s.concluidos ?? []).includes(CAPITULO_ATUAL);
+    est.chefeVencido = !!s.chefeVencido;
+    if (chefe && est.etapa === 'coracao' && !est.chefeVencido && !s.coracao) est.etapa = 'chefe';
     est.vida = Math.max(1, s.vida ?? VIDA_MAX);
     if (s.checkpoint) est.checkpoint.fromArray(s.checkpoint);
     est.tempoTremor = s.coracao ? Infinity : 30 + (s.ancoras?.length ?? 0) * 25;
@@ -345,8 +349,30 @@ export function criarCampanha({ cena, mapa, mundo, inimigos, jogador, respawn, c
   // "Tentar de novo": volta ao último ponto salvo com o fôlego cheio (o progresso continua)
   function reviver() {
     est.vida = VIDA_MAX; atualizarVida();
+    chefe?.reiniciar(); // a luta recomeça quando ela subir de novo
     est.falas.length = 0; proximaFala();
     respawn(est.checkpoint);
+  }
+
+  // ---------- o vilão (Cap. 1: Ravi, vilao.js) ----------
+  // depois das três âncoras ele espera no alto do morro; vencido, o Coração fica livre
+  let chefe = null;
+  function definirChefe(c) {
+    chefe = c;
+    // jogo salvo antes do vilão existir, já na etapa do Coração: a luta vem antes
+    if (est.etapa === 'coracao' && !est.chefeVencido && !mundo.coracao.restaurado) est.etapa = 'chefe';
+    c.v.aoMudarFase = () => falar(FALAS.chefeFase2);
+    c.v.aoDerrotar = () => {
+      est.etapa = 'coracao'; est.chefeVencido = true;
+      falar(FALAS.chefeDerrota);
+      est.checkpoint.copy(jogador.noChao ? jogador.pos : (jogador.seguro ?? jogador.pos)).add(new THREE.Vector3(0, 0.2, 0));
+      est.vida = VIDA_MAX; atualizarVida();
+      salvar();
+    };
+  }
+  function vigiarChefe() {
+    if (est.etapa !== 'chefe' || !chefe || chefe.visivel || jogador.morta) return;
+    if (mundo.coracao.pos.distanceTo(jogador.pos) < 18) { chefe.iniciar(mundo.coracao.pos); est.falas.length = 0; proximaFala(); falar(FALAS.chefeChegada); }
   }
 
   // purificação e cristal quebrados no combate (por golpes, não pelo E)
@@ -354,7 +380,7 @@ export function criarCampanha({ cena, mapa, mundo, inimigos, jogador, respawn, c
   function registrarCristal() { est.cristais++; aviso(AVISOS.cristalQuebrado, 1400); salvar(); }
 
   return {
-    atualizar, interagir, iniciar, fragmentos, estado: est, perderVida, reviver, registrarPurificado, registrarCristal, exportar, importar, salvar,
+    atualizar, interagir, iniciar, fragmentos, estado: est, definirChefe, perderVida, reviver, registrarPurificado, registrarCristal, exportar, importar, salvar,
     get tremor() { return est.tremor; },
     get lendo() { return !!est.lendo; },
   };

@@ -26,10 +26,11 @@ const APONTA = {
   ])),
 };
 
-export async function carregarBonecaNova(aoProgredir) {
+// (pasta e nome: outro corpo no mesmo formato, como o do vilão em assets/vilao/)
+export async function carregarBonecaNova(aoProgredir, pasta = PASTA, nome = 'boneca_nova') {
   const [info, bin] = await Promise.all([
-    fetch(PASTA + 'boneca_nova.json').then(r => r.json()),
-    fetch(PASTA + 'boneca_nova.bin').then(r => r.arrayBuffer()),
+    fetch(pasta + nome + '.json').then(r => r.json()),
+    fetch(pasta + nome + '.bin').then(r => r.arrayBuffer()),
   ]);
   aoProgredir?.({ loaded: 1, total: 1 });
   const n = info.vertices;

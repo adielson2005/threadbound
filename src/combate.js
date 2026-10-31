@@ -40,6 +40,7 @@ const INVULNERAVEL = 1.1;
 // volume do golpe nos Retalhos: uma cápsula na altura da cintura, do corpo da Brisa até o alcance,
 // testada contra o corpo do Retalho (inimigos.js). O alcance segue medido até o centro do alvo:
 // a cápsula termina antes dele o quanto somam o raio dela e o do corpo.
+const _seg = new THREE.Line3(), _c = new THREE.Vector3(), _p = new THREE.Vector3();
 const GOLPE_RAIO = 0.45, GOLPE_ALTURA = 0.75, GOLPE_INICIO = 0.2;
 const PEITO = 1.1; // de onde sai a linha de visão do golpe (nada pode estar entre ela e o alvo)
 
@@ -71,7 +72,8 @@ function modeloAgulha() {
   return g;
 }
 
-export function criarCombate({ cena, mapa, mundo, terreno, inimigos, campanha, jogador, personagem, tremer, morrer }) {
+// chefe: () => o vilão do capítulo (vilao.js) ou null; os golpes da Brisa acertam nele também
+export function criarCombate({ cena, mapa, mundo, terreno, inimigos, campanha, jogador, personagem, tremer, morrer, chefe = () => null }) {
   const $ = id => document.getElementById(id);
   const hudArma = $('arma'), hudGolpe = $('golpe');
   const rc = new THREE.Raycaster(); rc.firstHitOnly = true; rc.layers.enableAll();
@@ -229,13 +231,14 @@ export function criarCombate({ cena, mapa, mundo, terreno, inimigos, campanha, j
     return [
       ...inimigos.lista.filter(e => e.ativo).map(e => ({ tipo: 'inimigo', obj: e, pos: e.pos })),
       ...mundo.ancoras.flatMap(a => a.cristais.filter(c => !c.quebrado).map(c => ({ tipo: 'cristal', obj: c, pos: c.pos }))),
+      ...(chefe()?.lutando ? [{ tipo: 'chefe', obj: chefe().v, pos: chefe().v.pos }] : []),
     ];
   }
   function iniciarGolpe(nome) {
     const g = GOLPES[nome];
     // mira suave: vira para o inimigo (ou cristal) mais próximo à frente
     let melhor = null, d = 3.2;
-    for (const a of alvos()) { const x = Math.hypot(a.pos.x - jogador.pos.x, a.pos.z - jogador.pos.z); if (x < d - (a.tipo === 'inimigo' ? 0.8 : 0)) { d = x; melhor = a; } }
+    for (const a of alvos()) { const x = Math.hypot(a.pos.x - jogador.pos.x, a.pos.z - jogador.pos.z); if (x < d - (a.tipo !== 'cristal' ? 0.8 : 0)) { d = x; melhor = a; } }
     if (melhor) jogador.angulo = Math.atan2(melhor.pos.x - jogador.pos.x, melhor.pos.z - jogador.pos.z);
     jogador.golpe = { nome, t: 0, duracao: personagem.acoes[nome].getClip().duration / g.vel, cancela: g.cancela, novo: true };
     est.acertados = new Set();
@@ -266,9 +269,13 @@ export function criarCombate({ cena, mapa, mundo, terreno, inimigos, campanha, j
     }
     for (const a of alvos()) {
       if (est.acertados.has(a.obj)) continue;
-      const ponto = a.pos.clone().add(new THREE.Vector3(0, a.tipo === 'inimigo' ? 0.5 : 0.3, 0));
+      const ponto = a.pos.clone().add(new THREE.Vector3(0, a.tipo === 'inimigo' ? 0.5 : a.tipo === 'chefe' ? 1.1 : 0.3, 0));
       if (a.tipo === 'inimigo') {
         if (inimigos.distanciaSegmento(a.obj, ini, fim) > GOLPE_RAIO) continue;
+      } else if (a.tipo === 'chefe') {
+        // o corpo dele é um cilindro de 0,35 m de raio, do chão até a cabeça
+        _seg.set(ini, fim).closestPointToPoint(_c.set(a.pos.x, ini.y, a.pos.z), true, _p);
+        if (Math.hypot(_p.x - a.pos.x, _p.z - a.pos.z) > GOLPE_RAIO + 0.35 || Math.abs(a.pos.y - jogador.pos.y) > 1.3) continue;
       } else {
         const d = a.pos.clone().sub(centro); const dy = Math.abs(d.y); d.setY(0);
         if (d.length() > alcance || dy > 1.6) continue;
@@ -276,7 +283,10 @@ export function criarCombate({ cena, mapa, mundo, terreno, inimigos, campanha, j
       }
       if (!linhaLivre(mapa, peito, ponto)) continue; // não acerta através de paredes
       est.acertados.add(a.obj);
-      if (a.tipo === 'inimigo') {
+      if (a.tipo === 'chefe') {
+        chefe().atingir(dano, jogador.pos, def.empurrao);
+        faiscas(ponto, '#ffb08a', 8 + dano * 3);
+      } else if (a.tipo === 'inimigo') {
         inimigos.atingir(a.obj, dano, jogador.pos, def.empurrao);
         faiscas(ponto, '#ffe6a0', 8 + dano * 3);
         if (!a.obj.ativo) campanha.registrarPurificado();

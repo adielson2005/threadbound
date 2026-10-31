@@ -26,6 +26,7 @@ começam a se romper e a ilha começa a afundar.
 | **Tomé** | O faroleiro, hoje muito velho, preso no Recife das Vozes (Cap. 2). | Desfazer o que fez sem matar ninguém. | Rabugento e honesto. Carrega a culpa sozinho. |
 | **Ilma** | Neta de Aurélia, sumiu na névoa ainda menina. O vestido dela é o retalho do peito de Brisa. | (Revelação do Cap. 3.) | Uma voz que chama "vó?" na névoa. |
 | **Os Retalhos** | Pedaços das roupas dos moradores, animados pela Névoa Funda. | Defender o que restou dos seus donos. | Assustados, não maus. Purificá-los liberta uma lembrança. |
+| **Ravi** | Aprendiz do farol de Tomé, de jaqueta verde e botas de viagem. A mãe dele está na Névoa Funda. | Cortar os Fios de Maré para a ilha cair de volta no mar, achando que assim a névoa volta a ser gente. | Impulsivo, leal e desesperado. Não é mau: luta pela mãe. |
 | **A Névoa Funda** | O que sobrou dos moradores, presos entre o céu e o mar. | Voltar para casa (sem saber qual é). | É o antagonista sem vilão: dor que ninguém costurou. |
 
 ## Capítulo 1 — A Vila de Maré Alta (jogável)
@@ -41,8 +42,11 @@ ligadas por correntes de vento: a do Farol, a das Ruínas e a do Pomar.
 4. Atravessar as correntes de vento até as três ilhotas e reacender as **Âncoras de Maré**: a do
    Farol, a das Ruínas e a do Pomar. Para isso é preciso purificar os Retalhos e dissolver os
    cristais de névoa.
-5. Subir o morro e restaurar o **Coração da Ilha**.
-6. Ler a carta de Aurélia junto ao Coração.
+5. Subir o morro: **Ravi** espera no Coração e luta para impedir que ele volte a bater (chefe:
+   persegue, golpeia, investe em linha reta; na metade da vida fica mais rápido). Vencido, ele se
+   desfaz em névoa e diz para Brisa perguntar ao Tomé o que ele fez naquela noite.
+6. Restaurar o **Coração da Ilha**.
+7. Ler a carta de Aurélia junto ao Coração.
 
 **Áreas secretas (opcionais):** a Gruta dos Recados, escondida no morro da floresta, com uma
 carta das crianças da vila; e o mirante no alto do farol, por uma escada em espiral, com uma carta de
