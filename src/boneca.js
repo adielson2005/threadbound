@@ -325,10 +325,11 @@ function contorno(material, forca) {
   return material;
 }
 const cacheTexturas = new Map();
-function textura(renderer, nome, cor) {
+function textura(renderer, nome, cor, pasta = PASTA) {
   if (!nome) return Promise.resolve(null);
+  nome = pasta + nome;
   if (!cacheTexturas.has(nome)) {
-    cacheTexturas.set(nome, carregarTextura(renderer, PASTA + nome).then(t => {
+    cacheTexturas.set(nome, carregarTextura(renderer, nome).then(t => {
       t.colorSpace = cor ? THREE.SRGBColorSpace : THREE.NoColorSpace;
       t.anisotropy = Math.min(4, renderer.capabilities.getMaxAnisotropy());
       return t;
@@ -338,6 +339,7 @@ function textura(renderer, nome, cor) {
 }
 
 export async function aplicarQualidadeBoneca(boneca, renderer, nivel) {
+  if (boneca.forma.material) return boneca.forma.material(boneca, nivel, (nome, cor) => textura(renderer, nome, cor, boneca.forma.pasta));
   const t = nivel.texturaBoneca;
   const [cor, normal, rugosidade, metal] = await Promise.all([
     textura(renderer, t.cor, true), textura(renderer, t.normal), textura(renderer, t.rugosidade), textura(renderer, t.metal),
@@ -369,14 +371,17 @@ export async function aplicarQualidadeBoneca(boneca, renderer, nivel) {
 }
 
 // ---------- montagem ----------
-export async function criarBoneca(renderer, nivel, aoProgredir) {
+// forma: o corpo vestido no esqueleto e nas animações. Por padrão a Brisa; o vilão (vilao.js) passa
+// o dele: { pasta, nome (do .json/.bin), altura em m, material(boneca, nivel, textura) }
+const BRISA = { pasta: PASTA, nome: 'boneca_nova', altura: ALTURA };
+export async function criarBoneca(renderer, nivel, aoProgredir, forma = BRISA) {
   const gerente = new THREE.LoadingManager();
   gerente.setURLModifier(u => (/\.(png|jpe?g|tga)$/i.test(u) ? PIXEL : u)); // texturas vêm à parte, no tamanho do nível gráfico
   const loader = new FBXLoader(gerente);
   const [fbx, ref, dadosNova, ...hbm] = await Promise.all([
     loader.loadAsync(PASTA + 'boneca.fbx', aoProgredir),
     loader.loadAsync(PASTA_HBM + 'HumanF_Model.fbx'),
-    carregarBonecaNova(),
+    carregarBonecaNova(undefined, forma.pasta, forma.nome),
     ...Object.values(EMPRESTADAS).map(a => loader.loadAsync(PASTA_HBM + a)),
   ]);
 
@@ -416,7 +421,7 @@ export async function criarBoneca(renderer, nivel, aoProgredir) {
   Object.keys(EMPRESTADAS).forEach((nome, i) => { clipes[nome] = retargetar(hbm[i].animations[0], prep, ref, fbx); });
 
   // reparos nos clipes (diagnóstico e causas em reparos.js)
-  const metrosPorUnidade = ALTURA / (caixa.max.y - caixa.min.y);
+  const metrosPorUnidade = forma.altura / (caixa.max.y - caixa.min.y);
   const diagnostico = { picos: {}, alinhamento: {} };
   for (const [nome, c] of Object.entries(clipes)) diagnostico.picos[nome] = removerPicos(c);
   // cada golpe virado para a frente no momento em que acerta (as animações originais apontam para lados diferentes)
@@ -433,8 +438,8 @@ export async function criarBoneca(renderer, nivel, aoProgredir) {
   for (const o of ossos) { const l = ligacao.get(o.name); o.quaternion.copy(l.q); o.position.copy(l.p); }
 
   // hierarquia: raiz (posição e direção) -> corpo (pivô) -> modelo
-  const escala = ALTURA / (caixa.max.y - caixa.min.y);
-  const pivo = ALTURA * 0.5;
+  const escala = forma.altura / (caixa.max.y - caixa.min.y);
+  const pivo = forma.altura * 0.5;
   const modelo = new THREE.Group();
   modelo.add(fbx);
   modelo.scale.setScalar(escala);
@@ -466,7 +471,7 @@ export async function criarBoneca(renderer, nivel, aoProgredir) {
   const rigOssos = Object.fromEntries(ossos.map(o => [o.name, o]));
   // cabelo solto balançando por cima da animação (chamado por jogo.js depois da postura)
   const cabelo = criarCabelo(ajuste.cadeias, rigOssos);
-  const boneca = { raiz, corpo, malha, cabelo, mixer, acoes, velocidades, diagnostico, ajustarDetalhe, pernas: [perna('Left'), perna('Right')], rig: { ossos: rigOssos, lista: ossos, ligacao, papeis: PAPEIS } };
+  const boneca = { forma, raiz, corpo, malha, cabelo, mixer, acoes, velocidades, diagnostico, ajustarDetalhe, pernas: [perna('Left'), perna('Right')], rig: { ossos: rigOssos, lista: ossos, ligacao, papeis: PAPEIS } };
   await aplicarQualidadeBoneca(boneca, renderer, nivel);
   return boneca;
 }

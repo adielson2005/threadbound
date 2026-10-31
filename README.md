@@ -73,5 +73,6 @@ As texturas KTX2 são geradas por `ferramentas/gerar-ktx2.sh` (precisa do `toktx
 (Saíram da tela de Créditos do jogo, que agora mostra só o autor; ficam registrados aqui.)
 
 - Boneca: modelo "Little Lavender Doll" (Meshy) · animações extras: Human Basic Motions
+- Vilão (Ravi): modelo gerado no Meshy (release "vilão1"), com pesos de ossos feitos em `ferramentas/vilao/pesos.py` e as animações da boneca
 - Motor gráfico: three.js · colisão: three-mesh-bvh · simplificação: meshoptimizer (licenças em `vendor/`)
 - Fontes: Fredoka e Nunito (SIL Open Font License)

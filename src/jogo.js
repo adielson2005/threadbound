@@ -25,6 +25,7 @@ import { criarPraia } from './praia.js';
 import { criarCeu } from './ceu.js';
 import { carregarCachoeira, posicionarCachoeiras } from './cachoeira.js';
 import { criarInimigos } from './inimigos.js';
+import { criarVilao } from './vilao.js';
 import { criarCampanha } from './campanha.js';
 import { criarCombate, GOLPES } from './combate.js';
 import { criarAjusteResolucao, ajustarResolucao } from './resolucao.js';
@@ -300,6 +301,7 @@ async function aplicarNivel(nome) {
   atualizarMenu();
   if (mapa) { await aplicarQualidadeMapa(mapa, nivel); aquecerMapa(mapa, renderer, cena, camera); }
   if (personagem) await aplicarQualidadeBoneca(personagem, renderer, nivel);
+  if (vilao) await aplicarQualidadeBoneca(vilao.boneca, renderer, nivel);
   aplicarEfeitos();
   configurarSombra();
   quadrosParado = 3; // na pausa o fundo mostra o modo novo
@@ -568,6 +570,7 @@ function entradaMovimento() {
 // ---------- Mundo (preenchido ao carregar) ----------
 let mapa = null, terreno = null, personagem = null;
 let sombraBoneca = null; const _centroSombra = new THREE.Vector3();
+let vilao = null; // Cap. 1: Ravi, a luta antes do Coração da Ilha (vilao.js)
 let mundo = null, inimigos = null, campanha = null, combate = null, oclusao = null;
 const distancia = criarDistancia(); // objetos pequenos só são desenhados perto da câmera
 let estado = 'carregando'; // carregando | menu | jogando | fim
@@ -927,6 +930,16 @@ function impactoParede(v, n) {
 function empurrarInimigos() {
   if (!inimigos) return;
   const j = jogador;
+  // o vilão também: ele é mais pesado, quem sai do lugar é ela
+  if (vilao?.lutando) {
+    const v = vilao.v, dx = j.pos.x - v.pos.x, dz = j.pos.z - v.pos.z, d = Math.hypot(dx, dz), lim = RAIO + 0.36;
+    if (d < lim && Math.abs(j.pos.y - v.pos.y) < 1.5) {
+      const nx = d > 1e-4 ? dx / d : 1, nz = d > 1e-4 ? dz / d : 0;
+      j.pos.x += nx * (lim - d) * 0.8; j.pos.z += nz * (lim - d) * 0.8;
+      const entra = j.vel.x * nx + j.vel.z * nz;
+      if (entra < 0) { j.vel.x -= nx * entra; j.vel.z -= nz * entra; }
+    }
+  }
   for (const e of inimigos.lista) {
     if (!e.ativo) continue;
     const sobra = -inimigos.distanciaJogadora(e, j.pos);
@@ -1675,7 +1688,7 @@ renderer.setAnimationLoop(() => {
   nevoa?.atualizar(dt, t);
   modeloCachoeira?.atualizar(t);
   cachoeiras?.atualizar(t);
-  if (estado === 'jogando' && campanha) campanha.atualizar(dt, t);
+  if (estado === 'jogando' && campanha) { campanha.atualizar(dt, t); vilao?.atualizar(dt); }
   combate?.atualizar(dt, t);
 
   animarPersonagem(dt);
@@ -1787,6 +1800,7 @@ Promise.all([
       cena, mapa: m, mundo, terreno, inimigos, campanha, jogador, personagem: p,
       tremer: k => { impacto.tremor = Math.max(impacto.tremor, k); },
       morrer,
+      chefe: () => vilao,
     });
     aplicarEfeitos();
     configurarSombra();
@@ -1817,6 +1831,17 @@ Promise.all([
     await new Promise(r => requestAnimationFrame(() => setTimeout(r, 0)));
       // compila os shaders e sobe todos os níveis de detalhe do mapa para a GPU antes de começar
     // (evita travadinhas na primeira vez que algo aparece ou quando a câmera vira)
+    // o vilão do Cap. 1 (o corpo dele vem no mesmo esqueleto e animações da Brisa)
+    if (CAPITULO_ATUAL === 1) {
+      textoCarga('Preparando o vilão');
+      try {
+        vilao = await criarVilao({ renderer, nivel, cena, mapa: m, jogador, ui: $('chefe') });
+        vilao.v.aoAtacar = e => combate?.aoSerAtacada(e);
+        campanha.definirChefe(vilao);
+        sombraBoneca?.receberEm(cena, p.raiz);
+      } catch (e) { console.error('vilão', e); vilao = null; }
+    }
+
     // compila TODOS os materiais, inclusive os que ainda estão escondidos (ponte de luz, chuva,
     // objetos longe, faíscas): o compile do three.js só olha o que está visível, e o resto
     // compilava no meio do jogo, com travadinha
@@ -1846,7 +1871,7 @@ Promise.all([
     progressoCarga(1); textoCarga('Pronto');
     dispatchEvent(new Event('jogo-pronto'));
     window.__jogo = {
-      jogador, personagem, camera, camera3p, mapa, terreno, correntes, renderer, cena, sol, medidor, altos, mundo, inimigos, campanha, agua, nevoa, cachoeiras, praia, ceu: ceuJogo, get combate() { return combate; },
+      jogador, personagem, get vilao() { return vilao; }, camera, camera3p, mapa, terreno, correntes, renderer, cena, sol, medidor, altos, mundo, inimigos, campanha, agua, nevoa, cachoeiras, praia, ceu: ceuJogo, get combate() { return combate; },
       animacao: () => animAtual, estado: () => estado, nivel: () => nomeNivel, aplicarNivel, ocioso, get oclusao() { return oclusao; },
     };
     // veio do "Continuar" de outro capítulo: continua sem esperar outro clique

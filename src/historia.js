@@ -50,6 +50,18 @@ const FALAS_1 = {
   ],
   // ao ler uma carta pela primeira vez
   primeiraCarta: [['Brisa', 'Cartas… cada casa guarda um pedaço de quem morava aqui.']],
+  // Ravi, o aprendiz do farol, espera no alto do morro (luta antes do Coração)
+  chefeChegada: [
+    ['Ravi', 'Então é você a boneca da Aurélia. Achei que fosse só história de criança.'],
+    ['Ravi', 'Se esse Coração voltar a bater, a ilha fica presa no céu para sempre. E eles ficam presos com ela.'],
+    ['Brisa', 'Eles quem?'],
+    ['Ravi', 'A minha mãe está naquela névoa. Eu vou cortar os Fios de Maré, nem que a ilha caia no mar.'],
+  ],
+  chefeFase2: [['Ravi', 'Você não entende! Cada dia aqui em cima ela esquece mais quem era!']],
+  chefeDerrota: [
+    ['Ravi', '…Tá bom. Costura o seu Coração. Mas pergunta ao Tomé o que ele fez naquela noite.'],
+    ['Brisa', 'Ele se desfez na névoa… igual aos moradores. O Coração está livre.'],
+  ],
 };
 
 // carta de Aurélia junto ao Coração (fim do capítulo)
@@ -90,6 +102,7 @@ const OBJETIVOS_1 = {
   inicio: 'Explore a vila e encontre Fragmentos de Luz',
   ancoras: (n, total) => `Reacenda as Âncoras de Maré nas ilhotas (${n}/${total})`,
   coracao: 'Restaure o Coração da Ilha, no alto do morro',
+  chefe: 'Suba o morro até o Coração da Ilha. Alguém está esperando lá',
   bilhete: 'Leia a carta deixada no Coração da Ilha',
   fim: 'O farol aponta para o Recife das Vozes',
 };
