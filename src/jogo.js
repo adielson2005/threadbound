@@ -394,8 +394,8 @@ const T = {
   defender: ['KeyQ', 'GamepadDefender', 'ToqueDefesa'], // segurar
   devagar: ['KeyX'], // segurar: anda devagar
 };
-// golpes: J/clique esquerdo = combo (ou bater com o objeto na mão), K/clique direito = chute, F = pegar/soltar, L = esquivar
-const TECLAS_COMBATE = { KeyJ: 'combo', KeyK: 'chute', KeyF: 'pegar', KeyL: 'esquiva' };
+// golpes: J/clique esquerdo = combo (ou bater com o objeto na mão), K/clique direito = chute, F = pegar/soltar, L = esquivar, R = Explosão de Fios (o poder)
+const TECLAS_COMBATE = { KeyJ: 'combo', KeyK: 'chute', KeyF: 'pegar', KeyL: 'esquiva', KeyR: 'poder' };
 const camera3p = { yaw: 0, pitch: 0.35, dist: CAMERA.distancia, distAtual: CAMERA.distancia, alvo: new THREE.Vector3() };
 const analogico = { x: 0, y: 0, camX: 0, camY: 0 }; // gamepad / toque
 
@@ -504,6 +504,7 @@ $('tSoco').addEventListener('pointerdown', e => { e.preventDefault(); combate?.p
 $('tChute').addEventListener('pointerdown', e => { e.preventDefault(); combate?.pedir('chute'); });
 $('tPegar').addEventListener('pointerdown', e => { e.preventDefault(); combate?.pedir('pegar'); });
 $('tEsquiva').addEventListener('pointerdown', e => { e.preventDefault(); combate?.pedir('esquiva'); });
+$('tPoder').addEventListener('pointerdown', e => { e.preventDefault(); combate?.pedir('poder'); });
 const botaoDefesa = $('tDefesa');
 botaoDefesa.addEventListener('pointerdown', e => { e.preventDefault(); teclas.add('ToqueDefesa'); });
 for (const ev of ['pointerup', 'pointercancel', 'pointerleave']) botaoDefesa.addEventListener(ev, () => teclas.delete('ToqueDefesa'));
@@ -541,7 +542,7 @@ function lerGamepad() {
   analogico.x = ax(0) || (b(15) ? 1 : 0) - (b(14) ? 1 : 0);
   analogico.y = -ax(1) || (b(12) ? 1 : 0) - (b(13) ? 1 : 0);
   analogico.camX = ax(2); analogico.camY = ax(3);
-  b(2) || b(7) ? teclas.add('GamepadDisparar') : teclas.delete('GamepadDisparar');
+  b(2) ? teclas.add('GamepadDisparar') : teclas.delete('GamepadDisparar');
   b(6) ? teclas.add('GamepadDefender') : teclas.delete('GamepadDefender');
   if (borda(10)) gpSuper = !gpSuper;
   if (Math.hypot(ax(0), ax(1)) < 0.2 && !b(12) && !b(13) && !b(14) && !b(15)) gpSuper = false;
@@ -551,6 +552,7 @@ function lerGamepad() {
     if (borda(3)) combate?.pedir('chute');
     if (borda(5)) combate?.pedir('pegar');
     if (borda(11)) combate?.pedir('esquiva'); // R3: esquivar
+    if (borda(7)) combate?.pedir('poder'); // RT: Explosão de Fios
   }
   if (borda(0)) { if (estado === 'menu') reiniciar(); else if (estado === 'gameover') tentarDeNovo(); else pedidoPulo = true; }
   if (borda(4)) campanha?.interagir(); // LB: interagir
@@ -1295,8 +1297,14 @@ function animarPersonagem(dt) {
     }, pesoPlanar * 0.85);
     corpo.rotation.z = Math.sin(tempoCena * 1.7) * 0.07 * pesoPlanar;
   } else corpo.rotation.z = 0;
-  // agachar e alcançar o objeto do chão
+  // agachar e alcançar o objeto do chão; braços para cima soltando o poder
   combate?.aplicarPoses();
+  // golpe com peso: o corpo vai junto no momento do impacto (inclina para a frente e volta)
+  if (j.golpe && j.noChao) {
+    const g = GOLPES[j.golpe.nome], f = j.golpe.t / j.golpe.duracao;
+    const k = THREE.MathUtils.clamp((f - g.impacto[0] + 0.12) / (g.impacto[1] - g.impacto[0] + 0.3), 0, 1);
+    corpo.rotation.x += Math.sin(k * Math.PI) * (g.giro ? 0.05 : 0.14);
+  }
   // inclinação do tronco ao acelerar e nas curvas, e a cabeça olhando o que está perto
   posturaViva(dt, v);
   // pés apoiados no chão em rampas (desligado no ar, na cambalhota e agachada pegando algo)
@@ -1680,8 +1688,9 @@ renderer.setAnimationLoop(() => {
   if (parado) { if (quadrosParado <= 0) return; quadrosParado--; }
   medirDesempenho(dtBruto);
   const dtReal = Math.min(dtBruto, 0.05);
-  // golpe que acerta "pesa": o tempo quase para por um instante (hitstop)
-  const dt = parado ? 0 : dtReal * ((combate?.hitstop ?? 0) > 0 ? 0.08 : 1);
+  // golpe que acerta "pesa": o tempo quase para por um instante (hitstop); nos momentos fortes
+  // (defesa e esquiva perfeitas, o poder, o golpe que derruba o vilão) fica em câmera lenta
+  const dt = parado ? 0 : dtReal * (combate?.escalaTempo ?? 1);
   if (!parado) combate?.avancarHitstop(dtReal); // o hitstop conta em tempo real
   tempoCena += dt;
   const t = tempoCena;

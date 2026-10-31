@@ -398,6 +398,8 @@ export function criarCampanha({ cena, mapa, mundo, inimigos, jogador, respawn, c
       const d = jogador.pos.clone().sub(mundo.coracao.pos).setY(0);
       if (d.lengthSq() < 1e-4) d.set(1, 0, 0);
       chefe.iniciar(mundo.coracao.pos.clone().addScaledVector(d.normalize(), 2.5), 'chefe');
+      // os Retalhos que guardavam o Coração se desfazem: a luta é só entre os dois
+      for (const e of inimigos.lista) if (e.ativo && e.coracao) inimigos.purificar(e);
       est.falas.length = 0; proximaFala(); falar(FALAS.chefeChegada); dica('luta');
     }
   }
