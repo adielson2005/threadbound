@@ -706,3 +706,11 @@ Medido no perfil celular (Pixel 5 simulado, navegador sem placa de vídeo, entã
   e correr; só pernas e braços seguem a animação. Sem inclinação para a frente nem nas curvas. A
   cabeça ainda vira para olhar o que está perto; dos gestos de espera ficou só olhar em volta (o
   "trocar o peso" e o "espreguiçar" dobravam o tronco).
+
+### Braços ao lado do corpo
+
+- Com o tronco reto, o balanço dos braços das animações (feito para um tronco inclinado) ficava quase
+  todo para trás, com os cotovelos atrás das costas, e dava a impressão de barriga para a frente.
+  `centralizarBracos` (jogo.js) mede o ângulo ombro → cotovelo para a frente/para trás numa média de
+  ~1 s e gira o braço para essa média ficar ao lado do corpo (0,06 rad à frente da vertical); o
+  balanço continua, centrado no corpo. Vale parada, andando e correndo.
