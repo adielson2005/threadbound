@@ -58,6 +58,16 @@ const FALAS_1 = {
     ['Ravi', 'A minha mãe está naquela névoa. Eu vou cortar os Fios de Maré, nem que a ilha caia no mar.'],
   ],
   chefeFase2: [['Ravi', 'Você não entende! Cada dia aqui em cima ela esquece mais quem era!']],
+  // as outras vezes em que ele aparece: olhando de longe (1ª âncora) e numa emboscada (2ª âncora)
+  raviObserva: [
+    ['Brisa', 'Tem alguém ali… um rapaz de jaqueta verde, olhando para mim.'],
+    ['Ravi', 'Boneca de pano… não acenda a próxima.'],
+  ],
+  raviEmboscada: [['Ravi', 'Eu avisei. Cada âncora que você acende prende eles mais um pouco no céu.']],
+  raviRecua: [
+    ['Ravi', 'Isso não acabou. Te espero no Coração.'],
+    ['Brisa', 'Ele sumiu na névoa de novo…'],
+  ],
   chefeDerrota: [
     ['Ravi', '…Tá bom. Costura o seu Coração. Mas pergunta ao Tomé o que ele fez naquela noite.'],
     ['Brisa', 'Ele se desfez na névoa… igual aos moradores. O Coração está livre.'],
@@ -96,6 +106,7 @@ const DICAS_1 = {
   rocha: 'Rochas flutuantes balançam: pule nelas para alcançar fragmentos',
   memoria: 'Fragmentos lilases guardam lembranças da vila: são opcionais',
   carta: 'As casas guardam cartas dos moradores: entre e aperte E para ler',
+  luta: 'J soco · K chute · L esquivar rolando · Q defender (levantar a guarda bem na hora = defesa perfeita e contra-ataque)',
 };
 
 const OBJETIVOS_1 = {
@@ -154,6 +165,8 @@ const AVISOS_1 = {
   capituloCompleto: 'Capítulo 1 concluído!',
   quedaForte: (altura, dano) => `Ai! Queda de ${Math.round(altura)} m · −${dano} de fôlego`,
   caiuNoVazio: 'Brisa caiu da ilha… o vento a trouxe de volta!',
+  guardaQuebrada: 'Guarda quebrada! Agora!',
+  raviNaParede: 'Ravi bateu de frente! Ele está tonto',
 };
 
 // tela de game over: o motivo muda conforme como Brisa perdeu o último fôlego
@@ -420,6 +433,7 @@ export const DICAS_TOQUE = {
   correr: 'Arraste o bastão além da borda para correr · segure ⚡ para a corrida super rápida, que gasta o fôlego',
   pular: '▲ pula · no ar, ▲ de novo dá um impulso · segure ▲ para planar',
   planar: 'Caindo? Segure ▲ para planar devagar até o chão',
+  luta: 'Soco e chute nos botões da direita · ⟲ esquiva rolando · escudo defende (bem na hora = defesa perfeita e contra-ataque)',
 };
 export const paraToque = texto => texto.replace(/[Aa]perte E/g, m => (m[0] === 'A' ? 'Toque em E' : 'toque em E')).replace(/Espaço/g, '▲');
 export const OBJETIVOS = { ...OBJETIVOS_1, ...T.OBJETIVOS };
