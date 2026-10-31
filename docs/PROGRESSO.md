@@ -782,3 +782,23 @@ Medido no perfil celular (Pixel 5 simulado, navegador sem placa de vídeo, entã
   mais tempo.
 - Contra-ataque: depois de uma defesa ou esquiva perfeita, o próximo golpe dela em até 1,4 s vale o
   dobro.
+
+### Luta mais intensa: arma branca, superpoderes e câmera lenta
+
+- Lâmina da Tesoura (metade da tesoura gigante de Aurélia): uma na oficina e outra no caminho do
+  morro do Coração. F pega. Dano 3, 45 usos. Combo de lâmina: J encadeia corte, corte de volta (mais
+  rápido) e giro de 360° (acerta tudo em volta); K é o giro direto. Rastro de luz na lâmina durante
+  os cortes.
+- Explosão de Fios (poder da Brisa): a barra dourada embaixo do fôlego enche acertando golpes
+  (mais com arma), com defesa e esquiva perfeitas e ao apanhar. Cheia, R (RT no controle, ✦ no
+  celular): braços para cima, anel de luz no chão, empurra e atordoa todos em 6,5 m, dissolve
+  cristais e machuca o Ravi; câmera lenta por 0,9 s.
+- Poderes do Ravi: Lâminas de Névoa (brilho roxo nas mãos e meias-luas arremessadas em leque: 1 na
+  1ª fase, 3 na 2ª; dá para defender ou esquivar; batem em paredes) e, na 2ª fase, Passo de Névoa
+  (some e reaparece atrás da Brisa, em guarda).
+- Intensidade: câmera lenta na defesa e na esquiva perfeitas, no poder e no golpe que derruba o
+  Ravi. Os golpes têm peso: o corpo (dela e dele) inclina para a frente no impacto; o Ravi tomba
+  para o lado contrário de onde veio o golpe e inclina na investida.
+- Animações: o jogo não tem clipes novos de captura de movimento (sem internet para baixar); as
+  melhorias de luta são feitas em código por cima dos clipes existentes. Andando e correndo a Brisa
+  continua com o tronco reto (pedido anterior).

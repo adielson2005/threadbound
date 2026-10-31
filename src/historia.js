@@ -106,7 +106,7 @@ const DICAS_1 = {
   rocha: 'Rochas flutuantes balançam: pule nelas para alcançar fragmentos',
   memoria: 'Fragmentos lilases guardam lembranças da vila: são opcionais',
   carta: 'As casas guardam cartas dos moradores: entre e aperte E para ler',
-  luta: 'J soco · K chute · L esquivar rolando · Q defender (levantar a guarda bem na hora = defesa perfeita e contra-ataque)',
+  luta: 'J soco · K chute · L esquivar rolando · Q defender (bem na hora = defesa perfeita e contra-ataque) · R Explosão de Fios quando a barra dourada encher · F pega armas (a lâmina da tesoura corta em combo)',
 };
 
 const OBJETIVOS_1 = {
@@ -433,7 +433,7 @@ export const DICAS_TOQUE = {
   correr: 'Arraste o bastão além da borda para correr · segure ⚡ para a corrida super rápida, que gasta o fôlego',
   pular: '▲ pula · no ar, ▲ de novo dá um impulso · segure ▲ para planar',
   planar: 'Caindo? Segure ▲ para planar devagar até o chão',
-  luta: 'Soco e chute nos botões da direita · ⟲ esquiva rolando · escudo defende (bem na hora = defesa perfeita e contra-ataque)',
+  luta: 'Soco e chute nos botões da direita · ⟲ esquiva rolando · escudo defende (bem na hora = defesa perfeita) · ✦ Explosão de Fios quando a barra dourada encher',
 };
 export const paraToque = texto => texto.replace(/[Aa]perte E/g, m => (m[0] === 'A' ? 'Toque em E' : 'toque em E')).replace(/Espaço/g, '▲');
 export const OBJETIVOS = { ...OBJETIVOS_1, ...T.OBJETIVOS };

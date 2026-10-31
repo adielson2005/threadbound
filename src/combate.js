@@ -25,7 +25,12 @@ export const GOLPES = {
   chute: { vel: 1.35, cancela: 0.5, nome: 'Chute giratório', alcance: 1.9, dano: 2, impacto: [0.42, 0.66], avanco: 1.2, empurrao: 5.5 },
   // com objeto na mão: alcance e dano vêm do objeto
   golpeArma: { vel: 1.45, cancela: 0.45, nome: 'Golpe', alcance: 2, dano: 2, impacto: [0.28, 0.52], avanco: 1.2, empurrao: 6, arma: true },
+  // com uma arma de corte (a lâmina da tesoura): corte, corte de volta mais rápido e giro de 360°
+  // (o giro é o chute giratório com a lâmina estendida: acerta tudo em volta)
+  golpeArma2: { vel: 1.85, cancela: 0.4, nome: 'Corte de volta', alcance: 2, dano: 2, impacto: [0.26, 0.5], avanco: 1.6, empurrao: 4, arma: true },
+  giroArma: { vel: 1.3, cancela: 0.5, nome: 'Giro da lâmina', alcance: 2.2, dano: 3, impacto: [0.35, 0.7], avanco: 1.4, empurrao: 8, arma: true, giro: true },
 };
+const COMBO_ARMA = ['golpeArma', 'golpeArma2', 'giroArma'];
 const COMBO = ['soco1', 'soco2', 'soco3', 'soco4', 'soco5'];
 const JANELA_COMBO = 0.3; // a partir de quanto do golpe atual o próximo toque já fica guardado
 const FOLGA_COMBO = 0.4;  // segundos depois de um soco em que um toque ainda continua a sequência
@@ -33,7 +38,13 @@ const FOLGA_COMBO = 0.4;  // segundos depois de um soco em que um toque ainda co
 const ARMAS = {
   galho: { nome: 'Galho', dano: 2, alcance: 2.1, usos: 8 },
   agulha: { nome: 'Agulha de Prata', dano: 3, alcance: 2.4, usos: 16 },
+  // metade da tesoura gigante da oficina de Aurélia: arma branca de verdade, com combo de 3 cortes
+  tesoura: { nome: 'Lâmina da Tesoura', dano: 3, alcance: 2.3, usos: 45, corte: true },
 };
+// Explosão de Fios (o poder da Brisa): a barra enche acertando golpes, defendendo e esquivando na
+// hora certa; cheia (R, RT ou o botão ✦), uma onda de fios de luz empurra e atordoa todos em volta
+const PODER = { raio: 6.5, dano: 4, empurrao: 10, atordoa: 2.2, lento: 0.9 };
+const GANHO_PODER = { acerto: 0.07, acertoArma: 0.09, defesaPerfeita: 0.25, esquivaPerfeita: 0.2, dano: 0.08 };
 const DURACAO_PEGAR = 0.8;
 const DIRECAO_NA_MAO = new THREE.Vector3(0.318, 0.816, 0.483).normalize();
 const INVULNERAVEL = 1.1;
@@ -79,6 +90,22 @@ function modeloAgulha() {
   return g;
 }
 
+function modeloTesoura() {
+  const g = new THREE.Group();
+  const aco = new THREE.MeshStandardMaterial({ color: '#d7dde6', metalness: 0.95, roughness: 0.22, emissive: '#10151d' });
+  const latao = new THREE.MeshStandardMaterial({ color: '#b8893a', metalness: 0.8, roughness: 0.35 });
+  // lâmina: fina, afinando até a ponta, com o fio de um lado
+  const forma = new THREE.Shape();
+  forma.moveTo(-0.035, 0); forma.lineTo(0.03, 0); forma.lineTo(0.012, 0.86); forma.lineTo(-0.004, 0.92); forma.lineTo(-0.035, 0.6); forma.closePath();
+  const lamina = new THREE.Mesh(new THREE.ExtrudeGeometry(forma, { depth: 0.012, bevelEnabled: true, bevelThickness: 0.004, bevelSize: 0.004, bevelSegments: 1 }).translate(0, 0.08, -0.006), aco);
+  const parafuso = new THREE.Mesh(new THREE.CylinderGeometry(0.022, 0.022, 0.03, 12).rotateX(Math.PI / 2), latao); parafuso.position.y = 0.09;
+  // cabo: a argola da tesoura, enrolada com fio lilás
+  const argola = new THREE.Mesh(new THREE.TorusGeometry(0.06, 0.016, 8, 20), latao); argola.position.y = -0.05; argola.scale.set(1, 1.25, 1);
+  const fio = new THREE.Mesh(new THREE.CylinderGeometry(0.022, 0.022, 0.1, 8), new THREE.MeshStandardMaterial({ color: '#c9a7f2', roughness: 0.8 })); fio.position.y = 0.04;
+  g.add(lamina, parafuso, argola, fio);
+  return g;
+}
+
 // chefe: () => o vilão do capítulo (vilao.js) ou null; os golpes da Brisa acertam nele também
 export function criarCombate({ cena, mapa, mundo, terreno, inimigos, campanha, jogador, personagem, tremer, morrer, chefe = () => null }) {
   const $ = id => document.getElementById(id);
@@ -97,7 +124,7 @@ export function criarCombate({ cena, mapa, mundo, terreno, inimigos, campanha, j
   })();
   const objetos = [];
   // pontas de cada objeto ao longo de +Y (para a física: objetos.js)
-  const PONTAS = { galho: [-0.12, 0.9, 0.04], agulha: [-0.13, 1.08, 0.035] };
+  const PONTAS = { galho: [-0.12, 0.9, 0.04], agulha: [-0.13, 1.08, 0.035], tesoura: [-0.11, 1.0, 0.04] };
   // no começo: solto um pouco acima do chão, deitado, e assentado pela própria física (fica
   // deitado acompanhando a encosta, sem flutuar)
   function colocarNoChao(o, x, z, yRef) {
@@ -122,7 +149,7 @@ export function criarCombate({ cena, mapa, mundo, terreno, inimigos, campanha, j
   }
   function criarObjeto(tipo) {
     const grupo = new THREE.Group();
-    const modelo = tipo === 'agulha' ? modeloAgulha() : modeloGalho();
+    const modelo = tipo === 'agulha' ? modeloAgulha() : tipo === 'tesoura' ? modeloTesoura() : modeloGalho();
     modelo.traverse(m => { if (m.isMesh) m.castShadow = false; });
     grupo.add(modelo);
     const luz = new THREE.Sprite(brilho.clone()); luz.scale.setScalar(0.9); luz.position.y = 0.4;
@@ -135,6 +162,17 @@ export function criarCombate({ cena, mapa, mundo, terreno, inimigos, campanha, j
     const p = new THREE.Vector3(-1.1, 0, 2.3).applyMatrix4(of.matrixWorld);
     const agulha = criarObjeto('agulha');
     if (colocarNoChao(agulha, p.x, p.z, p.y)) objetos.push(agulha);
+    // a lâmina da tesoura: uma na oficina (do outro lado da mesa) e outra no caminho do morro
+    const pt = new THREE.Vector3(1.2, 0, 2.4).applyMatrix4(of.matrixWorld);
+    const t1 = criarObjeto('tesoura');
+    if (colocarNoChao(t1, pt.x, pt.z, pt.y)) objetos.push(t1);
+    const c = mundo.coracao.pos;
+    for (let k = 0; k < 12; k++) {
+      const a = k * 0.52, q = new THREE.Vector3(c.x + Math.cos(a) * 9, c.y, c.z + Math.sin(a) * 9);
+      const t2 = criarObjeto('tesoura');
+      if (colocarNoChao(t2, q.x, q.z, q.y + 3) && Math.abs(t2.grupo.position.y - c.y) < 3) { objetos.push(t2); break; }
+      if (t2.grupo.parent) cena.remove(t2.grupo);
+    }
     const livres = terreno.areas.flatMap(a => a.livres);
     const perto = (centro, min, max) => livres.filter(q => { const d = Math.hypot(q.x - centro.x, q.z - centro.z); return d > min && d < max && Math.abs(q.y - centro.y) < 2; });
     const lugares = [...perto(terreno.nascimento, 5, 11).slice(0, 40), ...mundo.ancoras.flatMap(a => perto(a.pos, 4.5, 8).slice(0, 15))];
@@ -231,7 +269,10 @@ export function criarCombate({ cena, mapa, mundo, terreno, inimigos, campanha, j
   }
 
   // ---------- estado ----------
-  const est = { invulneravel: 0, hitstop: 0, ultimoCombo: -1, desdeCombo: 9, acertados: null, esperaEsquiva: 0, tempoDefesa: 0, contra: 0, avisouEsquiva: false };
+  // ações extras para os golpes de lâmina (cópias de clipes que a boneca já tem)
+  personagem.acoes.golpeArma2 ??= personagem.mixer.clipAction(personagem.acoes.golpeArma.getClip().clone());
+  personagem.acoes.giroArma ??= personagem.mixer.clipAction(personagem.acoes.chute.getClip().clone());
+  const est = { invulneravel: 0, hitstop: 0, ultimoCombo: -1, ultimoArma: -1, desdeCombo: 9, acertados: null, esperaEsquiva: 0, tempoDefesa: 0, contra: 0, avisouEsquiva: false, poder: 0, lento: 0, poderAnim: 0 };
   let pedido = null, proximo = null;
 
   function alvos() {
@@ -278,21 +319,24 @@ export function criarCombate({ cena, mapa, mundo, terreno, inimigos, campanha, j
       if (est.acertados.has(a.obj)) continue;
       const ponto = a.pos.clone().add(new THREE.Vector3(0, a.tipo === 'inimigo' ? 0.5 : a.tipo === 'chefe' ? 1.1 : 0.3, 0));
       if (a.tipo === 'inimigo') {
-        if (inimigos.distanciaSegmento(a.obj, ini, fim) > GOLPE_RAIO) continue;
+        if (def.giro ? Math.hypot(a.pos.x - jogador.pos.x, a.pos.z - jogador.pos.z) > alcance + 0.45 || Math.abs(a.pos.y - jogador.pos.y) > 1.3
+          : inimigos.distanciaSegmento(a.obj, ini, fim) > GOLPE_RAIO) continue;
       } else if (a.tipo === 'chefe') {
         // o corpo dele é um cilindro de 0,35 m de raio, do chão até a cabeça
-        _seg.set(ini, fim).closestPointToPoint(_c.set(a.pos.x, ini.y, a.pos.z), true, _p);
-        if (Math.hypot(_p.x - a.pos.x, _p.z - a.pos.z) > GOLPE_RAIO + 0.35 || Math.abs(a.pos.y - jogador.pos.y) > 1.3) continue;
+        if (def.giro) _p.copy(jogador.pos); else _seg.set(ini, fim).closestPointToPoint(_c.set(a.pos.x, ini.y, a.pos.z), true, _p);
+        if (Math.hypot(_p.x - a.pos.x, _p.z - a.pos.z) > (def.giro ? alcance + 0.35 : GOLPE_RAIO + 0.35) || Math.abs(a.pos.y - jogador.pos.y) > 1.3) continue;
       } else {
         const d = a.pos.clone().sub(centro); const dy = Math.abs(d.y); d.setY(0);
         if (d.length() > alcance || dy > 1.6) continue;
-        if (d.lengthSq() > 0.04 && d.normalize().dot(frente) < 0.25) continue; // cone de ~75° à frente
+        if (!def.giro && d.lengthSq() > 0.04 && d.normalize().dot(frente) < 0.25) continue; // cone de ~75° à frente
       }
       if (!linhaLivre(mapa, peito, ponto)) continue; // não acerta através de paredes
       est.acertados.add(a.obj);
+      ganharPoder(arma ? GANHO_PODER.acertoArma : GANHO_PODER.acerto);
       if (a.tipo === 'chefe') {
-        chefe().atingir(dano, jogador.pos, def.empurrao);
-        faiscas(ponto, '#ffb08a', 8 + dano * 3);
+        chefe().atingir(dano, jogador.pos, def.empurrao, jogador.pos);
+        faiscas(ponto, arma?.corte ? '#e8f4ff' : '#ffb08a', 8 + dano * 3);
+        if (chefe().v.vida <= 0) est.lento = 1.4; // o golpe que derruba: câmera lenta
       } else if (a.tipo === 'inimigo') {
         inimigos.atingir(a.obj, dano, jogador.pos, def.empurrao);
         faiscas(ponto, '#ffe6a0', 8 + dano * 3);
@@ -316,7 +360,7 @@ export function criarCombate({ cena, mapa, mundo, terreno, inimigos, campanha, j
     const j = jogador;
     // rolando: o golpe passa por ela (esquiva perfeita abre o contra-ataque)
     if (j.esquiva && est.invulneravel > 0) {
-      if (!est.avisouEsquiva) { est.avisouEsquiva = true; est.contra = CONTRA; mostrar('Esquiva perfeita!'); est.hitstop = 0.08; }
+      if (!est.avisouEsquiva) { est.avisouEsquiva = true; est.contra = CONTRA; mostrar('Esquiva perfeita!'); est.lento = Math.max(est.lento, 0.35); ganharPoder(GANHO_PODER.esquivaPerfeita); }
       return;
     }
     if (est.invulneravel > 0 || j.morta || campanha.estado.terminou) return;
@@ -331,7 +375,8 @@ export function criarCombate({ cena, mapa, mundo, terreno, inimigos, campanha, j
       if (perfeita) {
         est.contra = CONTRA;
         faiscas(j.pos.clone().addScaledVector(para, 0.45).add(new THREE.Vector3(0, 1.1, 0)), '#fff2b0', 20);
-        tremer(0.35); est.invulneravel = 0.4; est.hitstop = 0.12;
+        tremer(0.35); est.invulneravel = 0.4; est.hitstop = 0.12; est.lento = Math.max(est.lento, 0.4);
+        ganharPoder(GANHO_PODER.defesaPerfeita);
         mostrar('Defesa perfeita!');
         return;
       }
@@ -342,8 +387,9 @@ export function criarCombate({ cena, mapa, mundo, terreno, inimigos, campanha, j
     }
     est.invulneravel = INVULNERAVEL;
     j.vel.set(-para.x * 7, 4.5, -para.z * 7); j.noChao = false;
-    j.golpe = null; j.pegando = null; j.machucado = 0.45;
+    j.golpe = null; j.pegando = null; j.machucado = 0.45; j.esquiva = null;
     tremer(0.5);
+    ganharPoder(GANHO_PODER.dano);
     if (campanha.perderVida(1) <= 0) morrer('golpe');
   }
 
@@ -361,6 +407,11 @@ export function criarCombate({ cena, mapa, mundo, terreno, inimigos, campanha, j
     est.esperaEsquiva = Math.max(0, est.esperaEsquiva - dt);
     est.contra = Math.max(0, est.contra - dt);
     est.tempoDefesa = j.defendendo ? est.tempoDefesa + dt : 0;
+    est.poderAnim = Math.max(0, est.poderAnim - dt);
+    if (pedido === 'poder') {
+      if (est.poder >= 1 && j.noChao && !j.morta && !j.pegando && j.cambalhota < 0) { soltarPoder(); pedido = null; }
+      else if (est.poder < 1) { mostrar('O brilho ainda não está carregado', true); pedido = null; }
+    }
     // esquiva: rola na direção do comando (sem comando, para trás); cancela o golpe em andamento
     if (pedido === 'esquiva') {
       if (j.noChao && j.cambalhota < 0 && !j.morta && !j.pegando && !j.esquiva && est.esperaEsquiva <= 0) {
@@ -404,7 +455,15 @@ export function criarCombate({ cena, mapa, mundo, terreno, inimigos, campanha, j
     // Segurando um objeto, o golpe principal é bater com ele.
     if (pedido === 'combo' || pedido === 'chute') {
       let feito = false;
-      if (pedido === 'combo' && segurando) { if (!j.golpe && livre) { iniciarGolpe('golpeArma'); feito = true; } }
+      if (segurando?.corte) {
+        // lâmina: J encadeia corte, corte de volta e giro; K é o giro direto
+        const i = j.golpe ? COMBO_ARMA.indexOf(j.golpe.nome) : -1;
+        if (pedido === 'chute') { if (!j.golpe && livre) { iniciarGolpe('giroArma'); feito = true; } }
+        else if (!j.golpe && livre) {
+          const continua = est.ultimoArma >= 0 && est.ultimoArma < COMBO_ARMA.length - 1 && est.desdeCombo < FOLGA_COMBO;
+          iniciarGolpe(COMBO_ARMA[continua ? est.ultimoArma + 1 : 0]); feito = true;
+        } else if (i >= 0 && i < COMBO_ARMA.length - 1 && j.golpe.t / j.golpe.duracao > JANELA_COMBO) { proximo = COMBO_ARMA[i + 1]; feito = true; }
+      } else if (pedido === 'combo' && segurando) { if (!j.golpe && livre) { iniciarGolpe('golpeArma'); feito = true; } }
       else if (pedido === 'combo') {
         const i = j.golpe ? COMBO.indexOf(j.golpe.nome) : -1;
         if (!j.golpe && livre) {
@@ -419,7 +478,7 @@ export function criarCombate({ cena, mapa, mundo, terreno, inimigos, campanha, j
       aplicarGolpe();
       // termina um pouco antes do fim da animação, que se mistura com a próxima
       if (j.golpe && j.golpe.t >= j.golpe.duracao - 0.12) {
-        est.ultimoCombo = COMBO.indexOf(j.golpe.nome); est.desdeCombo = 0;
+        est.ultimoCombo = COMBO.indexOf(j.golpe.nome); est.ultimoArma = COMBO_ARMA.indexOf(j.golpe.nome); est.desdeCombo = 0;
         j.golpe = null;
         if (proximo && j.noChao) iniciarGolpe(proximo);
         proximo = null;
@@ -454,10 +513,97 @@ export function criarCombate({ cena, mapa, mundo, terreno, inimigos, campanha, j
       s.material.opacity = Math.max(0, u.vida * 3);
       if (u.vida <= 0) { cena.remove(s); s.material.dispose(); particulas.splice(particulas.indexOf(s), 1); }
     }
+    atualizarRastro();
+    if (tempoOnda >= 0) {
+      tempoOnda += dt;
+      const k = Math.min(1, tempoOnda / 0.6);
+      onda.scale.setScalar(0.5 + k * PODER.raio); matOnda.opacity = 0.9 * (1 - k);
+      if (k >= 1) { tempoOnda = -1; onda.visible = false; }
+    }
     const chave = `${segurando?.usosRestantes}|${pertoDe?.nome}`;
     if (chave !== hudAntes) { hudAntes = chave; atualizarHud(); }
   }
-  function avancarHitstop(dtReal) { est.hitstop = Math.max(0, est.hitstop - dtReal); }
+  function avancarHitstop(dtReal) { est.hitstop = Math.max(0, est.hitstop - dtReal); est.lento = Math.max(0, est.lento - dtReal); }
+
+  // ---------- Explosão de Fios (o poder da Brisa) ----------
+  const hudPoder = $('poder'), botaoPoder = $('tPoder');
+  function ganharPoder(x) {
+    const antes = est.poder;
+    est.poder = Math.min(1, est.poder + x);
+    if (antes < 1 && est.poder >= 1) mostrar('Brilho carregado!');
+    atualizarPoder();
+  }
+  function atualizarPoder() {
+    if (hudPoder) { hudPoder.querySelector('i').style.transform = `scaleX(${est.poder})`; hudPoder.classList.toggle('cheio', est.poder >= 1); }
+    botaoPoder?.classList.toggle('pronto', est.poder >= 1);
+  }
+  // onda: um anel de luz que cresce rente ao chão
+  const matOnda = new THREE.MeshBasicMaterial({ color: '#ffe9a8', transparent: true, opacity: 0.9, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide });
+  const onda = new THREE.Mesh(new THREE.RingGeometry(0.85, 1, 48).rotateX(-Math.PI / 2), matOnda);
+  onda.visible = false; cena.add(onda);
+  let tempoOnda = -1;
+  function soltarPoder() {
+    const j = jogador;
+    est.poder = 0; atualizarPoder();
+    j.golpe = null; proximo = null; j.esquiva = null;
+    est.poderAnim = 0.7; est.invulneravel = Math.max(est.invulneravel, 0.9); est.lento = PODER.lento;
+    tremer(0.8);
+    mostrar('Explosão de Fios!');
+    onda.position.copy(j.pos).y += 0.15; onda.visible = true; tempoOnda = 0;
+    faiscas(j.pos.clone().add(new THREE.Vector3(0, 1.1, 0)), '#fff2b0', 40);
+    // todos em volta: empurrados, atordoados e machucados
+    for (const e of inimigos.lista) if (e.ativo && e.pos.distanceTo(j.pos) < PODER.raio) {
+      inimigos.atingir(e, PODER.dano, j.pos, PODER.empurrao);
+      if (e.ativo) { e.estado = 'atordoado'; e.atordoado = PODER.atordoa; } else campanha.registrarPurificado();
+    }
+    for (const a of mundo.ancoras) for (const c of a.cristais) if (!c.quebrado && c.pos.distanceTo(j.pos) < PODER.raio) {
+      c.quebrado = true; c.grupo.visible = false; c.aura.visible = false; campanha.registrarCristal();
+    }
+    const ch = chefe();
+    if (ch?.lutando && ch.v.pos.distanceTo(j.pos) < PODER.raio) {
+      ch.atingir(PODER.dano, j.pos, PODER.empurrao);
+      if (ch.v.vida > 0 && ch.lutando) ch.atordoar(PODER.atordoa, 'poder'); else est.lento = 1.4;
+    }
+  }
+
+  // ---------- rastro da lâmina ----------
+  // fita entre a base e a ponta da arma nos últimos quadros do golpe, sumindo com a idade
+  const N_RASTRO = 14;
+  const geoRastro = new THREE.BufferGeometry();
+  const posRastro = new Float32Array(N_RASTRO * 2 * 3), alfaRastro = new Float32Array(N_RASTRO * 2);
+  geoRastro.setAttribute('position', new THREE.BufferAttribute(posRastro, 3));
+  geoRastro.setAttribute('alfa', new THREE.BufferAttribute(alfaRastro, 1));
+  const indRastro = [];
+  for (let i = 0; i < N_RASTRO - 1; i++) { const a = i * 2; indRastro.push(a, a + 1, a + 2, a + 1, a + 3, a + 2); }
+  geoRastro.setIndex(indRastro);
+  const rastro = new THREE.Mesh(geoRastro, new THREE.ShaderMaterial({
+    transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide,
+    uniforms: { cor: { value: new THREE.Color('#dff0ff') } },
+    vertexShader: 'attribute float alfa; varying float vA; void main() { vA = alfa; gl_Position = projectionMatrix * viewMatrix * vec4(position, 1.0); }',
+    fragmentShader: 'uniform vec3 cor; varying float vA; void main() { gl_FragColor = vec4(cor * vA, vA); }',
+  }));
+  rastro.frustumCulled = false; rastro.visible = false; cena.add(rastro);
+  const amostras = [], _base = new THREE.Vector3(), _ponta = new THREE.Vector3();
+  function atualizarRastro() {
+    const g = jogador.golpe, o = segurando;
+    const ativo = o?.corte && g && GOLPES[g.nome]?.arma;
+    if (ativo) {
+      o.grupo.updateMatrixWorld(true);
+      o.grupo.localToWorld(_base.set(0, 0.25, 0)); o.grupo.localToWorld(_ponta.set(0, 1.0, 0));
+      amostras.unshift([_base.clone(), _ponta.clone()]);
+    } else if (amostras.length) amostras.pop();
+    if (amostras.length > N_RASTRO) amostras.length = N_RASTRO;
+    rastro.visible = amostras.length > 1;
+    if (!rastro.visible) return;
+    for (let i = 0; i < N_RASTRO; i++) {
+      const [b, p] = amostras[Math.min(i, amostras.length - 1)];
+      posRastro.set([b.x, b.y, b.z], i * 6); posRastro.set([p.x, p.y, p.z], i * 6 + 3);
+      const a = i < amostras.length ? 0.55 * (1 - i / N_RASTRO) : 0;
+      alfaRastro[i * 2] = a * 0.2; alfaRastro[i * 2 + 1] = a;
+    }
+    geoRastro.attributes.position.needsUpdate = true; geoRastro.attributes.alfa.needsUpdate = true;
+  }
+
 
   // Pose de "pegar do chão" (depois de mixer.update): agacha, inclina o tronco e estica os braços.
   // Os pés ficam onde a animação de base os pôs: o quadril desce o quanto as pernas dobradas sobem.
@@ -465,6 +611,11 @@ export function criarCombate({ cena, mapa, mundo, terreno, inimigos, campanha, j
   const pes = ['mixamorigLeftFoot', 'mixamorigRightFoot'].map(n => personagem.rig.ossos[n]);
   const tmp = new THREE.Vector3();
   function aplicarPoses() {
+    // soltando o poder: braços abertos para cima, peito para a frente
+    if (est.poderAnim > 0) {
+      const w = Math.sin(Math.min(1, est.poderAnim / 0.7) * Math.PI);
+      aplicarPose(personagem.rig, { bacia: 0, quadril: 0.1, joelho: 0.35, pe: -0.2, coluna: -0.25, braco: 2.6, cotovelo: 0.15, cabeca: -0.3 }, w * 0.9, false);
+    }
     const p = jogador.pegando;
     if (!p) return;
     const k = p.t / DURACAO_PEGAR;
@@ -486,6 +637,9 @@ export function criarCombate({ cena, mapa, mundo, terreno, inimigos, campanha, j
     get segurando() { return segurando; },
     get invulneravel() { return est.invulneravel; },
     get hitstop() { return est.hitstop; },
+    // escala do tempo do jogo: quase parado no impacto (hitstop), câmera lenta nos momentos fortes
+    get escalaTempo() { return est.hitstop > 0 ? 0.08 : est.lento > 0 ? 0.35 : 1; },
+    get poder() { return est.poder; },
     objetos,
   };
 }
