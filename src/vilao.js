@@ -129,7 +129,7 @@ export async function criarVilao({ renderer, nivel, cena, mapa, jogador, ui }) {
     v.vidaInicio = v.vida;
     v.ativo = modo !== 'observar';
     v.estado = modo === 'observar' ? 'observando' : 'chegada'; v.tempo = modo === 'chefe' ? 2.6 : 1.4;
-    v.aparecer = 0; v.proximaInvestida = 5;
+    v.aparecer = 0; v.proximaInvestida = 5; v.proximasLaminas = 7; v.proximoPasso = 8; // o primeiro poder não vem logo de cara
     v.angulo = Math.atan2(jogador.pos.x - v.pos.x, jogador.pos.z - v.pos.z);
     b.raiz.visible = true; sombra.visible = true;
     b.mixer.stopAllAction(); anim = null; tocar(modo === 'observar' ? 'parada' : 'guarda', 0);
