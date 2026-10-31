@@ -1250,7 +1250,9 @@ function animarPersonagem(dt) {
   // clipe atual não anima (a animação parada não mexe na coluna) acumulariam o giro de cada quadro
   for (const osso of ossosPorCima()) osso.quaternion.copy(personagem.rig.ligacao.get(osso.name).q);
   personagem.mixer.update(dt);
-  estabilizarTronco(dt, (animAtual === 'parada' || animAtual === 'andar' || animAtual === 'correr') && j.noChao && !j.golpe && !j.pegando);
+  const troncoReto = (animAtual === 'parada' || animAtual === 'andar' || animAtual === 'correr') && j.noChao && !j.golpe && !j.pegando;
+  estabilizarTronco(dt, troncoReto);
+  centralizarBracos(dt, troncoReto);
   // impulso com as pernas, grupado no ar ("bola") e abertura para cair (por cima da animação)
   aplicarCambalhota(personagem.rig, j.cambalhota);
   // planando: braços abertos para cima segurando o ar, corpo arqueado, pernas soltas balançando
@@ -1293,6 +1295,41 @@ let pesoPes = 0, pesoPlanar = 0;
 // O corpo todo reto, parada, andando e correndo: depois da animação, bacia, coluna, pescoço e cabeça
 // voltam inteiros para a postura reta da boneca (só pernas e braços seguem a animação). A cabeça ainda
 // vira para olhar o que está perto (postura viva).
+// Braços junto do corpo: as animações balançam os braços em volta de um tronco inclinado; com o tronco
+// reto, o balanço ficava quase todo para trás (cotovelos atrás das costas, parecendo barriga para a
+// frente). Mede-se o ângulo do braço (ombro → cotovelo) para a frente/para trás, numa média de ~1 s,
+// e o braço gira para essa média ficar ao lado do corpo: o balanço continua, centrado nele.
+const BRACO_ALVO = 0.06; // rad para a frente da vertical (solto, ao lado do corpo)
+const bracos = { L: null, R: null, sinal: 0, peso: 0 };
+const _ombro = new THREE.Vector3(), _cotovelo = new THREE.Vector3(), _dBraco = new THREE.Vector3();
+function anguloBraco(braco, antebraco, frente) {
+  braco.getWorldPosition(_ombro); antebraco.getWorldPosition(_cotovelo);
+  _dBraco.subVectors(_cotovelo, _ombro);
+  return Math.atan2(_dBraco.dot(frente), -_dBraco.y);
+}
+function centralizarBracos(dt, ativo) {
+  bracos.peso += ((ativo ? 1 : 0) - bracos.peso) * Math.min(1, dt * 6);
+  const { ossos, papeis: P } = personagem.rig, yaw = personagem.raiz.rotation.y;
+  const frente = new THREE.Vector3(Math.sin(yaw), 0, Math.cos(yaw)), lateral = new THREE.Vector3(Math.cos(yaw), 0, -Math.sin(yaw));
+  personagem.raiz.updateMatrixWorld(true);
+  for (const L of ['L', 'R']) {
+    const braco = ossos[P[`braco${L}`]], antebraco = ossos[P[`antebraco${L}`]];
+    if (!braco || !antebraco) continue;
+    const ang = anguloBraco(braco, antebraco, frente);
+    bracos[L] = bracos[L] === null ? ang : bracos[L] + (ang - bracos[L]) * Math.min(1, dt * 1.2);
+    if (bracos.peso < 0.01) continue;
+    // para que lado o giro em volta do eixo lateral leva o braço para a frente (depende do esqueleto)
+    if (!bracos.sinal) {
+      const q0 = braco.quaternion.clone();
+      girarOssoMundo(braco, lateral, 0.2);
+      bracos.sinal = anguloBraco(braco, antebraco, frente) > ang ? 1 : -1;
+      braco.quaternion.copy(q0); braco.updateMatrixWorld(true);
+    }
+    const corr = THREE.MathUtils.clamp(BRACO_ALVO - bracos[L], -0.7, 0.7) * bracos.peso;
+    girarOssoMundo(braco, lateral, bracos.sinal * corr);
+  }
+}
+
 let pesoTronco = 0;
 function estabilizarTronco(dt, ativo) {
   pesoTronco += ((ativo ? 1 : 0) - pesoTronco) * Math.min(1, dt * 8);
