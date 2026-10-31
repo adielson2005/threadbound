@@ -23,9 +23,13 @@ const VIDA = 16;
 const G = -26;
 const ALCANCE = { soco1: 1.55, soco2: 1.6, chute: 1.9 };
 const IMPACTO = { soco1: [0.1, 0.45], soco2: [0.3, 0.65], chute: [0.42, 0.66] };
+// aviso: antes de cada sequência de golpes ele se encolhe em guarda por esse tempo (dá para ler e
+// defender ou sair); depois de acertar a Brisa ele recua um instante (vez dela de bater).
+// Medido com um jogador automático que só soca e nunca defende: com os socos saindo sem aviso e o
+// combo de 3 golpes, a Brisa perdia os 5 fôlegos em 8 s tirando 2 de 16 de vida dele.
 const FASES = [
-  { correr: 4.0, pausa: 1.1, investida: 8.5, combo: ['soco1', 'chute'] },
-  { correr: 5.0, pausa: 0.6, investida: 10, combo: ['soco1', 'soco2', 'chute'] },
+  { correr: 3.6, pausa: 1.6, aviso: 0.45, investida: 8, combo: ['soco1'], recuo: 1.6 },
+  { correr: 4.6, pausa: 1.0, aviso: 0.3, investida: 9.5, combo: ['soco1', 'chute'], recuo: 1.1 },
 ];
 
 function material(boneca, nivel, textura) {
@@ -120,7 +124,8 @@ export async function criarVilao({ renderer, nivel, cena, mapa, jogador, ui }) {
     const p = v.pos.clone().sub(de).setY(0); if (p.lengthSq() < 1e-6) p.set(0, 0, 1);
     v.vel.addScaledVector(p.normalize(), Math.min(empurrao, 6) * 0.6);
     // apanhando no meio de um golpe dele: o golpe é interrompido (dá para trocar socos)
-    if (v.estado === 'golpe' && Math.random() < 0.5) { v.estado = 'perseguir'; v.golpe = null; v.tempo = 0.35; }
+    // (na primeira fase sempre; na segunda, metade das vezes) e o aviso também
+    if ((v.estado === 'golpe' || v.estado === 'aviso') && (faseAntes === FASES[0] || Math.random() < 0.5)) { v.estado = 'perseguir'; v.golpe = null; v.tempo = 0.45; }
     mostrarBarra(true);
     if (v.vida <= 0) { derrotar(); return true; }
     if (fase() !== faseAntes) v.aoMudarFase?.();
@@ -173,6 +178,11 @@ export async function criarVilao({ renderer, nivel, cena, mapa, jogador, ui }) {
     } else if (v.estado === 'atordoado') {
       v.atordoado -= dt; tocar('guarda');
       if (v.atordoado <= 0) { v.estado = 'perseguir'; v.tempo = F.pausa * 0.5; }
+    } else if (v.estado === 'aviso') {
+      tocar('guarda', 0.12); virarPara(jogador.pos, dt, 10);
+      v.flash = Math.max(v.flash, 0.35);
+      v.tempo -= dt;
+      if (v.tempo <= 0) iniciarGolpe(F.combo[0], 0);
     } else if (v.estado === 'preparar') {
       // investida: se encolhe olhando para ela e depois dispara
       tocar('guarda'); virarPara(jogador.pos, dt, 10);
@@ -191,11 +201,11 @@ export async function criarVilao({ renderer, nivel, cena, mapa, jogador, ui }) {
       g.t += dt;
       const f = g.t / clipe.duration;
       virarPara(jogador.pos, dt, f < IMPACTO[g.nome][0] ? 10 : 2);
-      if (!g.acertou && f >= IMPACTO[g.nome][0] && f <= IMPACTO[g.nome][1] && alcanca(ALCANCE[g.nome])) { g.acertou = true; v.aoAtacar?.(v); }
+      if (!g.acertou && f >= IMPACTO[g.nome][0] && f <= IMPACTO[g.nome][1] && alcanca(ALCANCE[g.nome])) { g.acertou = true; g.algum = true; v.aoAtacar?.(v); }
       if (f >= 0.92) {
         g.i++;
-        if (g.i < F.combo.length && dJ < 2.4) iniciarGolpe(F.combo[g.i], g.i);
-        else { v.estado = 'perseguir'; v.tempo = F.pausa; v.golpe = null; }
+        if (g.i < F.combo.length && dJ < 2.4 && !g.algum) iniciarGolpe(F.combo[g.i], g.i);
+        else { v.estado = 'perseguir'; v.tempo = g.algum ? F.recuo : F.pausa; v.golpe = null; }
       }
     } else { // perseguir
       v.tempo -= dt;
@@ -206,7 +216,7 @@ export async function criarVilao({ renderer, nivel, cena, mapa, jogador, ui }) {
         tocar(dJ > 3 ? 'correr' : 'andar');
       } else tocar('parada');
       if (v.tempo <= 0 && v.noChao) {
-        if (dJ < 1.6) iniciarGolpe(F.combo[0], 0);
+        if (dJ < 1.6) { v.estado = 'aviso'; v.tempo = F.aviso; }
         else if (dJ > 4.5 && dJ < 11 && v.proximaInvestida <= 0) {
           v.estado = 'preparar'; v.tempo = 0.65; v.proximaInvestida = 5 + Math.random() * 3;
         }
