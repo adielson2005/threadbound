@@ -699,3 +699,10 @@ Medido no perfil celular (Pixel 5 simulado, navegador sem placa de vídeo, entã
 - Cabelo: as cápsulas dos braços que afastam as mechas ficaram mais grossas (braço 0,075 → 0,09,
   antebraço 0,055 → 0,07); com o tronco firme, o cabelo cai reto nas costas em vez de balançar.
 - Conferido em filmagens antes/depois com o relógio virtual (de trás e de lado, andando e correndo).
+
+### Corpo todo reto (parada, andando e correndo)
+
+- A pedido: bacia, coluna, pescoço e cabeça ficam inteiros na postura reta da boneca em parada, andar
+  e correr; só pernas e braços seguem a animação. Sem inclinação para a frente nem nas curvas. A
+  cabeça ainda vira para olhar o que está perto; dos gestos de espera ficou só olhar em volta (o
+  "trocar o peso" e o "espreguiçar" dobravam o tronco).

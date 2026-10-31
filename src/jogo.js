@@ -1250,7 +1250,7 @@ function animarPersonagem(dt) {
   // clipe atual não anima (a animação parada não mexe na coluna) acumulariam o giro de cada quadro
   for (const osso of ossosPorCima()) osso.quaternion.copy(personagem.rig.ligacao.get(osso.name).q);
   personagem.mixer.update(dt);
-  estabilizarTronco(dt, (animAtual === 'andar' || animAtual === 'correr') && j.noChao && !j.golpe, animAtual === 'andar');
+  estabilizarTronco(dt, (animAtual === 'parada' || animAtual === 'andar' || animAtual === 'correr') && j.noChao && !j.golpe && !j.pegando);
   // impulso com as pernas, grupado no ar ("bola") e abertura para cair (por cima da animação)
   aplicarCambalhota(personagem.rig, j.cambalhota);
   // planando: braços abertos para cima segurando o ar, corpo arqueado, pernas soltas balançando
@@ -1290,23 +1290,18 @@ let pesoPes = 0, pesoPlanar = 0;
 // barriga para a frente; de trás, o tronco tombando de um lado para o outro a cada passo (e o cabelo
 // junto). Depois da animação, a bacia e a coluna voltam boa parte do caminho para a postura reta da
 // boneca; a inclinação para a frente da corrida vem da postura viva, proporcional à velocidade.
-// (pescoço e cabeça também, só andando: na animação de andar eles se inclinavam para compensar o
-// arco das costas e, com as costas retas, a cabeça ficava olhando para o chão; na de correr a cabeça
-// já sobe para compensar a inclinação do corpo, e endireitá-la escondia o rosto)
-// (bacia quase toda: medido de lado, a coluna em si fica reta, a menos de 1 cm da linha bacia–pescoço;
-// o que dava a "barriga para a frente" era a bacia girada para trás pela animação, levando a saia para a
-// frente e o peito para trás)
-const TRONCO = { bacia: 0.9, coluna: 0.85, cabeca: 0.6 };
-let pesoTronco = 0, pesoCabeca = 0;
-function estabilizarTronco(dt, ativo, andando) {
+// O corpo todo reto, parada, andando e correndo: depois da animação, bacia, coluna, pescoço e cabeça
+// voltam inteiros para a postura reta da boneca (só pernas e braços seguem a animação). A cabeça ainda
+// vira para olhar o que está perto (postura viva).
+let pesoTronco = 0;
+function estabilizarTronco(dt, ativo) {
   pesoTronco += ((ativo ? 1 : 0) - pesoTronco) * Math.min(1, dt * 8);
-  pesoCabeca += ((ativo && andando ? 1 : 0) - pesoCabeca) * Math.min(1, dt * 6);
   if (pesoTronco < 0.01) return;
   const { ossos, papeis: P, ligacao } = personagem.rig;
-  const reto = (o, k) => { const l = o && ligacao.get(o.name); if (l) o.quaternion.slerp(l.q, k * pesoTronco); };
-  reto(ossos[P.hips], TRONCO.bacia);
-  for (const n of P.coluna) reto(ossos[n], TRONCO.coluna);
-  if (pesoTronco > 0.01) { const k = TRONCO.cabeca * pesoCabeca / pesoTronco; reto(ossos[P.pescoco], k); reto(ossos[P.cabeca], k); }
+  const reto = o => { const l = o && ligacao.get(o.name); if (l) o.quaternion.slerp(l.q, pesoTronco); };
+  reto(ossos[P.hips]);
+  for (const n of P.coluna) reto(ossos[n]);
+  reto(ossos[P.pescoco]); reto(ossos[P.cabeca]);
 }
 let _ossosPorCima = null;
 function ossosPorCima() {
@@ -1341,7 +1336,8 @@ function alvoDoOlhar() {
 // Gestos de quem espera parada (por cima da animação parada): depois de uns segundos sem se mexer,
 // de tempos em tempos Brisa olha em volta, troca o peso de perna ou se espreguiça. Qualquer
 // movimento corta o gesto na hora (o peso cai rápido).
-const GESTOS = { olhar: 3.2, peso: 2.8, espreguicar: 2.6 };
+// (só olhar em volta, com a cabeça: o corpo fica reto)
+const GESTOS = { olhar: 3.2 };
 const ocioso = { parada: 0, espera: 6, gesto: null, t: 0, peso: 0, anterior: null, sinal: null };
 const _mao = new THREE.Vector3();
 function gestoOcioso(dt, v, livre, frente, lateral) {
@@ -1352,7 +1348,8 @@ function gestoOcioso(dt, v, livre, frente, lateral) {
   if (parada && !ocioso.gesto && ocioso.parada > 5) {
     ocioso.espera -= dt;
     if (ocioso.espera <= 0) {
-      const opcoes = Object.keys(GESTOS).filter(g => g !== ocioso.anterior);
+      const todos = Object.keys(GESTOS), outros = todos.filter(g => g !== ocioso.anterior);
+      const opcoes = outros.length ? outros : todos;
       ocioso.gesto = ocioso.anterior = opcoes[Math.floor(Math.random() * opcoes.length)];
       ocioso.t = 0; ocioso.espera = 6 + Math.random() * 5;
     }
@@ -1370,7 +1367,6 @@ function gestoOcioso(dt, v, livre, frente, lateral) {
     const a = Math.sin(fase * Math.PI * 2) * 0.75 * w;
     girarOssoMundo(rig.ossos[P.pescoco], cima, a * 0.4);
     girarOssoMundo(rig.ossos[P.cabeca], cima, a * 0.6);
-    for (const o of coluna) girarOssoMundo(o, cima, a * 0.15 / coluna.length);
   } else if (ocioso.anterior === 'peso') {
     // joga o peso numa perna: o tronco tomba um pouco e a cabeça compensa
     const a = Math.sin(fase * Math.PI) * 0.12 * w;
@@ -1406,10 +1402,8 @@ function posturaViva(dt, v) {
   const yaw = raiz.rotation.y;
   if (postura.yawAnt !== null) { let d = yaw - postura.yawAnt; d = Math.atan2(Math.sin(d), Math.cos(d)); postura.giro += (d / dt - postura.giro) * Math.min(1, dt * 8); }
   postura.yawAnt = yaw;
-  // (andando ~0,06 rad, como ela fica parada; correndo ~0,08, na corrida super rápida ~0,12: mais que
-  // isso, com a bacia firme, a cabeça baixava e o cabelo cobria o rosto)
-  const alvoFrente = livre ? THREE.MathUtils.clamp(postura.acel * 0.018 + (v > 0.5 ? 0.06 : 0) + Math.max(0, v - 2.6) * 0.012, -0.14, 0.2) : 0;
-  const alvoLado = livre ? THREE.MathUtils.clamp(-postura.giro * v * 0.02, -0.2, 0.2) : 0;
+  // corpo reto: sem inclinar o tronco para a frente nem para dentro das curvas
+  const alvoFrente = 0, alvoLado = 0;
   postura.frente += (alvoFrente - postura.frente) * Math.min(1, dt * 5);
   postura.lado += (alvoLado - postura.lado) * Math.min(1, dt * 5);
   raiz.updateMatrixWorld(true);
@@ -1420,8 +1414,6 @@ function posturaViva(dt, v) {
   // cabeça: devolve a inclinação do tronco (o olhar fica no horizonte, não no chão) e olha o alvo
   const cabeca = rig.ossos[rig.papeis.cabeca];
   if (!cabeca) return;
-  // (correndo um pouco mais: a animação de correr baixa a cabeça)
-  girarOssoMundo(cabeca, lateral, -postura.frente * (v > 2.9 ? 1.6 : 1));
   let alvoYaw = 0, alvoPitch = 0;
   const alvo = livre || j.noChao ? alvoDoOlhar() : null;
   if (alvo) {
