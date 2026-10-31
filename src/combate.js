@@ -17,18 +17,19 @@ import { criarCorpo, lancar, passo as passoObjeto, aplicar, empurrar as empurrar
 // impacto (fração da animação), avanço (m/s no começo do golpe) e empurrão no inimigo (m/s).
 // As janelas seguem o momento de alcance máximo medido em cada animação.
 export const GOLPES = {
-  soco1: { vel: 1.3, cancela: 0.4, nome: 'Soco rápido', alcance: 1.4, dano: 1, impacto: [0.1, 0.45], avanco: 2.2, empurrao: 1.2 },
-  soco2: { vel: 1.3, cancela: 0.4, nome: 'Soco direto', alcance: 1.5, dano: 1, impacto: [0.3, 0.65], avanco: 2.2, empurrao: 1.2 },
-  soco3: { vel: 1.3, cancela: 0.4, nome: 'Gancho', alcance: 1.4, dano: 1, impacto: [0.3, 0.7], avanco: 2, empurrao: 1.4 },
-  soco4: { vel: 1.3, cancela: 0.4, nome: 'Soco giratório', alcance: 1.6, dano: 1, impacto: [0.4, 0.72], avanco: 2, empurrao: 1.6 },
-  soco5: { vel: 1.25, cancela: 0.45, nome: 'Golpe final', alcance: 1.7, dano: 2, impacto: [0.15, 0.5], avanco: 2.4, empurrao: 6 },
-  chute: { vel: 1.35, cancela: 0.5, nome: 'Chute giratório', alcance: 1.9, dano: 2, impacto: [0.42, 0.66], avanco: 1.2, empurrao: 5.5 },
+  soco1: { vel: 1.5, cancela: 0.4, nome: 'Soco rápido', alcance: 1.4, dano: 1, impacto: [0.1, 0.45], avanco: 2.2, empurrao: 1.2 },
+  soco2: { vel: 1.5, cancela: 0.4, nome: 'Soco direto', alcance: 1.5, dano: 1, impacto: [0.3, 0.65], avanco: 2.2, empurrao: 1.2 },
+  soco3: { vel: 1.5, cancela: 0.4, nome: 'Gancho', alcance: 1.4, dano: 1, impacto: [0.3, 0.7], avanco: 2, empurrao: 1.4 },
+  soco4: { vel: 1.5, cancela: 0.4, nome: 'Soco giratório', alcance: 1.6, dano: 1, impacto: [0.4, 0.72], avanco: 2, empurrao: 1.6 },
+  soco5: { vel: 1.4, cancela: 0.45, nome: 'Golpe final', alcance: 1.7, dano: 2, impacto: [0.15, 0.5], avanco: 2.4, empurrao: 6 },
+  chute: { vel: 1.5, cancela: 0.5, nome: 'Chute giratório', alcance: 1.9, dano: 2, impacto: [0.42, 0.66], avanco: 1.2, empurrao: 5.5 },
+  // (velocidades medidas: o "Attack" a 1,45× durava ~1,9 s, lento demais para a lâmina)
   // com objeto na mão: alcance e dano vêm do objeto
-  golpeArma: { vel: 1.45, cancela: 0.45, nome: 'Golpe', alcance: 2, dano: 2, impacto: [0.28, 0.52], avanco: 1.2, empurrao: 6, arma: true },
+  golpeArma: { vel: 2.1, cancela: 0.4, nome: 'Golpe', alcance: 2, dano: 2, impacto: [0.28, 0.52], avanco: 1.2, empurrao: 6, arma: true },
   // com uma arma de corte (a lâmina da tesoura): corte, corte de volta mais rápido e giro de 360°
   // (o giro é o chute giratório com a lâmina estendida: acerta tudo em volta)
-  golpeArma2: { vel: 1.85, cancela: 0.4, nome: 'Corte de volta', alcance: 2, dano: 2, impacto: [0.26, 0.5], avanco: 1.6, empurrao: 4, arma: true },
-  giroArma: { vel: 1.3, cancela: 0.5, nome: 'Giro da lâmina', alcance: 2.2, dano: 3, impacto: [0.35, 0.7], avanco: 1.4, empurrao: 8, arma: true, giro: true },
+  golpeArma2: { vel: 2.6, cancela: 0.35, nome: 'Corte de volta', alcance: 2, dano: 2, impacto: [0.26, 0.5], avanco: 1.6, empurrao: 4, arma: true },
+  giroArma: { vel: 1.75, cancela: 0.45, nome: 'Giro da lâmina', alcance: 2.2, dano: 3, impacto: [0.35, 0.7], avanco: 1.4, empurrao: 8, arma: true, giro: true },
 };
 const COMBO_ARMA = ['golpeArma', 'golpeArma2', 'giroArma'];
 const COMBO = ['soco1', 'soco2', 'soco3', 'soco4', 'soco5'];
@@ -285,8 +286,15 @@ export function criarCombate({ cena, mapa, mundo, terreno, inimigos, campanha, j
   function iniciarGolpe(nome) {
     const g = GOLPES[nome];
     // mira suave: vira para o inimigo (ou cristal) mais próximo à frente
-    let melhor = null, d = 3.2;
-    for (const a of alvos()) { const x = Math.hypot(a.pos.x - jogador.pos.x, a.pos.z - jogador.pos.z); if (x < d - (a.tipo !== 'cristal' ? 0.8 : 0)) { d = x; melhor = a; } }
+    // (até 3,2 m; inimigos contam 0,8 m e o vilão 1,4 m mais perto que cristais. Antes o desconto era
+    // aplicado contra a distância do último escolhido: com um Retalho a 2 m e o Ravi a 1,2 m ela
+    // virava para o Retalho e socava o ar)
+    let melhor = null, nota = Infinity;
+    for (const a of alvos()) {
+      const x = Math.hypot(a.pos.x - jogador.pos.x, a.pos.z - jogador.pos.z);
+      const n = x - (a.tipo === 'chefe' ? 1.4 : a.tipo !== 'cristal' ? 0.8 : 0); // na luta, o vilão primeiro
+      if (x < 3.2 && n < nota) { nota = n; melhor = a; }
+    }
     if (melhor) jogador.angulo = Math.atan2(melhor.pos.x - jogador.pos.x, melhor.pos.z - jogador.pos.z);
     jogador.golpe = { nome, t: 0, duracao: personagem.acoes[nome].getClip().duration / g.vel, cancela: g.cancela, novo: true };
     est.acertados = new Set();

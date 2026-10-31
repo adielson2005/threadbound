@@ -38,6 +38,7 @@ const VIDA = 16;
 const G = -26;
 const ALCANCE = { soco1: 1.55, soco2: 1.6, chute: 1.9 };
 const IMPACTO = { soco1: [0.1, 0.45], soco2: [0.3, 0.65], chute: [0.42, 0.66] };
+const RITMO = [1.2, 1.4]; // velocidade dos golpes dele em cada fase (o clipe a 1× ficava arrastado)
 // aviso: antes de cada sequência de golpes ele se encolhe em guarda por esse tempo (dá para ler e
 // defender ou sair); depois de acertar a Brisa ele recua um instante (vez dela de bater).
 // Medido com um jogador automático que só soca e nunca defende: com os socos saindo sem aviso e o
@@ -345,7 +346,7 @@ export async function criarVilao({ renderer, nivel, cena, mapa, jogador, ui }) {
       if (v.tempo <= 0) { v.estado = 'rodear'; v.tempo = F.pausa; }
     } else if (v.estado === 'golpe') {
       const g = v.golpe, acao = b.acoes[g.nome], clipe = acao.getClip();
-      g.t += dt;
+      g.t += dt * g.ritmo;
       const f = g.t / clipe.duration;
       virarPara(jogador.pos, dt, f < IMPACTO[g.nome][0] ? 10 : 2);
       if (!g.acertou && f >= IMPACTO[g.nome][0] && f <= IMPACTO[g.nome][1] && alcanca(ALCANCE[g.nome])) { g.acertou = true; g.algum = true; v.aoAtacar?.(v); }
@@ -432,8 +433,10 @@ export async function criarVilao({ renderer, nivel, cena, mapa, jogador, ui }) {
   }
   function iniciarGolpe(nome, i, algum = false) {
     v.estado = 'golpe';
-    v.golpe = { nome, t: 0, i, acertou: false, algum };
+    const ritmo = RITMO[fase() === FASES[1] ? 1 : 0];
+    v.golpe = { nome, t: 0, i, acertou: false, algum, ritmo };
     tocar(nome, 0.1, true);
+    b.acoes[nome].setEffectiveTimeScale(ritmo);
   }
 
   return {
