@@ -20,6 +20,7 @@ const DORMIR_VEL = 0.06, DORMIR_TEMPO = 0.6;
 
 const _t = {}, _d = new THREE.Vector3(), _v = new THREE.Vector3(), _n = new THREE.Vector3(), _c = new THREE.Vector3();
 const _q = new THREE.Quaternion(), _eixo = new THREE.Vector3(), _cima = new THREE.Vector3(0, 1, 0), _lado = new THREE.Vector3();
+const _raio = new THREE.Ray();
 
 // pontas no espaço do objeto (ao longo de +Y, pegada na origem) e o raio de colisão
 export function criarCorpo(grupo, y0, y1, raio = 0.045) {
@@ -76,6 +77,15 @@ export function passo(corpo, bvh, dt, empurradores = []) {
       _v.subVectors(p, a).multiplyScalar(amort);
       a.copy(p);
       p.add(_v); p.y += G * h * h;
+      // arremessado rápido, um ponto anda mais que o próprio raio num subpasso e podia pular um
+      // poste ou uma tábua fina inteira: o caminho é conferido e ele para antes do que bateu
+      _d.subVectors(p, a);
+      const anda = _d.length();
+      if (anda > corpo.raio) {
+        _raio.set(a, _d.divideScalar(anda));
+        const bate = bvh.raycastFirst(_raio, THREE.DoubleSide, 0, anda + corpo.raio);
+        if (bate && bate.distance < anda + corpo.raio) p.copy(a).addScaledVector(_raio.direction, Math.max(0, bate.distance - corpo.raio));
+      }
     }
     // cápsulas que empurram (a Brisa): o ponto sai de dentro e ganha a velocidade dela
     for (const e of empurradores) for (let k = 0; k < 3; k++) {
