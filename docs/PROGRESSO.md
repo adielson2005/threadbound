@@ -714,3 +714,11 @@ Medido no perfil celular (Pixel 5 simulado, navegador sem placa de vídeo, entã
   `centralizarBracos` (jogo.js) mede o ângulo ombro → cotovelo para a frente/para trás numa média de
   ~1 s e gira o braço para essa média ficar ao lado do corpo (0,06 rad à frente da vertical); o
   balanço continua, centrado no corpo. Vale parada, andando e correndo.
+
+### Corrida mais natural
+
+- Correndo, o tronco inclina para a frente a partir da cintura (~6°; ~10° na super rápida) e a
+  cabeça desfaz a inclinação (olhar no horizonte). Andando e parada, reto.
+- Da animação volta só o giro em volta do eixo vertical (ombros e quadril girando em sentidos opostos
+  a cada passada): 45% correndo, 25% andando, decomposto por swing–twist em relação à pose de
+  repouso, sem o arco das costas nem o tombo para os lados.

@@ -1251,7 +1251,7 @@ function animarPersonagem(dt) {
   for (const osso of ossosPorCima()) osso.quaternion.copy(personagem.rig.ligacao.get(osso.name).q);
   personagem.mixer.update(dt);
   const troncoReto = (animAtual === 'parada' || animAtual === 'andar' || animAtual === 'correr') && j.noChao && !j.golpe && !j.pegando;
-  estabilizarTronco(dt, troncoReto);
+  estabilizarTronco(dt, troncoReto, animAtual);
   centralizarBracos(dt, troncoReto);
   // impulso com as pernas, grupado no ar ("bola") e abertura para cair (por cima da animação)
   aplicarCambalhota(personagem.rig, j.cambalhota);
@@ -1330,15 +1330,36 @@ function centralizarBracos(dt, ativo) {
   }
 }
 
-let pesoTronco = 0;
-function estabilizarTronco(dt, ativo) {
+// Da animação fica só o giro em volta do eixo vertical (ombros e quadril girando em sentidos opostos
+// a cada passada), uma fração dele: andando pouco, correndo mais. Sem o arco das costas nem o tombo
+// para os lados; parada, nada.
+const GIRO_TRONCO = { andar: 0.25, correr: 0.45 };
+const _qRel = new THREE.Quaternion(), _qGiroT = new THREE.Quaternion(), _qMundoT = new THREE.Quaternion(), _eixoT = new THREE.Vector3(), _cimaT = new THREE.Vector3(0, 1, 0), _identidade = new THREE.Quaternion();
+let pesoTronco = 0, giroTronco = 0;
+function estabilizarTronco(dt, ativo, anim) {
   pesoTronco += ((ativo ? 1 : 0) - pesoTronco) * Math.min(1, dt * 8);
+  giroTronco += ((ativo ? GIRO_TRONCO[anim] ?? 0 : 0) - giroTronco) * Math.min(1, dt * 6);
   if (pesoTronco < 0.01) return;
   const { ossos, papeis: P, ligacao } = personagem.rig;
-  const reto = o => { const l = o && ligacao.get(o.name); if (l) o.quaternion.slerp(l.q, pesoTronco); };
-  reto(ossos[P.hips]);
-  for (const n of P.coluna) reto(ossos[n]);
-  reto(ossos[P.pescoco]); reto(ossos[P.cabeca]);
+  const reto = (o, giro) => {
+    const l = o && ligacao.get(o.name);
+    if (!l) return;
+    let alvo = l.q;
+    if (giro > 0.01) {
+      // giro da animação em relação ao repouso, decomposto: só a parte em volta do eixo do osso que
+      // aponta para cima no mundo (torção), sem a que dobra ou tomba o tronco
+      _qRel.copy(l.q).invert().multiply(o.quaternion);
+      o.parent.getWorldQuaternion(_qMundoT).multiply(l.q).invert();
+      _eixoT.copy(_cimaT).applyQuaternion(_qMundoT).normalize();
+      const d = _qRel.x * _eixoT.x + _qRel.y * _eixoT.y + _qRel.z * _eixoT.z;
+      _qGiroT.set(_eixoT.x * d, _eixoT.y * d, _eixoT.z * d, _qRel.w).normalize();
+      alvo = _qRel.copy(_identidade).slerp(_qGiroT, giro).premultiply(l.q);
+    }
+    o.quaternion.slerp(alvo, pesoTronco);
+  };
+  reto(ossos[P.hips], giroTronco);
+  for (const n of P.coluna) reto(ossos[n], giroTronco);
+  reto(ossos[P.pescoco], 0); reto(ossos[P.cabeca], 0);
 }
 let _ossosPorCima = null;
 function ossosPorCima() {
@@ -1439,8 +1460,9 @@ function posturaViva(dt, v) {
   const yaw = raiz.rotation.y;
   if (postura.yawAnt !== null) { let d = yaw - postura.yawAnt; d = Math.atan2(Math.sin(d), Math.cos(d)); postura.giro += (d / dt - postura.giro) * Math.min(1, dt * 8); }
   postura.yawAnt = yaw;
-  // corpo reto: sem inclinar o tronco para a frente nem para dentro das curvas
-  const alvoFrente = 0, alvoLado = 0;
+  // andando e parada, o tronco reto; correndo, inclinado para a frente a partir da cintura, como quem
+  // corre (~6° correndo, ~10° na super rápida), sem tombar nas curvas
+  const alvoFrente = livre && v > 2.9 ? THREE.MathUtils.clamp(0.1 + (v - 4.6) * 0.028, 0.06, 0.18) : 0, alvoLado = 0;
   postura.frente += (alvoFrente - postura.frente) * Math.min(1, dt * 5);
   postura.lado += (alvoLado - postura.lado) * Math.min(1, dt * 5);
   raiz.updateMatrixWorld(true);
@@ -1451,6 +1473,8 @@ function posturaViva(dt, v) {
   // cabeça: devolve a inclinação do tronco (o olhar fica no horizonte, não no chão) e olha o alvo
   const cabeca = rig.ossos[rig.papeis.cabeca];
   if (!cabeca) return;
+  // a cabeça desfaz a inclinação do tronco: o olhar fica no horizonte
+  girarOssoMundo(cabeca, lateral, -postura.frente);
   let alvoYaw = 0, alvoPitch = 0;
   const alvo = livre || j.noChao ? alvoDoOlhar() : null;
   if (alvo) {
