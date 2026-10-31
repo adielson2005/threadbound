@@ -19,7 +19,7 @@ rm -rf "$B"; mkdir -p "$B/assets/www/assets/boneca" "$B/assets/www/assets/cachoe
 #    cachoeira, que vira cachoeira.bin, e o mapa antigo do Meshy)
 W="$B/assets/www"
 cp index.html "$W/"; cp -r src vendor "$W/"
-for d in animacoes efeitos menu; do cp -r "assets/$d" "$W/assets/"; done
+for d in animacoes efeitos menu vilao; do cp -r "assets/$d" "$W/assets/"; done
 cp assets/boneca/boneca.fbx assets/boneca/boneca_nova.bin assets/boneca/boneca_nova.json assets/boneca/*_1024.* assets/boneca/*_2048.* assets/boneca/*_4096.* "$W/assets/boneca/"
 cp assets/cachoeira/cachoeira.bin assets/cachoeira/cachoeira_*.* "$W/assets/cachoeira/"
 
