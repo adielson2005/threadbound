@@ -739,8 +739,10 @@ Medido no perfil celular (Pixel 5 simulado, navegador sem placa de vídeo, entã
   deles, antes e agora.
 - Objetos soltos (galho, agulha) arremessados rápido podiam pular um poste ou uma tábua fina num
   subpasso: o caminho de cada ponto é conferido com um raio na BVH e ele para antes do que bateu.
-- Testado: entrar em cada casa da vila pela porta e subir os últimos degraus do farol até a carta,
-  na versão anterior e nesta.
+- Testado com caminho automático, na versão anterior e nesta: entra pela porta na Casa dos Barcos e
+  na Casa das Redes nas duas; nas outras o caminho do teste não acha a porta nas duas (limite do
+  teste, não da colisão). A subida do farol até a carta, com o parapeito novo, ainda está sendo
+  conferida.
 
 ### Sombra de verdade da Brisa
 
