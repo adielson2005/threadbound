@@ -755,3 +755,30 @@ Medido no perfil celular (Pixel 5 simulado, navegador sem placa de vídeo, entã
 - Vale em Low, Medium e High e no celular (no celular conferido no Low, com material simples). No
   PC sem placa de vídeo fica só a mancha. Custo: uma passada a mais só com a malha dela, num mapa
   pequeno. Não foi medido em celular de verdade.
+
+### Vilão do Cap. 1: Ravi, o Corta-Fios
+
+- Modelo do release "vilão1" (Meshy: rapaz de jaqueta verde, 10 mil triângulos, sem ossos). Fora do
+  jogo, `ferramentas/vilao/pesos.py` junta os vértices, calcula pesos de ossos por região (pernas e
+  braços pela distância aos ossos, tronco pela cadeia da coluna, ombros e quadril misturados,
+  suavizado pela malha, sem misturar os lados) com as juntas de `ferramentas/vilao/juntas.json`
+  (cotovelo, pulso e joelho refinados pelo centro dos vértices). `criarBoneca` aceita outro corpo: o
+  vilão usa o mesmo esqueleto, as mesmas animações e os mesmos reparos da Brisa, com 1,85 m.
+- Aparece três vezes: ao longe depois da 1ª âncora; numa emboscada depois da 2ª (luta curta, recua
+  com um terço da vida a menos ou depois de 30 s); e como chefe no alto do morro, antes do Coração.
+- Luta: rodeia de guarda a meia distância, avança e golpeia sempre com um aviso em guarda antes,
+  investida em linha reta (contra uma parede fica tonto), na 2ª fase salto com pouso que derruba,
+  esquiva para trás quando ela começa um golpe perto, postura que quebra com golpes seguidos.
+  Colisão com o mapa igual à da Brisa. Barra de vida no HUD.
+- Equilíbrio, medido com um jogador automático que só soca e nunca defende: antes do aviso e do
+  recuo, a Brisa perdia os 5 fôlegos em 8 s tirando 2 de 16 de vida dele.
+
+### Luta da Brisa (vale para Ravi e para os Retalhos)
+
+- Esquiva (L, R3 no controle, botão ⟲ no celular): rolamento curto na direção do comando (sem
+  comando, para trás), cancela o golpe em andamento; os primeiros 0,3 s ninguém acerta. Um ataque
+  que passa nesse instante é "esquiva perfeita".
+- Defesa perfeita: a guarda (Q) levantada até 0,22 s antes do golpe chegar atordoa o atacante por
+  mais tempo.
+- Contra-ataque: depois de uma defesa ou esquiva perfeita, o próximo golpe dela em até 1,4 s vale o
+  dobro.

@@ -37,6 +37,13 @@ const ARMAS = {
 const DURACAO_PEGAR = 0.8;
 const DIRECAO_NA_MAO = new THREE.Vector3(0.318, 0.816, 0.483).normalize();
 const INVULNERAVEL = 1.1;
+// esquiva: rolamento curto na direção do comando (sem comando, para trás). Os primeiros
+// INVENCIVEL_ESQUIVA s ninguém acerta; um ataque que passa nesse instante é "esquiva perfeita".
+const ESQUIVA = { duracao: 0.42, vel: 7.5, velFim: 2.2, invencivel: 0.3, espera: 0.55 };
+// defesa perfeita: a guarda levantada até DEFESA_PERFEITA s antes do golpe chegar
+const DEFESA_PERFEITA = 0.22;
+// contra-ataque: depois de uma defesa ou esquiva perfeita, o próximo golpe dela vale o dobro
+const CONTRA = 1.4;
 // volume do golpe nos Retalhos: uma cápsula na altura da cintura, do corpo da Brisa até o alcance,
 // testada contra o corpo do Retalho (inimigos.js). O alcance segue medido até o centro do alvo:
 // a cápsula termina antes dele o quanto somam o raio dela e o do corpo.
@@ -224,7 +231,7 @@ export function criarCombate({ cena, mapa, mundo, terreno, inimigos, campanha, j
   }
 
   // ---------- estado ----------
-  const est = { invulneravel: 0, hitstop: 0, ultimoCombo: -1, desdeCombo: 9, acertados: null };
+  const est = { invulneravel: 0, hitstop: 0, ultimoCombo: -1, desdeCombo: 9, acertados: null, esperaEsquiva: 0, tempoDefesa: 0, contra: 0, avisouEsquiva: false };
   let pedido = null, proximo = null;
 
   function alvos() {
@@ -251,7 +258,7 @@ export function criarCombate({ cena, mapa, mundo, terreno, inimigos, campanha, j
     const def = GOLPES[g.nome], f = g.t / g.duracao;
     if (f < def.impacto[0] || f > def.impacto[1]) return;
     const arma = def.arma ? segurando : null;
-    const alcance = arma ? arma.alcance : def.alcance, dano = arma ? arma.dano : def.dano;
+    const alcance = arma ? arma.alcance : def.alcance, dano = (arma ? arma.dano : def.dano) * (est.contra > 0 ? 2 : 1);
     const frente = new THREE.Vector3(Math.sin(jogador.angulo), 0, Math.cos(jogador.angulo));
     const centro = jogador.pos.clone().addScaledVector(frente, 0.45);
     const ini = jogador.pos.clone().addScaledVector(frente, GOLPE_INICIO).setY(jogador.pos.y + GOLPE_ALTURA);
@@ -295,6 +302,7 @@ export function criarCombate({ cena, mapa, mundo, terreno, inimigos, campanha, j
         faiscas(ponto, '#c890ff', 10);
         if (c.vida <= 0) { c.quebrado = true; c.grupo.visible = false; c.aura.visible = false; campanha.registrarCristal(); }
       }
+      if (est.contra > 0) { est.contra = 0; mostrar('Contra-ataque!'); faiscas(ponto, '#fff2b0', 18); }
       // o golpe "pesa": congela um instante e a câmera dá um tranco
       est.hitstop = Math.max(est.hitstop, 0.05 + dano * 0.015);
       tremer(0.18 + dano * 0.08);
@@ -306,12 +314,27 @@ export function criarCombate({ cena, mapa, mundo, terreno, inimigos, campanha, j
   // o Retalho que acerta a investida: defendendo de frente, bloqueia; senão perde fôlego
   function aoSerAtacada(e) {
     const j = jogador;
+    // rolando: o golpe passa por ela (esquiva perfeita abre o contra-ataque)
+    if (j.esquiva && est.invulneravel > 0) {
+      if (!est.avisouEsquiva) { est.avisouEsquiva = true; est.contra = CONTRA; mostrar('Esquiva perfeita!'); est.hitstop = 0.08; }
+      return;
+    }
     if (est.invulneravel > 0 || j.morta || campanha.estado.terminou) return;
     const para = e.pos.clone().sub(j.pos).setY(0).normalize(); // da Brisa para o inimigo
     const frente = new THREE.Vector3(Math.sin(j.angulo), 0, Math.cos(j.angulo));
     if (j.defendendo && frente.dot(para) > 0.1) {
-      j.vel.addScaledVector(para, -3);
-      e.vel.copy(para).multiplyScalar(5); e.estado = 'atordoado'; e.atordoado = 0.8; e.flash = 0.6;
+      // guarda levantada bem na hora: defesa perfeita (atordoa mais e abre o contra-ataque)
+      const perfeita = est.tempoDefesa < DEFESA_PERFEITA;
+      j.vel.addScaledVector(para, perfeita ? -1 : -3);
+      e.vel.copy(para).multiplyScalar(perfeita ? 7 : 5); e.estado = 'atordoado'; e.atordoado = perfeita ? 1.6 : 0.8; e.flash = 0.6;
+      e.golpe = null;
+      if (perfeita) {
+        est.contra = CONTRA;
+        faiscas(j.pos.clone().addScaledVector(para, 0.45).add(new THREE.Vector3(0, 1.1, 0)), '#fff2b0', 20);
+        tremer(0.35); est.invulneravel = 0.4; est.hitstop = 0.12;
+        mostrar('Defesa perfeita!');
+        return;
+      }
       faiscas(j.pos.clone().addScaledVector(para, 0.45).add(new THREE.Vector3(0, 1.1, 0)), '#bfe4ff', 12);
       tremer(0.25); est.invulneravel = 0.35; est.hitstop = 0.06;
       mostrar('Defendeu!');
@@ -335,8 +358,31 @@ export function criarCombate({ cena, mapa, mundo, terreno, inimigos, campanha, j
     if (validade <= 0) pedido = null;
     est.invulneravel = Math.max(0, est.invulneravel - dt);
     est.desdeCombo += dt;
+    est.esperaEsquiva = Math.max(0, est.esperaEsquiva - dt);
+    est.contra = Math.max(0, est.contra - dt);
+    est.tempoDefesa = j.defendendo ? est.tempoDefesa + dt : 0;
+    // esquiva: rola na direção do comando (sem comando, para trás); cancela o golpe em andamento
+    if (pedido === 'esquiva') {
+      if (j.noChao && j.cambalhota < 0 && !j.morta && !j.pegando && !j.esquiva && est.esperaEsquiva <= 0) {
+        const ent = j.entrada;
+        const dir = ent && ent.lengthSq() > 0.01 ? ent.clone().setY(0).normalize() : new THREE.Vector3(-Math.sin(j.angulo), 0, -Math.cos(j.angulo));
+        j.esquiva = { t: 0, dir };
+        j.angulo = Math.atan2(dir.x, dir.z);
+        j.golpe = null; proximo = null; j.machucado = 0;
+        est.invulneravel = Math.max(est.invulneravel, ESQUIVA.invencivel); est.avisouEsquiva = false;
+        est.esperaEsquiva = ESQUIVA.espera;
+        pedido = null;
+      } else if (j.esquiva) pedido = null;
+    }
+    if (j.esquiva) {
+      const e = j.esquiva;
+      e.t += dt;
+      const k = Math.min(1, e.t / ESQUIVA.duracao), vel = ESQUIVA.vel + (ESQUIVA.velFim - ESQUIVA.vel) * k * k;
+      e.vx = e.dir.x * vel; e.vz = e.dir.z * vel; e.progresso = k;
+      if (e.t >= ESQUIVA.duracao || !j.noChao) j.esquiva = null;
+    }
     j.machucado = Math.max(0, (j.machucado || 0) - dt);
-    const livre = j.noChao && j.cambalhota < 0 && !j.morta && !j.pegando && !(j.machucado > 0);
+    const livre = j.noChao && j.cambalhota < 0 && !j.morta && !j.pegando && !(j.machucado > 0) && !j.esquiva;
 
     // pegar / soltar
     if (pedido === 'pegar') {

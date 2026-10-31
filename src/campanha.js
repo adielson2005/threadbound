@@ -199,6 +199,9 @@ export function criarCampanha({ cena, mapa, mundo, inimigos, jogador, respawn, c
     falar(FALAS.ancoraRestaurada[Math.min(n, 3) - 1]);
     est.tempoTremor = 30 + n * 25;
     if (n === mundo.ancoras.length) { est.etapa = chefe ? 'chefe' : 'coracao'; dica('coracao'); }
+    // Ravi aparece: depois da 1ª âncora, olhando de longe; depois da 2ª, numa emboscada
+    if (chefe && n === 1 && !est.raviObservou) { est.raviObservou = true; setTimeout(() => aparecerRavi('observar'), 3500); }
+    if (chefe && n === 2 && !est.raviEmboscou) { est.raviEmboscou = true; setTimeout(() => aparecerRavi('emboscada'), 4500); }
     salvar();
   }
   function restaurarCoracao() {
@@ -310,7 +313,7 @@ export function criarCampanha({ cena, mapa, mundo, inimigos, jogador, respawn, c
       cristais: mundo.ancoras.flatMap((a, i) => a.cristais.flatMap((c, k) => (c.quebrado ? [[i, k]] : []))),
       purificados: inimigos.lista.flatMap((e, i) => (e.ativo ? [] : [i])),
       cartas: cartas.filter(c => c.lida).map(c => c.nome),
-      concluido: !!est.concluido, chefeVencido: !!est.chefeVencido,
+      concluido: !!est.concluido, chefeVencido: !!est.chefeVencido, raviObservou: !!est.raviObservou, raviEmboscou: !!est.raviEmboscou,
     };
   }
   function salvar() { aoSalvar?.(exportar()); }
@@ -326,7 +329,7 @@ export function criarCampanha({ cena, mapa, mundo, inimigos, jogador, respawn, c
     if (est.etapa === 'final') est.etapa = 'bilhete';
     if (est.etapa === 'fim') mundo.coracao.bilhete.visible = false;
     est.concluido = !!s.concluido || (s.concluidos ?? []).includes(CAPITULO_ATUAL);
-    est.chefeVencido = !!s.chefeVencido;
+    est.chefeVencido = !!s.chefeVencido; est.raviObservou = !!s.raviObservou; est.raviEmboscou = !!s.raviEmboscou;
     if (chefe && est.etapa === 'coracao' && !est.chefeVencido && !s.coracao) est.etapa = 'chefe';
     est.vida = Math.max(1, s.vida ?? VIDA_MAX);
     if (s.checkpoint) est.checkpoint.fromArray(s.checkpoint);
@@ -362,6 +365,11 @@ export function criarCampanha({ cena, mapa, mundo, inimigos, jogador, respawn, c
     // jogo salvo antes do vilão existir, já na etapa do Coração: a luta vem antes
     if (est.etapa === 'coracao' && !est.chefeVencido && !mundo.coracao.restaurado) est.etapa = 'chefe';
     c.v.aoMudarFase = () => falar(FALAS.chefeFase2);
+    c.v.aoRecuar = modo => { if (modo === 'emboscada') falar(FALAS.raviRecua); };
+    c.v.aoAviso = motivo => {
+      if (motivo === 'quebra') aviso(AVISOS.guardaQuebrada, 1300);
+      else if (motivo === 'parede') aviso(AVISOS.raviNaParede, 1500);
+    };
     c.v.aoDerrotar = () => {
       est.etapa = 'coracao'; est.chefeVencido = true;
       falar(FALAS.chefeDerrota);
@@ -370,9 +378,28 @@ export function criarCampanha({ cena, mapa, mundo, inimigos, jogador, respawn, c
       salvar();
     };
   }
+  // ponto a "dist" m da Brisa, na direção do Coração girada de "giro" rad (ele vem de lá)
+  function pontoRavi(dist, giro = 0) {
+    const d = mundo.coracao.pos.clone().sub(jogador.pos).setY(0);
+    if (d.lengthSq() < 1e-4) d.set(1, 0, 0);
+    d.normalize().applyAxisAngle(new THREE.Vector3(0, 1, 0), giro);
+    return jogador.pos.clone().addScaledVector(d, dist).setY(jogador.pos.y + 1);
+  }
+  function aparecerRavi(modo) {
+    if (!chefe || chefe.visivel || jogador.morta || est.terminou || est.etapa === 'chefe') return;
+    if (modo === 'observar') { chefe.iniciar(pontoRavi(18, 0.5), 'observar'); falar(FALAS.raviObserva); }
+    else { chefe.iniciar(pontoRavi(6, 0.9), 'emboscada'); falar(FALAS.raviEmboscada); dica('luta'); }
+  }
   function vigiarChefe() {
-    if (est.etapa !== 'chefe' || !chefe || chefe.visivel || jogador.morta) return;
-    if (mundo.coracao.pos.distanceTo(jogador.pos) < 18) { chefe.iniciar(mundo.coracao.pos); est.falas.length = 0; proximaFala(); falar(FALAS.chefeChegada); }
+    if (est.etapa !== 'chefe' || !chefe || jogador.morta) return;
+    if (chefe.visivel && chefe.v.modo === 'chefe') return;
+    if (mundo.coracao.pos.distanceTo(jogador.pos) < 18) {
+      if (chefe.visivel) chefe.reiniciar();
+      const d = jogador.pos.clone().sub(mundo.coracao.pos).setY(0);
+      if (d.lengthSq() < 1e-4) d.set(1, 0, 0);
+      chefe.iniciar(mundo.coracao.pos.clone().addScaledVector(d.normalize(), 2.5), 'chefe');
+      est.falas.length = 0; proximaFala(); falar(FALAS.chefeChegada); dica('luta');
+    }
   }
 
   // purificação e cristal quebrados no combate (por golpes, não pelo E)

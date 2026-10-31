@@ -394,8 +394,8 @@ const T = {
   defender: ['KeyQ', 'GamepadDefender', 'ToqueDefesa'], // segurar
   devagar: ['KeyX'], // segurar: anda devagar
 };
-// golpes: J/clique esquerdo = combo (ou bater com o objeto na mão), K/clique direito = chute, F = pegar/soltar
-const TECLAS_COMBATE = { KeyJ: 'combo', KeyK: 'chute', KeyF: 'pegar' };
+// golpes: J/clique esquerdo = combo (ou bater com o objeto na mão), K/clique direito = chute, F = pegar/soltar, L = esquivar
+const TECLAS_COMBATE = { KeyJ: 'combo', KeyK: 'chute', KeyF: 'pegar', KeyL: 'esquiva' };
 const camera3p = { yaw: 0, pitch: 0.35, dist: CAMERA.distancia, distAtual: CAMERA.distancia, alvo: new THREE.Vector3() };
 const analogico = { x: 0, y: 0, camX: 0, camY: 0 }; // gamepad / toque
 
@@ -503,6 +503,7 @@ $('tUsar').addEventListener('pointerdown', e => { e.preventDefault(); campanha?.
 $('tSoco').addEventListener('pointerdown', e => { e.preventDefault(); combate?.pedir('combo'); });
 $('tChute').addEventListener('pointerdown', e => { e.preventDefault(); combate?.pedir('chute'); });
 $('tPegar').addEventListener('pointerdown', e => { e.preventDefault(); combate?.pedir('pegar'); });
+$('tEsquiva').addEventListener('pointerdown', e => { e.preventDefault(); combate?.pedir('esquiva'); });
 const botaoDefesa = $('tDefesa');
 botaoDefesa.addEventListener('pointerdown', e => { e.preventDefault(); teclas.add('ToqueDefesa'); });
 for (const ev of ['pointerup', 'pointercancel', 'pointerleave']) botaoDefesa.addEventListener(ev, () => teclas.delete('ToqueDefesa'));
@@ -549,6 +550,7 @@ function lerGamepad() {
     if (borda(1)) combate?.pedir('combo');
     if (borda(3)) combate?.pedir('chute');
     if (borda(5)) combate?.pedir('pegar');
+    if (borda(11)) combate?.pedir('esquiva'); // R3: esquivar
   }
   if (borda(0)) { if (estado === 'menu') reiniciar(); else if (estado === 'gameover') tentarDeNovo(); else pedidoPulo = true; }
   if (borda(4)) campanha?.interagir(); // LB: interagir
@@ -590,7 +592,7 @@ function respawn(ponto) {
   const j = jogador;
   j.pos.copy(ponto ?? j.seguro);
   j.vel.set(0, 0, 0);
-  Object.assign(j, { noChao: false, lancado: false, puloDuploUsado: false, cambalhota: -1, comecouCambalhota: false, tempoNoAr: 0, aterrissou: false, veioDoTrampolim: true, morta: false, noVazio: false, impacto: 0, golpe: null, pegando: null, machucado: 0, defendendo: false, energia: 1, cansada: false, esperaEnergia: 0 });
+  Object.assign(j, { noChao: false, lancado: false, puloDuploUsado: false, cambalhota: -1, comecouCambalhota: false, tempoNoAr: 0, aterrissou: false, veioDoTrampolim: true, morta: false, noVazio: false, impacto: 0, golpe: null, pegando: null, machucado: 0, defendendo: false, energia: 1, cansada: false, esperaEnergia: 0, esquiva: null });
   if (personagem) { personagem.mixer.stopAllAction(); animAtual = null; tocar('parada'); }
 }
 
@@ -998,11 +1000,12 @@ function passoFisica(dt) {
   frente.set(-Math.sin(camera3p.yaw), 0, -Math.cos(camera3p.yaw));
   direita.set(Math.cos(camera3p.yaw), 0, -Math.sin(camera3p.yaw));
   desejado.copy(direita).multiplyScalar(ent.x).addScaledVector(frente, ent.y);
-  // combate: golpes, pegar/soltar e defesa
+  // combate: golpes, pegar/soltar, defesa e esquiva (a esquiva rola na direção do comando)
+  j.entrada = desejado;
   combate?.passo(dt);
   j.defendendo = algumaTecla(T.defender) && j.noChao && !j.golpe && !j.pegando && !j.morta && !(j.machucado > 0);
   // golpeando no chão, pegando algo ou acabando de ser atingida: os pés não obedecem ao comando
-  const semControle = (j.golpe && j.noChao) || j.pegando || j.machucado > 0;
+  const semControle = (j.golpe && j.noChao) || j.pegando || j.machucado > 0 || j.esquiva;
   if (semControle) desejado.set(0, 0, 0);
   dirEntrada.copy(desejado);
   // no começo de um golpe Brisa dá um passinho para a frente (o combo acompanha o alvo)
@@ -1041,6 +1044,8 @@ function passoFisica(dt) {
     if (dv.length() > lim) dv.setLength(lim);
     j.vel.x += dv.x; j.vel.z += dv.z;
   }
+  // rolando na esquiva: a velocidade é a do rolamento (rápida no começo, freando no fim)
+  if (j.esquiva) { j.vel.x = j.esquiva.vx; j.vel.z = j.esquiva.vz; }
 
   // um pulo cancela o golpe depois de um trecho dele; pegando algo ou atingida, não pula
   const podePular = !j.morta && !j.pegando && !(j.machucado > 0) && (!j.golpe || j.golpe.t / j.golpe.duracao > j.golpe.cancela);
@@ -1226,8 +1231,11 @@ function animarPersonagem(dt) {
     tocar('cambalhota', { fade: 0.08, inicio: 0.08, vel: 0 });
   }
   // giro para a frente em volta do centro do corpo, com aceleração suave no começo e no fim
-  const p = j.cambalhota;
+  // (a esquiva é um rolamento no chão: o mesmo giro, com o corpo descendo até perto do chão)
+  const p = j.cambalhota >= 0 ? j.cambalhota : j.esquiva ? j.esquiva.progresso ?? 0 : -1;
   corpo.rotation.x = p >= 0 ? p * p * (3 - 2 * p) * Math.PI * 2 : 0;
+  corpo.userData.pivo ??= corpo.position.y;
+  corpo.position.y = corpo.userData.pivo - (j.esquiva ? Math.sin(Math.PI * (j.esquiva.progresso ?? 0)) * 0.42 : 0);
 
   if (j.morta) {
     // sem fôlego: no chão ela cai (uma vez só, e fica deitada); no ar continua despencando
@@ -1239,6 +1247,8 @@ function animarPersonagem(dt) {
   } else if (!j.noChao) {
     const subindo = animAtual === 'puloInicio' && j.vel.y > 1;
     if (!subindo && j.tempoNoAr > 0.1) tocar('queda', { fade: 0.3 });
+  } else if (j.esquiva) {
+    tocar('cambalhota', { fade: 0.06, inicio: 0.08, vel: 0 });
   } else if (j.golpe) {
     // cada golpe recomeça do início (o mesmo soco de novo mistura com o anterior)
     if (j.golpe.novo) { j.golpe.novo = false; tocar(j.golpe.nome, { fade: 0.12, vel: GOLPES[j.golpe.nome].vel, reiniciar: true }); }
@@ -1273,7 +1283,7 @@ function animarPersonagem(dt) {
   estabilizarTronco(dt, troncoReto, animAtual);
   centralizarBracos(dt, troncoReto);
   // impulso com as pernas, grupado no ar ("bola") e abertura para cair (por cima da animação)
-  aplicarCambalhota(personagem.rig, j.cambalhota);
+  aplicarCambalhota(personagem.rig, j.cambalhota >= 0 ? j.cambalhota : j.esquiva ? j.esquiva.progresso ?? 0 : -1);
   // planando: braços abertos para cima segurando o ar, corpo arqueado, pernas soltas balançando
   // (por cima da animação de queda, que continua rodando por baixo)
   pesoPlanar += ((j.planando ? 1 : 0) - pesoPlanar) * Math.min(1, dt * 6);
@@ -1290,7 +1300,7 @@ function animarPersonagem(dt) {
   // inclinação do tronco ao acelerar e nas curvas, e a cabeça olhando o que está perto
   posturaViva(dt, v);
   // pés apoiados no chão em rampas (desligado no ar, na cambalhota e agachada pegando algo)
-  const apoiada = j.noChao && j.cambalhota < 0 && !j.morta && !j.pegando;
+  const apoiada = j.noChao && j.cambalhota < 0 && !j.morta && !j.pegando && !j.esquiva;
   pesoPes += ((apoiada ? 1 : 0) - pesoPes) * Math.min(1, dt * 10);
   assentarPes(personagem, mapa.malha, pesoPes);
   // atingida: o corpo recua um instante (por cima da animação)
