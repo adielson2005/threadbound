@@ -27,6 +27,7 @@ import { carregarCachoeira, posicionarCachoeiras } from './cachoeira.js';
 import { criarInimigos } from './inimigos.js';
 import { criarVilao } from './vilao.js';
 import { criarTutorial } from './tutorial.js';
+import { criarFolhas } from './folhas.js';
 import { som, definirVolume, musicaLuta } from './som.js';
 import { DIFICULDADES, dificuldade, definirDificuldade } from './dificuldade.js';
 import { criarCampanha } from './campanha.js';
@@ -584,6 +585,7 @@ function entradaMovimento() {
 let mapa = null, terreno = null, personagem = null;
 let sombraBoneca = null; const _centroSombra = new THREE.Vector3();
 let distPassos = 0;
+let folhas = null, tempoFolhas = 0; // vegetação macia (folhas.js)
 let vilao = null; // Cap. 1: Ravi, a luta antes do Coração da Ilha (vilao.js)
 let mundo = null, inimigos = null, campanha = null, combate = null, oclusao = null;
 const distancia = criarDistancia(); // objetos pequenos só são desenhados perto da câmera
@@ -956,6 +958,7 @@ function impactoPouso(v) {
   impacto.mergulho = Math.max(impacto.mergulho, 0.06 + k * 0.3);
   impacto.amassar = Math.max(impacto.amassar, 0.06 + k * 0.16);
   jogador.impacto = Math.max(jogador.impacto || 0, 0.08 + k * 0.45);
+  som.batida(0.3 + k * 0.7); // pouso forte
   soltarPoeira(jogador.pos, Math.round(5 + k * 14), 1.2 + k * 2.2);
 }
 // v: velocidade com que entrou na parede (m/s); n: normal da parede (aponta para fora dela)
@@ -965,6 +968,7 @@ function impactoParede(v, n) {
   jogador.vel.addScaledVector(n, v * 0.22);
   impacto.tremor = Math.max(impacto.tremor, 0.15 + k * 0.45);
   jogador.impacto = Math.max(jogador.impacto || 0, 0.1 + k * 0.2);
+  som.batida(0.4 + k * 0.6); // bater numa pedra ou parede: um baque surdo, mais forte quanto mais rápido
   if (n.y > -0.5) soltarPoeira(jogador.pos.clone().addScaledVector(n, -RAIO).add(new THREE.Vector3(0, 0.9, 0)), Math.round(3 + k * 6), 0.6 + k);
 }
 // Brisa e os Retalhos não se atravessam: cada um empurra o outro (ela é mais pesada que eles).
@@ -1077,7 +1081,9 @@ function passoFisica(dt) {
     // logo depois de um impacto forte as pernas ainda estão absorvendo o tranco: responde menos
     const tranco = j.impacto > 0 ? 0.25 : 1;
     const acel = (j.noChao ? FISICA.aceleracao : FISICA.aceleracaoAr * (j.lancado ? 0.4 : j.planando ? 1.4 : 1)) * tranco;
-    desejado.multiplyScalar(vmax);
+    // dentro de uma moita: anda com dificuldade (até 55% mais devagar no meio dela)
+    const mata = j.noChao ? folhas?.dentro(j.pos) : null;
+    desejado.multiplyScalar(vmax * (mata ? 1 - 0.55 * Math.min(1, mata.k * 1.8) : 1));
     if (passoGolpe > 0) desejado.set(Math.sin(j.angulo) * passoGolpe, 0, Math.cos(j.angulo) * passoGolpe);
     const dv = desejado.sub(horiz);
     const lim = acel * dt;
@@ -1759,6 +1765,13 @@ renderer.setAnimationLoop(() => {
   if (estado === 'jogando' && campanha) { campanha.atualizar(dt, t); vilao?.atualizar(dt); tutorial.atualizar(dt, jogador); }
   // música de combate enquanto o Ravi luta (mais forte na 2ª fase); passos no chão
   musicaLuta(estado === 'jogando' && !pausado && !!vilao?.lutando, !!vilao?.segundaFase);
+  // passando por uma moita: as folhas caem e o mato roça
+  if (folhas) {
+    const v = Math.hypot(jogador.vel.x, jogador.vel.z), mata = v > 0.4 ? folhas.dentro(jogador.pos) : null;
+    tempoFolhas -= dt * (mata ? v : 0);
+    if (mata && tempoFolhas <= 0) { tempoFolhas = 0.9; folhas.soltar(jogador.pos.x, jogador.pos.y, jogador.pos.z, jogador.vel.x, jogador.vel.z, 4 + Math.round(v)); som.folhas(); }
+    folhas.atualizar(dt, t);
+  }
   if (estado === 'jogando' && jogador.noChao && !jogador.esquiva) {
     const v = Math.hypot(jogador.vel.x, jogador.vel.z);
     distPassos += v * dt;
@@ -1848,6 +1861,7 @@ Promise.all([
       cachoeiras = posicionarCachoeiras({ cena, mapa: m, terreno, mundo, agua, nevoa, modelo: cach, praia });
     }
     inimigos = criarInimigos({ cena, mapa: m, posicoes: mundo.posicoesInimigos });
+    folhas = criarFolhas({ cena, plantas: m.vegetacaoMacia ?? [] });
     campanha = criarCampanha({
       cena, mapa: m, mundo, inimigos, jogador,
       respawn: p => { respawn(p); jogador.seguro.copy(p); },

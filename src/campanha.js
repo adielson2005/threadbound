@@ -58,6 +58,37 @@ export function criarCampanha({ cena, mapa, mundo, inimigos, jogador, respawn, c
   });
   let cartasLidas = 0;
 
+  // ---------- farol do objetivo (level design: guiar sem encher a tela de texto) ----------
+  // uma coluna de luz dourada, alta e fininha, sobre o objetivo atual: a âncora apagada mais perto
+  // e, depois, o Coração. Vista de longe por cima das árvores; some quando ela chega perto (não
+  // atrapalha a área) e durante as lutas
+  const farol = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.9, 1.6, 70, 14, 1, true).translate(0, 35, 0),
+    new THREE.ShaderMaterial({
+      // (mistura normal, não aditiva: luz dourada somada ao céu claro do dia quase não aparecia)
+      transparent: true, depthWrite: false, side: THREE.DoubleSide,
+      uniforms: { forca: { value: 0 }, tempo: { value: 0 } },
+      vertexShader: 'varying float vY; void main() { vY = position.y / 70.0; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }',
+      fragmentShader: 'uniform float forca; uniform float tempo; varying float vY; void main() { float a = forca * pow(1.0 - vY, 0.6) * (0.8 + 0.2 * sin(tempo * 2.0 - vY * 14.0)); gl_FragColor = vec4(1.0, 0.8, 0.38, a); }',
+    }));
+  farol.frustumCulled = false; farol.visible = false; farol.renderOrder = 2;
+  cena.add(farol);
+  function atualizarFarol(dt, t) {
+    let alvo = null;
+    if (est.etapa === 'ancoras' || est.etapa === 'inicio') {
+      let d = Infinity;
+      for (const a of mundo.ancoras) if (!a.restaurada) { const x = a.pos.distanceTo(jogador.pos); if (x < d) { d = x; alvo = a.pos; } }
+    } else if (est.etapa === 'coracao' || est.etapa === 'chefe') alvo = mundo.coracao.pos;
+    const lutando = chefe?.lutando;
+    const d = alvo ? Math.hypot(alvo.x - jogador.pos.x, alvo.z - jogador.pos.z) : 0;
+    const quer = alvo && !lutando ? THREE.MathUtils.smoothstep(d, 10, 30) * 0.6 : 0;
+    const u = farol.material.uniforms;
+    u.forca.value += (quer - u.forca.value) * Math.min(1, dt * 2);
+    u.tempo.value = t;
+    farol.visible = u.forca.value > 0.005;
+    if (alvo) farol.position.copy(alvo);
+  }
+
   // ---------- state ----------
   const est = {
     vida: vidaMax(), pegos: 0, purificados: 0, cristais: 0,
@@ -243,6 +274,7 @@ export function criarCampanha({ cena, mapa, mundo, inimigos, jogador, respawn, c
     // dialogue timing
     if (est.falaAtual) { est.falaTempo -= dt; if (est.falaTempo <= 0) proximaFala(); }
     vigiarChefe();
+    atualizarFarol(dt, t);
 
     // fragments
     const corpo = _corpo.copy(jogador.pos); corpo.y += 0.8;
@@ -419,7 +451,7 @@ export function criarCampanha({ cena, mapa, mundo, inimigos, jogador, respawn, c
   function registrarCristal() { est.cristais++; aviso(AVISOS.cristalQuebrado, 1400); salvar(); }
 
   return {
-    atualizar, interagir, iniciar, fragmentos, estado: est, definirChefe, silenciarDicas, perderVida, reviver, registrarPurificado, registrarCristal, exportar, importar, salvar,
+    atualizar, interagir, iniciar, fragmentos, estado: est, definirChefe, silenciarDicas, farol, perderVida, reviver, registrarPurificado, registrarCristal, exportar, importar, salvar,
     get tremor() { return est.tremor; },
     get lendo() { return !!est.lendo; },
   };

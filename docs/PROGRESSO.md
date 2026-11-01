@@ -844,3 +844,17 @@ Medido no perfil celular (Pixel 5 simulado, navegador sem placa de vídeo, entã
   a frente e 6 m/s para cima; antes era só enfeite). Medido na corrente de ida e volta da ilha
   principal: sem cambalhota ela pousa na outra ponta, a 18,8 m; com cambalhota passa dela e pousa a
   24 m. Dá para corrigir a direção no ar como sempre.
+
+### Level design e game design: plantas que não prendem, farol do objetivo e o GDD
+
+- Bug: a Brisa travava em moitas (o miolo delas tinha colisão sólida, que a cápsula enroscava).
+  Agora moitas e algas que balançam são macias (`src/folhas.js`): sem colisão, mas ela fica até 55%
+  mais lenta no meio delas, as folhas caem por onde ela passa e o mato faz barulho. Testado andando
+  em linha reta pela mesma moita, por três lados: antes ela ficou presa por um lado (0,19 m/s) e
+  enroscou nos outros; agora passa pelos três, a 1,2 m/s no meio.
+- Pedras, paredes, árvores, móveis e corais continuam sólidos; bater neles ou pousar forte agora
+  tem um baque (som), além do tranco e da poeira que já existiam.
+- Farol do objetivo: coluna de luz dourada sobre a âncora apagada mais perto e, depois, sobre o
+  Coração; vista de longe, some perto e nas lutas (mistura normal: aditiva sumia no céu claro).
+- `docs/GDD.md`: o documento de game design (visão, pilares, regras, mecânicas, fluxo da
+  progressão, level design do Cap. 1, dificuldade, interface, áudio, desempenho, próximos passos).
