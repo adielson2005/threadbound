@@ -34,7 +34,8 @@ import { texturaDeCanvas } from './canvasTextura.js';
 // Reação a golpes: o corpo tomba para o lado contrário de onde veio o golpe.
 
 const PASTA = new URL('../assets/vilao/', import.meta.url).href;
-const VIDA = 16;
+// (era 16: com a lâmina e a defesa perfeita, um jogador automático tirava 12 de vida em 6 s)
+const VIDA = 26;
 const G = -26;
 const ALCANCE = { soco1: 1.55, soco2: 1.6, chute: 1.9 };
 const IMPACTO = { soco1: [0.1, 0.45], soco2: [0.3, 0.65], chute: [0.42, 0.66] };
@@ -187,7 +188,7 @@ export async function criarVilao({ renderer, nivel, cena, mapa, jogador, ui }) {
     if (!v.ativo || ['chegada', 'caindo', 'sumindo', 'observando', 'passo'].includes(v.estado)) return false;
     const faseAntes = fase();
     const tonto = v.estado === 'atordoado';
-    v.vida -= tonto ? dano * 1.5 : dano;
+    v.vida -= tonto ? dano * 1.25 : dano;
     v.flash = 1; v.recuo = 1;
     const p = v.pos.clone().sub(de).setY(0); if (p.lengthSq() < 1e-6) p.set(0, 0, 1);
     // direção do golpe no espaço dele (x: de lado, y: de frente/de costas) para o corpo tombar
