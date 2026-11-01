@@ -4,6 +4,7 @@ import { aplicarPose } from './cambalhota.js';
 import { linhaLivre } from './colisao.js';
 import { brilhoDeDia } from './dia.js';
 import { dificuldade } from './dificuldade.js';
+import { som } from './som.js';
 import { criarCorpo, lancar, passo as passoObjeto, aplicar, empurrar as empurrarCorpo } from './objetos.js';
 
 // Combate de Brisa: socos (combo de 5), chute, pegar um objeto do chão (galho ou a Agulha de
@@ -204,7 +205,7 @@ export function criarCombate({ cena, mapa, mundo, terreno, inimigos, campanha, j
     o.grupo.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), DIRECAO_NA_MAO);
     o.luz.visible = false; o.noChao = false;
     suporte.add(o.grupo);
-    segurando = o;
+    segurando = o; som.pegar();
     atualizarHud();
   }
   // soltar: o objeto sai da mão de onde está (posição e direção de verdade), com a velocidade
@@ -297,6 +298,7 @@ export function criarCombate({ cena, mapa, mundo, terreno, inimigos, campanha, j
     }
     if (melhor) jogador.angulo = Math.atan2(melhor.pos.x - jogador.pos.x, melhor.pos.z - jogador.pos.z);
     jogador.golpe = { nome, t: 0, duracao: personagem.acoes[nome].getClip().duration / g.vel, cancela: g.cancela, novo: true };
+    som.golpe(g.arma && segurando?.corte ? 'corte' : nome === 'chute' || g.giro ? 'chute' : 'soco');
     est.acertados = new Set();
   }
 
@@ -341,6 +343,7 @@ export function criarCombate({ cena, mapa, mundo, terreno, inimigos, campanha, j
       if (!linhaLivre(mapa, peito, ponto)) continue; // não acerta através de paredes
       est.acertados.add(a.obj);
       ganharPoder(arma ? GANHO_PODER.acertoArma : GANHO_PODER.acerto);
+      som.acerto(dano, !!arma?.corte);
       if (a.tipo === 'chefe') {
         chefe().atingir(dano, jogador.pos, def.empurrao, jogador.pos);
         faiscas(ponto, arma?.corte ? '#e8f4ff' : '#ffb08a', 8 + dano * 3);
@@ -368,7 +371,7 @@ export function criarCombate({ cena, mapa, mundo, terreno, inimigos, campanha, j
     const j = jogador;
     // rolando: o golpe passa por ela (esquiva perfeita abre o contra-ataque)
     if (j.esquiva && est.invulneravel > 0) {
-      if (!est.avisouEsquiva) { est.avisouEsquiva = true; est.contra = CONTRA; mostrar('Esquiva perfeita!'); est.lento = Math.max(est.lento, 0.35); ganharPoder(GANHO_PODER.esquivaPerfeita); }
+      if (!est.avisouEsquiva) { est.avisouEsquiva = true; est.contra = CONTRA; som.defesa(true); mostrar('Esquiva perfeita!'); est.lento = Math.max(est.lento, 0.35); ganharPoder(GANHO_PODER.esquivaPerfeita); }
       return;
     }
     if (est.invulneravel > 0 || j.morta || campanha.estado.terminou) return;
@@ -384,12 +387,13 @@ export function criarCombate({ cena, mapa, mundo, terreno, inimigos, campanha, j
         est.contra = CONTRA;
         faiscas(j.pos.clone().addScaledVector(para, 0.45).add(new THREE.Vector3(0, 1.1, 0)), '#fff2b0', 20);
         tremer(0.35); est.invulneravel = 0.4; est.hitstop = 0.12; est.lento = Math.max(est.lento, 0.4);
-        ganharPoder(GANHO_PODER.defesaPerfeita);
+        ganharPoder(GANHO_PODER.defesaPerfeita); som.defesa(true);
         mostrar('Defesa perfeita!');
         return;
       }
       faiscas(j.pos.clone().addScaledVector(para, 0.45).add(new THREE.Vector3(0, 1.1, 0)), '#bfe4ff', 12);
       tremer(0.25); est.invulneravel = 0.35; est.hitstop = 0.06;
+      som.defesa(false);
       mostrar('Defendeu!');
       return;
     }
@@ -397,7 +401,7 @@ export function criarCombate({ cena, mapa, mundo, terreno, inimigos, campanha, j
     j.vel.set(-para.x * 7, 4.5, -para.z * 7); j.noChao = false;
     j.golpe = null; j.pegando = null; j.machucado = 0.45; j.esquiva = null;
     tremer(0.5);
-    ganharPoder(GANHO_PODER.dano);
+    ganharPoder(GANHO_PODER.dano); som.dano();
     if (campanha.perderVida(1) <= 0) morrer('golpe');
   }
 
@@ -425,7 +429,7 @@ export function criarCombate({ cena, mapa, mundo, terreno, inimigos, campanha, j
       if (j.noChao && j.cambalhota < 0 && !j.morta && !j.pegando && !j.esquiva && est.esperaEsquiva <= 0) {
         const ent = j.entrada;
         const dir = ent && ent.lengthSq() > 0.01 ? ent.clone().setY(0).normalize() : new THREE.Vector3(-Math.sin(j.angulo), 0, -Math.cos(j.angulo));
-        j.esquiva = { t: 0, dir };
+        j.esquiva = { t: 0, dir }; som.esquiva();
         j.angulo = Math.atan2(dir.x, dir.z);
         j.golpe = null; proximo = null; j.machucado = 0;
         est.invulneravel = Math.max(est.invulneravel, ESQUIVA.invencivel); est.avisouEsquiva = false;
@@ -538,6 +542,7 @@ export function criarCombate({ cena, mapa, mundo, terreno, inimigos, campanha, j
   function ganharPoder(x) {
     const antes = est.poder;
     est.poder = Math.min(1, est.poder + x * dificuldade().ganhoPoder);
+    if (antes < 1 && est.poder >= 1) som.carregado();
     if (antes < 1 && est.poder >= 1) mostrar(matchMedia('(pointer: coarse)').matches ? 'Brilho carregado! Toque em ✦' : 'Brilho carregado! Aperte V');
     atualizarPoder();
   }
@@ -552,7 +557,7 @@ export function criarCombate({ cena, mapa, mundo, terreno, inimigos, campanha, j
   let tempoOnda = -1;
   function soltarPoder() {
     const j = jogador;
-    est.poder = 0; atualizarPoder();
+    est.poder = 0; atualizarPoder(); som.poder();
     j.golpe = null; proximo = null; j.esquiva = null;
     est.poderAnim = 0.7; est.invulneravel = Math.max(est.invulneravel, 0.9); est.lento = PODER.lento;
     tremer(0.8);

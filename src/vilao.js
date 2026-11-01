@@ -4,6 +4,7 @@ import { moverComColisao, RAIO } from './fisica.js';
 import { linhaLivre } from './colisao.js';
 import { texturaDeCanvas } from './canvasTextura.js';
 import { dificuldade } from './dificuldade.js';
+import { som } from './som.js';
 
 // Ravi, o vilão do Capítulo 1 (modelo do release "vilão1": rapaz de jaqueta verde, Meshy, sem ossos).
 // A malha ganhou pesos de ossos fora do jogo (ferramentas/vilao/pesos.py) e é vestida no mesmo
@@ -162,6 +163,7 @@ export async function criarVilao({ renderer, nivel, cena, mapa, jogador, ui }) {
   const laminas = [];
   const _dl = new THREE.Vector3();
   function arremessar(n) {
+    som.laminaNevoa();
     const base = Math.atan2(jogador.pos.x - v.pos.x, jogador.pos.z - v.pos.z);
     for (let k = 0; k < n; k++) {
       const a = base + (k - (n - 1) / 2) * 0.26;
@@ -345,7 +347,7 @@ export async function criarVilao({ renderer, nivel, cena, mapa, jogador, ui }) {
       if (v.noChao && v.tempo < 0) {
         v.estado = 'pouso'; v.tempo = 0.45; v.vel.set(0, 0, 0); tocar('aterrissar', 0.08);
         if (dJ < 2.0 && Math.abs(jogador.pos.y - v.pos.y) < 0.8 && jogador.noChao) v.aoAtacar?.(v);
-        v.aoAviso?.('pouso');
+        v.aoAviso?.('pouso'); som.pouso();
       }
       v.tempo -= dt;
     } else if (v.estado === 'pouso') {
@@ -377,7 +379,7 @@ export async function criarVilao({ renderer, nivel, cena, mapa, jogador, ui }) {
         if (dJ > 5 && dJ < 13 && v.proximasLaminas <= 0) {
           v.estado = 'conjurar'; v.tempo = 0.6; v.proximasLaminas = LAMINA.espera + Math.random() * 2;
         } else if (F.passo && dJ > 3 && v.proximoPasso <= 0) {
-          v.estado = 'passo'; v.tempo = 0.3; v.proximoPasso = 7 + Math.random() * 3;
+          v.estado = 'passo'; v.tempo = 0.3; v.proximoPasso = 7 + Math.random() * 3; som.passoNevoa();
         } else if (F.salto && dJ > 3.5 && dJ < 8 && Math.random() < 0.35) {
           v.estado = 'salto'; v.tempo = 0.2;
           const tVoo = 0.75;
@@ -393,7 +395,7 @@ export async function criarVilao({ renderer, nivel, cena, mapa, jogador, ui }) {
         desejado.set(dx, 0, dz).normalize().multiplyScalar(dJ > 3 ? F.correr : F.correr * 0.6);
         tocar(dJ > 3 ? 'correr' : 'andar');
       } else tocar('guarda');
-      if (dJ < 1.6 && v.noChao) { v.estado = 'aviso'; v.tempo = F.aviso; }
+      if (dJ < 1.6 && v.noChao) { v.estado = 'aviso'; v.tempo = F.aviso; som.aviso(); }
       else if (v.tempo <= 0) { v.estado = 'rodear'; v.tempo = 1; }
     }
 
@@ -450,5 +452,6 @@ export async function criarVilao({ renderer, nivel, cena, mapa, jogador, ui }) {
     v, boneca: b, iniciar, reiniciar, recuar, atingir, atualizar, atordoar,
     get lutando() { return v.ativo && !['caindo', 'sumindo', 'observando', 'oculto'].includes(v.estado); },
     get visivel() { return b.raiz.visible; },
+    get segundaFase() { return v.modo === 'chefe' && v.vida <= vidaTotal() / 2; },
   };
 }

@@ -27,6 +27,7 @@ import { carregarCachoeira, posicionarCachoeiras } from './cachoeira.js';
 import { criarInimigos } from './inimigos.js';
 import { criarVilao } from './vilao.js';
 import { criarTutorial } from './tutorial.js';
+import { som, definirVolume, musicaLuta } from './som.js';
 import { DIFICULDADES, dificuldade, definirDificuldade } from './dificuldade.js';
 import { criarCampanha } from './campanha.js';
 import { criarCombate, GOLPES } from './combate.js';
@@ -151,7 +152,7 @@ ceuJogo.definirTom(CONFIG.ambiente.ceu);
   const [numero, nome] = CAPITULO.split(' — ');
   document.querySelector('#tela .selo').textContent = numero;
   document.querySelector('#tela .sub').textContent = nome;
-  document.title = `Threadbound — ${nome}`;
+  document.title = `Fiapo — ${nome}`;
 }
 
 // luz do céu: azul clarinho de cima e, de baixo, o tom quente da areia e da grama refletindo
@@ -578,6 +579,7 @@ function entradaMovimento() {
 // ---------- Mundo (preenchido ao carregar) ----------
 let mapa = null, terreno = null, personagem = null;
 let sombraBoneca = null; const _centroSombra = new THREE.Vector3();
+let distPassos = 0;
 let vilao = null; // Cap. 1: Ravi, a luta antes do Coração da Ilha (vilao.js)
 let mundo = null, inimigos = null, campanha = null, combate = null, oclusao = null;
 const distancia = criarDistancia(); // objetos pequenos só são desenhados perto da câmera
@@ -799,6 +801,7 @@ for (const a of paineis.querySelectorAll('.aba')) a.addEventListener('click', ()
 const config = lerConfig();
 function aplicarConfig() {
   chuva.definirVolume(config.volume);
+  definirVolume(config.volume);
   CAMERA.sensibilidade = 0.0025 * config.sensibilidade;
   document.documentElement.style.setProperty('--escala-texto', config.texto);
   $('volumeValor').textContent = Math.round(config.volume * 100) + '%';
@@ -874,6 +877,9 @@ addEventListener('keydown', e => {
 // a opção marcada é sempre uma só (a que tem o foco): o mouse marca ao passar por cima (a linha
 // inteira conta, não só o texto) e o dedo marca no toque, antes de soltar
 const OPCAO = '.item-menu, .botao, .aba, .voltar, [data-nivel], .capitulos li button, .instagram, .opcao input, .opcao select';
+// som da interface: um tique ao marcar uma opção e um acorde curto ao confirmar
+addEventListener('focusin', e => { if (e.target.matches?.(OPCAO)) som.foco(); });
+addEventListener('click', e => { if (e.target.closest?.(OPCAO)) som.ok(); });
 addEventListener('pointermove', e => {
   if (e.pointerType !== 'mouse') return;
   const b = e.target.closest?.(OPCAO);
@@ -1736,6 +1742,13 @@ renderer.setAnimationLoop(() => {
   modeloCachoeira?.atualizar(t);
   cachoeiras?.atualizar(t);
   if (estado === 'jogando' && campanha) { campanha.atualizar(dt, t); vilao?.atualizar(dt); tutorial.atualizar(dt, jogador); }
+  // música de combate enquanto o Ravi luta (mais forte na 2ª fase); passos no chão
+  musicaLuta(estado === 'jogando' && !pausado && !!vilao?.lutando, !!vilao?.segundaFase);
+  if (estado === 'jogando' && jogador.noChao && !jogador.esquiva) {
+    const v = Math.hypot(jogador.vel.x, jogador.vel.z);
+    distPassos += v * dt;
+    if (v > 0.6 && distPassos > (v > 4 ? 0.95 : 0.62)) { distPassos = 0; som.passo(v > 4 ? 1.3 : 1); }
+  }
   combate?.atualizar(dt, t);
 
   animarPersonagem(dt);

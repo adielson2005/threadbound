@@ -5,14 +5,14 @@
 // are the texts of the chapter being played (capitulo.js).
 import { CAPITULO_ATUAL } from './capitulo.js';
 
-export const TITULO = 'Threadbound';
+export const TITULO = 'Fiapo';
 const CAPITULO_1 = 'Capítulo 1 — A Vila de Maré Alta';
 
 // Story card on the start screen (short, read in a few seconds)
 const INTRO_1 = [
-  'Há quarenta anos, a Maré Negra subiu do fundo do mar para engolir a Vila de Maré Alta.',
-  'Para salvá-la, a costureira e o faroleiro costuraram a ilha nas nuvens com Fios de Maré. A vila subiu… e os moradores, um a um, viraram névoa.',
-  'Hoje os fios estão se rompendo. Na praça vazia, uma boneca feita com os retalhos de todos eles abre os olhos.',
+  'Há quarenta anos, a Maré Negra subiu do fundo do mar para engolir a Vila de Maré Alta. Uma costureira e um faroleiro costuraram a ilha nas nuvens com Fios de Maré, e a vila subiu.',
+  'O preço: os moradores, um a um, viraram névoa.',
+  'Hoje os fios estão caindo. Não estão rompendo sozinhos: alguém está cortando. Na praça vazia, uma boneca feita com os retalhos de todos eles abre os olhos.',
 ];
 
 // Brisa's lines and short scenes. Each entry: [speaker, text]
@@ -20,21 +20,21 @@ const FALAS_1 = {
   // acordar na praça
   despertar: [
     ['Brisa', 'Essa praça tem cheiro de linha nova… e de mar velho.'],
-    ['Brisa', 'Uma mesa de costura, carretéis, uma agulha enorme. Alguém trabalhou aqui até o último ponto.'],
     ['Brisa', 'O chão está tremendo! A ilha… está descendo?'],
+    ['Brisa', 'Esse fio no chão não arrebentou. A ponta está lisa. Alguém cortou ele.'],
   ],
   primeiroFragmento: [['Brisa', 'Um Fragmento de Luz! É um pedacinho dos Fios de Maré… ele esquentou meu retalho do peito.']],
   primeiroInimigo: [
     ['Brisa', 'Um retalho andando sozinho… é um pedaço de roupa de alguém daqui.'],
     ['Brisa', 'Você não quer brigar, não é? Está procurando o seu dono. Vou te acalmar com cuidado.'],
   ],
-  primeiraAncora: [['Brisa', 'Uma Âncora de Maré. Os fios dela se soltaram… e a névoa endureceu em cristais.']],
+  primeiraAncora: [['Brisa', 'Uma Âncora de Maré. Os fios dela foram cortados rente… e a névoa endureceu em cristais em volta.']],
   ancoraSemFragmentos: [['Brisa', 'Ainda não tenho luz suficiente. Preciso de mais Fragmentos de Luz.']],
   ancoraComGuardas: [['Brisa', 'Os retalhos assustados ainda guardam a âncora. Primeiro preciso acalmá-los.']],
   ancoraRestaurada: [
     [['Brisa', 'Ela acendeu! O tremor parou… a ilha respira de novo.']],
     [['Brisa', 'Mais uma! Aguenta firme, Maré Alta… falta pouco.']],
-    [['Brisa', 'As três âncoras estão acesas. Agora o Coração da Ilha, lá no alto do morro.']],
+    [['Brisa', 'As três âncoras estão acesas. Agora o Coração da Ilha, lá no alto do morro… antes que ele chegue primeiro.']],
   ],
   coracaoFechado: [['Brisa', 'O Coração da Ilha está frio. As três âncoras precisam estar acesas primeiro.']],
   restaurarCoracao: [['Brisa', 'Eu vou te costurar de novo. Do jeito que ela fazia: ponto por ponto.']],
@@ -52,37 +52,40 @@ const FALAS_1 = {
   primeiraCarta: [['Brisa', 'Cartas… cada casa guarda um pedaço de quem morava aqui.']],
   // Ravi, o aprendiz do farol, espera no alto do morro (luta antes do Coração)
   chefeChegada: [
-    ['Ravi', 'Então é você a boneca da Aurélia. Achei que fosse só história de criança.'],
-    ['Ravi', 'Se esse Coração voltar a bater, a ilha fica presa no céu para sempre. E eles ficam presos com ela.'],
-    ['Brisa', 'Eles quem?'],
-    ['Ravi', 'A minha mãe está naquela névoa. Eu vou cortar os Fios de Maré, nem que a ilha caia no mar.'],
+    ['Ravi', 'Chegou tarde, boneca. Esse Coração para de bater hoje.'],
+    ['Brisa', 'Se ele parar, a ilha cai no mar! Com tudo o que sobrou da vila!'],
+    ['Ravi', 'Sobrou névoa. A minha mãe é névoa. Presa aqui em cima há quarenta anos porque uma costureira teve medo de perder alguém.'],
+    ['Ravi', 'Eu corto o último fio e ela volta para o mar. Sai da frente.'],
   ],
-  chefeFase2: [['Ravi', 'Você não entende! Cada dia aqui em cima ela esquece mais quem era!']],
+  chefeFase2: [['Ravi', 'Você é feita do vestido dela, sabia? Da rede da minha mãe! Você nem devia existir!']],
   // as outras vezes em que ele aparece: olhando de longe (1ª âncora) e numa emboscada (2ª âncora)
   raviObserva: [
-    ['Brisa', 'Tem alguém ali… um rapaz de jaqueta verde, olhando para mim.'],
-    ['Ravi', 'Boneca de pano… não acenda a próxima.'],
+    ['Brisa', 'Tem alguém ali… um rapaz de jaqueta verde. Tem uma tesoura de fio no cinto dele.'],
+    ['Ravi', 'Boneca de pano. Não acenda a próxima.'],
   ],
-  raviEmboscada: [['Ravi', 'Eu avisei. Cada âncora que você acende prende eles mais um pouco no céu.']],
+  raviEmboscada: [
+    ['Ravi', 'Eu avisei. Cada âncora que você acende prende eles mais um pouco no céu.'],
+    ['Brisa', 'Foi você! Você cortou os fios!'],
+  ],
   raviRecua: [
-    ['Ravi', 'Isso não acabou. Te espero no Coração.'],
-    ['Brisa', 'Ele sumiu na névoa de novo…'],
+    ['Ravi', 'Você luta igual a ela. Igual à Aurélia. Te espero no Coração.'],
+    ['Brisa', 'Ele anda pela névoa como se ela fosse dele…'],
   ],
   chefeDerrota: [
-    ['Ravi', '…Tá bom. Costura o seu Coração. Mas pergunta ao Tomé o que ele fez naquela noite.'],
-    ['Brisa', 'Ele se desfez na névoa… igual aos moradores. O Coração está livre.'],
+    ['Ravi', '…Tá. Costura o seu Coração. Mas pergunta ao Tomé o que ele fez naquela noite. Pergunta por que a Maré Negra parou no horizonte.'],
+    ['Brisa', 'Ele virou névoa… e a névoa foi embora sozinha, como se soubesse para onde ir.'],
   ],
 };
 
 // carta de Aurélia junto ao Coração (fim do capítulo)
-const BILHETE_1 = '“Se você está lendo isto, minha boneca, o Coração voltou a bater. Fui eu que costurei Maré Alta nas nuvens, com o Tomé. Salvamos a ilha da Maré Negra… e o preço foram as pessoas: a névoa levou todo mundo, um por um. Costurei você com um retalho de cada um, para alguém se lembrar deles. Procure o Tomé no Recife das Vozes. Ele sabe o resto. Me perdoe por ter deixado você sozinha. — Aurélia”';
+const BILHETE_1 = '“Se você está lendo isto, minha boneca, o Coração voltou a bater. Fui eu que costurei Maré Alta nas nuvens, com o Tomé. Salvamos a ilha da Maré Negra… e o preço foram as pessoas: a névoa levou todo mundo, um por um. Costurei você com um retalho de cada um, para alguém se lembrar deles. Se o Ravi, o menino da Marisa, cruzar o seu caminho: ele cresceu sozinho e com raiva, e tem razão de ter. Não deixe ele cortar o último fio. Procure o Tomé no Recife das Vozes. Ele sabe o resto. Me perdoe por ter deixado você sozinha. — Aurélia”';
 
 // cartas das casas da vila (opcionais): contam como era a vida em Maré Alta
 const CARTAS_1 = {
   'Casa dos Barcos': '“Hoje o mar estava liso como vidro. Os peixes sumiram faz três dias. O velho Tomé diz que é a Maré Negra voltando. Eu digo que é superstição de faroleiro.” — Bento, pescador',
   'Casa da Parteira': '“Trouxe mais um bebê ao mundo esta noite, uma menina forte. Choveu lá dentro da casa e no céu ao mesmo tempo. A Aurélia costurou uma manta para ela com as cores do pôr do sol.” — Dona Celeste',
   'Casa do Relojoeiro': '“Os relógios da vila pararam todos na mesma hora: 4h40. Desmontei três e não achei defeito. É como se o tempo estivesse esperando alguma coisa.” — Seu Inácio',
-  'Casa das Redes': '“A Aurélia veio buscar as linhas mais fortes que eu tinha, as das redes de arrasto. Disse que era para uma costura grande. Não quis contar qual.” — Marisa, rendeira',
+  'Casa das Redes': '“A Aurélia veio buscar as linhas mais fortes que eu tinha, as das redes de arrasto. Disse que era para uma costura grande. O Ravi, meu menino, foi ajudar o Tomé no farol hoje. Volta para o jantar, filho.” — Marisa, rendeira',
   // áreas secretas
   'Gruta dos Recados': '“Aqui embaixo a gente escondia os recados que o mar não podia ler. Se alguém achar este: a Aurélia não é bruxa, é só uma avó com medo. Cuidem dela.” — As crianças da vila',
   'Mirante do Farol': '“Daqui de cima dá para ver as três ilhotas e, num dia limpo, uma tempestade que nunca sai do lugar. Eu sei o que tem lá dentro. Um dia alguém vai ter que ir.” — Tomé',
@@ -121,7 +124,7 @@ const OBJETIVOS_1 = {
 // lembranças guardadas nos fragmentos lilases: curtas e incompletas
 const MEMORIAS_1 = [
   'Crianças correndo na praça, uma pipa de retalhos presa no telhado da Casa das Redes.',
-  'Um homem de capa amarela sobe as escadas do farol, resmungando com a lanterna apagada.',
+  'Um homem de capa amarela sobe as escadas do farol, resmungando. Atrás dele, um menino de jaqueta grande demais carrega a lanterna.',
   '“Se a ilha subir, vocês vão comigo. Ninguém fica para a Maré Negra.” Uma voz firme, uma agulha brilhando.',
   'O céu escurece de baixo para cima. O mar inteiro levanta como um lençol, e a ilha sobe junto com ele.',
   'Uma menina de vestido remendado chama na névoa. Ninguém responde. Só o vento.',
@@ -143,7 +146,7 @@ const INTERACOES_1 = {
 const CHAMADA_1 = 'Ajude Brisa a reacender as Âncoras de Maré e o Coração da Ilha antes que a vila caia no mar.';
 
 const FIM_1 = {
-  sub: 'O Coração da Ilha voltou a bater e o farol acendeu sozinho. Quem chamou na névoa?',
+  sub: 'O Coração voltou a bater, o Corta-Fios recuou para a névoa e o farol apontou para a tempestade. O que o Tomé fez naquela noite?',
   continua: 'Continua no Recife das Vozes…',
 };
 
@@ -396,7 +399,7 @@ const TEXTOS = {
       ancoras: (n, total) => `Desfaça os Nós da Costura (${n}/${total})`,
       coracao: 'Encontre Aurélia no alto da costura',
       bilhete: 'Leia o último bilhete de Aurélia',
-      fim: 'Fim. Obrigada por jogar Threadbound',
+      fim: 'Fim. Obrigada por jogar Fiapo',
     },
     MEMORIAS: [
       'Todos os moradores na praça, no dia antes da subida, rindo de uma pipa presa no telhado.',
