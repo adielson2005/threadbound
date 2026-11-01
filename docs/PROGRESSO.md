@@ -836,3 +836,7 @@ Medido no perfil celular (Pixel 5 simulado, navegador sem placa de vídeo, entã
 - Roteiro do Cap. 1 (ver `docs/ROTEIRO.md`): os fios estão sendo cortados; Ravi é filho da Marisa
   (Casa das Redes) e aprendiz do Tomé; pistas, falas mais diretas, carta de Aurélia sobre ele.
 - Desempenho: Retalhos e campanha reaproveitam vetores no laço por quadro (menos coleta de lixo).
+- Pulo duplo mais longe: além de subir (12, era 11), sai para a frente a pelo menos 8,2 m/s na
+  direção do comando (sem comando, para onde ela está virada) e mantém essa velocidade na cambalhota
+  (no ar normal o limite é 5,8). Medido andando e dando o pulo duplo no alto: 5,4 m → 7,1 m. O pulo
+  simples não mudou (2,2 m).
