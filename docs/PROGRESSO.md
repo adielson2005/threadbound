@@ -840,3 +840,7 @@ Medido no perfil celular (Pixel 5 simulado, navegador sem placa de vídeo, entã
   direção do comando (sem comando, para onde ela está virada) e mantém essa velocidade na cambalhota
   (no ar normal o limite é 5,8). Medido andando e dando o pulo duplo no alto: 5,4 m → 7,1 m. O pulo
   simples não mudou (2,2 m).
+- Corrente de vento: a cambalhota (pulo no ar) durante o voo agora dá impulso (35% mais rápido para
+  a frente e 6 m/s para cima; antes era só enfeite). Medido na corrente de ida e volta da ilha
+  principal: sem cambalhota ela pousa na outra ponta, a 18,8 m; com cambalhota passa dela e pousa a
+  24 m. Dá para corrigir a direção no ar como sempre.

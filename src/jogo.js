@@ -65,6 +65,7 @@ const FISICA = {
   // e um impulso para a frente: na cambalhota ela pode ir até velocidadePuloDuplo (no ar normal, 5,8)
   // e sai com pelo menos isso na direção do comando (sem comando, para onde está virada)
   velocidadePuloDuplo: 8.2,
+  impulsoVento: 1.35, subidaVento: 6, // cambalhota no voo da corrente de vento
   duracaoCambalhota: 0.6,
   coyote: 0.12,             // tempo para ainda pular depois de sair da borda
   bufferPulo: 0.12,         // tempo que um pulo apertado cedo "fica guardado"
@@ -1099,8 +1100,12 @@ function passoFisica(dt) {
     j.vel.y = FISICA.pulo; j.noChao = false; j.tempoNoAr = 1; j.tempoPulo = 99;
     j.pulou = true; j.veioDoTrampolim = false; j.golpe = null;
   } else if (apertouAgora && !j.noChao && !j.puloDuploUsado) {
-    // no arco do trampolim a cambalhota é só de enfeite: não muda a trajetória
-    if (!j.lancado) {
+    // no voo da corrente de vento a cambalhota dá um impulso: 35% mais rápido para a frente e um
+    // pouco de subida (vai bem mais longe que o arco calculado; dá para corrigir no ar como sempre)
+    if (j.lancado) {
+      j.vel.x *= FISICA.impulsoVento; j.vel.z *= FISICA.impulsoVento;
+      j.vel.y = Math.max(j.vel.y, 0) + FISICA.subidaVento;
+    } else {
       j.vel.y = FISICA.puloDuplo;
       // impulso para a frente: o pulo duplo leva mais longe (atravessa vãos que o pulo simples não alcança)
       const dx = dirEntrada.lengthSq() > 0.01 ? dirEntrada.x : Math.sin(j.angulo), dz = dirEntrada.lengthSq() > 0.01 ? dirEntrada.z : Math.cos(j.angulo);
