@@ -790,7 +790,7 @@ Medido no perfil celular (Pixel 5 simulado, navegador sem placa de vídeo, entã
   rápido) e giro de 360° (acerta tudo em volta); K é o giro direto. Rastro de luz na lâmina durante
   os cortes.
 - Explosão de Fios (poder da Brisa): a barra dourada embaixo do fôlego enche acertando golpes
-  (mais com arma), com defesa e esquiva perfeitas e ao apanhar. Cheia, R (RT no controle, ✦ no
+  (mais com arma), com defesa e esquiva perfeitas e ao apanhar. Cheia, V (RT no controle, ✦ no
   celular): braços para cima, anel de luz no chão, empurra e atordoa todos em 6,5 m, dissolve
   cristais e machuca o Ravi; câmera lenta por 0,9 s. (Tecla V: o R já era "voltar ao ponto seguro".)
 - Poderes do Ravi: Lâminas de Névoa (brilho roxo nas mãos e meias-luas arremessadas em leque: 1 na
