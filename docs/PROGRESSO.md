@@ -822,3 +822,21 @@ Medido no perfil celular (Pixel 5 simulado, navegador sem placa de vídeo, entã
 - A dificuldade passou para depois de "Novo jogo": uma tela própria com as quatro opções (nome,
   nível e descrição), do mais fácil ao mais difícil; Voltar/Esc volta para Continuar / Novo jogo.
   Escolher já começa o jogo novo (tutorial e depois a história). O Continuar usa a última escolhida.
+
+### Fiapo: nome novo, capa e ícone, som e o Corta-Fios no roteiro
+
+- O jogo passa a se chamar **Fiapo** (curto, brasileiro, fácil de lembrar: um fio solto, a boneca de
+  retalhos, os Fios de Maré). Pacote Android e chave continuam os mesmos (atualiza por cima).
+- Capa (1080 × 1920, `docs/arte/capa-fiapo.jpg`) e ícone do APK (`docs/arte/icone-fiapo-512.png` e
+  `android/res/drawable-*/icone.png`): fotos da Brisa no próprio jogo, em guarda com a Lâmina da
+  Tesoura ao entardecer, com o título em Fredoka e um fio dourado.
+- Som sintetizado (`src/som.js`, Web Audio, sem arquivos): golpes, acertos, defesa e defesa perfeita,
+  esquiva, dano, poderes dos dois, passos, coleta, âncora, vitória, interface e música de combate em
+  lá menor que esquenta na 2ª fase do Ravi.
+- Roteiro do Cap. 1 (ver `docs/ROTEIRO.md`): os fios estão sendo cortados; Ravi é filho da Marisa
+  (Casa das Redes) e aprendiz do Tomé; pistas, falas mais diretas, carta de Aurélia sobre ele.
+- Desempenho: Retalhos e campanha reaproveitam vetores no laço por quadro (menos coleta de lixo).
+- Pulo duplo mais longe: além de subir (12, era 11), sai para a frente a pelo menos 8,2 m/s na
+  direção do comando (sem comando, para onde ela está virada) e mantém essa velocidade na cambalhota
+  (no ar normal o limite é 5,8). Medido andando e dando o pulo duplo no alto: 5,4 m → 7,1 m. O pulo
+  simples não mudou (2,2 m).

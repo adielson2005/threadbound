@@ -61,7 +61,10 @@ const FISICA = {
   aceleracao: 45,
   aceleracaoAr: 14,
   pulo: 12.5,
-  puloDuplo: 11,            // segundo toque no pulo, no ar: cambalhota
+  puloDuplo: 12,            // segundo toque no pulo, no ar: cambalhota (era 11)
+  // e um impulso para a frente: na cambalhota ela pode ir até velocidadePuloDuplo (no ar normal, 5,8)
+  // e sai com pelo menos isso na direção do comando (sem comando, para onde está virada)
+  velocidadePuloDuplo: 8.2,
   duracaoCambalhota: 0.6,
   coyote: 0.12,             // tempo para ainda pular depois de sair da borda
   bufferPulo: 0.12,         // tempo que um pulo apertado cedo "fica guardado"
@@ -1063,7 +1066,7 @@ function passoFisica(dt) {
   } else if ((j.esperaEnergia -= dt) <= 0) j.energia = Math.min(1, j.energia + dt / E.recarga);
   // defendendo ela anda devagar, de guarda
   const devagar = algumaTecla(T.devagar) && j.noChao;
-  const vmax = j.defendendo ? FISICA.velocidadeGuarda : j.planando ? FISICA.velocidadePlanando : j.superCorrendo ? FISICA.velocidadeSuper : j.disparando ? FISICA.velocidadeDisparada
+  const vmax = !j.noChao && j.cambalhota >= 0 && !j.lancado ? FISICA.velocidadePuloDuplo : j.defendendo ? FISICA.velocidadeGuarda : j.planando ? FISICA.velocidadePlanando : j.superCorrendo ? FISICA.velocidadeSuper : j.disparando ? FISICA.velocidadeDisparada
     : !j.noChao && j.tempoNoAr > 0.25 ? FISICA.velocidadeAr : devagar ? FISICA.velocidadeDevagar : FISICA.velocidade;
 
   horiz.set(j.vel.x, 0, j.vel.z);
@@ -1097,7 +1100,14 @@ function passoFisica(dt) {
     j.pulou = true; j.veioDoTrampolim = false; j.golpe = null;
   } else if (apertouAgora && !j.noChao && !j.puloDuploUsado) {
     // no arco do trampolim a cambalhota é só de enfeite: não muda a trajetória
-    if (!j.lancado) j.vel.y = FISICA.puloDuplo;
+    if (!j.lancado) {
+      j.vel.y = FISICA.puloDuplo;
+      // impulso para a frente: o pulo duplo leva mais longe (atravessa vãos que o pulo simples não alcança)
+      const dx = dirEntrada.lengthSq() > 0.01 ? dirEntrada.x : Math.sin(j.angulo), dz = dirEntrada.lengthSq() > 0.01 ? dirEntrada.z : Math.cos(j.angulo);
+      const n = Math.hypot(dx, dz) || 1, atual = Math.hypot(j.vel.x, j.vel.z);
+      const v = Math.max(atual, FISICA.velocidadePuloDuplo);
+      j.vel.x = dx / n * v; j.vel.z = dz / n * v;
+    }
     j.tempoPulo = 99;
     j.puloDuploUsado = true;
     j.cambalhota = 0;
