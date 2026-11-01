@@ -819,3 +819,6 @@ Medido no perfil celular (Pixel 5 simulado, navegador sem placa de vídeo, entã
   fôlegos, vilão com 150% da vida, quase sem aviso, defesa perfeita bem curta).
 - Testado no navegador: o menu troca a dificuldade e mostra a descrição; o tutorial passa pelos 6
   passos com o teclado e termina em "Pronto!", e então começam as falas, sem dicas de controle.
+- A dificuldade passou para depois de "Novo jogo": uma tela própria com as quatro opções (nome,
+  nível e descrição), do mais fácil ao mais difícil; Voltar/Esc volta para Continuar / Novo jogo.
+  Escolher já começa o jogo novo (tutorial e depois a história). O Continuar usa a última escolhida.
