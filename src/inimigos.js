@@ -29,6 +29,9 @@ const PASSO_MOVER = 0.2; // largest move per check (a knock-back at 6 m/s must n
 const INTERVALO_VISAO = 0.25; // line-of-sight raycast at most this often per Retalho
 
 const _local = new THREE.Vector3(), _a = new THREE.Vector3(), _b = new THREE.Vector3();
+// vetores reaproveitados no laço por quadro (antes eram criados ~5 por Retalho por quadro: lixo que
+// o coletor do navegador limpa com pausas, que no celular viram travadinhas)
+const _paraJog = new THREE.Vector3(), _desejado = new THREE.Vector3(), _rumo = new THREE.Vector3(), _olhar = new THREE.Vector3();
 // approximate distance (m) from world point p to the body surface (negative inside)
 function distanciaCorpo(e, p) { return distanciaLocal(e, _local.copy(p).applyMatrix4(e.inversa)); }
 function distanciaLocal(e, q) {
@@ -232,7 +235,7 @@ export function criarInimigos({ cena, mapa, posicoes }) {
       const d2 = e.pos.distanceToSquared(jogadora.pos);
       e.g.visible = d2 < DESENHAR * DESENHAR;
       if (d2 > DORMIR * DORMIR && e.estado === 'patrulha') continue;
-      const paraJog = jogadora.pos.clone().sub(e.pos);
+      const paraJog = _paraJog.copy(jogadora.pos).sub(e.pos);
       const dh = Math.hypot(paraJog.x, paraJog.z), dy = Math.abs(paraJog.y);
       // it only sees her if nothing stands in between (a house wall, a rock…)
       const perto = jogadora.vivo && dh < VISAO && dy < 2.5 && e.pos.distanceTo(e.casa) < 14;
@@ -241,7 +244,7 @@ export function criarInimigos({ cena, mapa, posicoes }) {
       else if (e.proximaVisao <= 0) { e.proximaVisao = INTERVALO_VISAO; e.veJogadora = alcanca(e, peitoJ); }
       const enxerga = perto && e.veJogadora;
       if (enxerga && !e.viu) e.viu = true;
-      let desejado = new THREE.Vector3();
+      const desejado = _desejado.set(0, 0, 0);
 
       if (e.estado === 'atordoado') {
         e.atordoado -= dt;
@@ -274,10 +277,10 @@ export function criarInimigos({ cena, mapa, posicoes }) {
           const a = Math.random() * Math.PI * 2, r = Math.random() * 4;
           e.alvo.set(e.casa.x + Math.cos(a) * r, e.casa.y, e.casa.z + Math.sin(a) * r);
         }
-        const p = e.alvo.clone().sub(e.pos).setY(0);
+        const p = _rumo.copy(e.alvo).sub(e.pos).setY(0);
         if (p.length() > 0.3) desejado.copy(p.normalize().multiplyScalar(VEL * 0.4));
         // drift back home if pushed far away
-        if (e.pos.distanceTo(e.casa) > 10) desejado.copy(e.casa.clone().sub(e.pos).setY(0).normalize().multiplyScalar(VEL));
+        if (e.pos.distanceTo(e.casa) > 10) desejado.copy(e.casa).sub(e.pos).setY(0).normalize().multiplyScalar(VEL);
       }
 
       if (e.estado !== 'investida' && e.estado !== 'atordoado') e.vel.lerp(desejado, Math.min(1, dt * 6));
@@ -302,7 +305,7 @@ export function criarInimigos({ cena, mapa, posicoes }) {
       }
 
       // face movement or the player
-      const olhar = (e.estado === 'patrulha' ? e.vel : paraJog).clone().setY(0);
+      const olhar = _olhar.copy(e.estado === 'patrulha' ? e.vel : paraJog).setY(0);
       if (olhar.lengthSq() > 1e-4) {
         let d = Math.atan2(olhar.x, olhar.z) - e.g.rotation.y;
         d = Math.atan2(Math.sin(d), Math.cos(d));

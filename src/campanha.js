@@ -238,14 +238,14 @@ export function criarCampanha({ cena, mapa, mundo, inimigos, jogador, respawn, c
   }
 
   // ---------- per-frame ----------
-  const antes = jogador.pos.clone();
+  const antes = jogador.pos.clone(), _corpo = new THREE.Vector3();
   function atualizar(dt, t) {
     // dialogue timing
     if (est.falaAtual) { est.falaTempo -= dt; if (est.falaTempo <= 0) proximaFala(); }
     vigiarChefe();
 
     // fragments
-    const corpo = jogador.pos.clone().add(new THREE.Vector3(0, 0.8, 0));
+    const corpo = _corpo.copy(jogador.pos); corpo.y += 0.8;
     for (const f of fragmentos) {
       if (f.pega) continue;
       const y = f.rocha ? f.rocha.col.topo + 1 : f.y;
