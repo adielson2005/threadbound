@@ -9,7 +9,10 @@ import { CAPITULO_ATUAL } from './capitulo.js';
 // Heart of the Thread, short dialogues, tremors while the island sinks, and the ending.
 // Everything here is lightweight and driven by the game loop (atualizar) and the E key (interagir).
 
-const VIDA_MAX = 5;
+import { dificuldade } from './dificuldade.js';
+
+// fôlegos da Brisa: dependem da dificuldade (dificuldade.js), lida a cada uso
+const vidaMax = () => dificuldade().folego;
 const TOQUE = matchMedia('(pointer: coarse)').matches; // celular/tablet: dicas dos botões de toque
 
 const $ = id => document.getElementById(id);
@@ -56,7 +59,7 @@ export function criarCampanha({ cena, mapa, mundo, inimigos, jogador, respawn, c
 
   // ---------- state ----------
   const est = {
-    vida: VIDA_MAX, pegos: 0, purificados: 0, cristais: 0,
+    vida: vidaMax(), pegos: 0, purificados: 0, cristais: 0,
     etapa: 'inicio', checkpoint: jogador.pos.clone(), tempoTremor: 22, tremor: 0,
     dicas: new Set(), andou: 0, falas: [], falaTempo: 0, mostrouAncora: new Set(), viuInimigo: false, terminou: false,
   };
@@ -64,7 +67,7 @@ export function criarCampanha({ cena, mapa, mundo, inimigos, jogador, respawn, c
   // ---------- UI helpers ----------
   function atualizarVida() {
     ui.vida.innerHTML = '';
-    for (let i = 0; i < VIDA_MAX; i++) {
+    for (let i = 0; i < vidaMax(); i++) {
       const s = document.createElement('i');
       if (i >= est.vida) s.className = 'vazio';
       ui.vida.appendChild(s);
@@ -86,7 +89,12 @@ export function criarCampanha({ cena, mapa, mundo, inimigos, jogador, respawn, c
     clearTimeout(tempoAviso); tempoAviso = setTimeout(() => { ui.aviso.style.opacity = 0; }, ms);
   }
   let tempoDica = null;
+  // depois do mini tutorial (tutorial.js) as dicas de controle não aparecem mais: só as que
+  // respondem a algo que ela tentou fazer (forcar), como a âncora ainda presa por cristais
+  let semDicas = false;
+  function silenciarDicas() { semDicas = true; }
   function dica(chave, forcar = false) {
+    if (semDicas && !forcar) return;
     if (est.dicas.has(chave) && !forcar) return;
     est.dicas.add(chave);
     ui.dica.textContent = TOQUE ? (DICAS_TOQUE[chave] ?? paraToque(DICAS[chave])) : DICAS[chave]; ui.dica.style.opacity = 1;
@@ -119,6 +127,7 @@ export function criarCampanha({ cena, mapa, mundo, inimigos, jogador, respawn, c
     }
     // primeira linha = o objetivo; o resto (cristais, guardiões, luz) vai menor embaixo
     const [titulo, ...detalhes] = txt.split('\n');
+    // (os detalhes da âncora só de perto dela, numa linha curta: menos texto na tela durante o jogo)
     html(ui.objetivo, `<small>Objetivo</small><b>${escapar(titulo)}</b>${detalhes.length ? `<span>${escapar(detalhes.join(' · '))}</span>` : ''}`);
   }
   function memoria(texto, titulo = '✧ Fragmento de Lembrança ✧') {
@@ -194,7 +203,7 @@ export function criarCampanha({ cena, mapa, mundo, inimigos, jogador, respawn, c
     // checkpoint where Brisa is standing (she must be on the ground next to the anchor to restore
     // it); a fixed offset from the anchor could land over the edge on small islands
     est.checkpoint.copy(jogador.noChao ? jogador.pos : (jogador.seguro ?? jogador.pos)).add(new THREE.Vector3(0, 0.2, 0));
-    est.vida = VIDA_MAX; atualizarVida();
+    est.vida = vidaMax(); atualizarVida();
     aviso(AVISOS.ancoraRestaurada);
     falar(FALAS.ancoraRestaurada[Math.min(n, 3) - 1]);
     est.tempoTremor = 30 + n * 25;
@@ -243,7 +252,7 @@ export function criarCampanha({ cena, mapa, mundo, inimigos, jogador, respawn, c
       f.malha.rotation.y = t * 1.8 + f.fase;
       if (f.grupo.position.distanceToSquared(corpo) < 1.2) {
         f.pega = true; f.grupo.visible = false; est.pegos++;
-        est.vida = Math.min(VIDA_MAX, est.vida + 1); atualizarVida(); atualizarFragmentos();
+        est.vida = Math.min(vidaMax(), est.vida + 1); atualizarVida(); atualizarFragmentos();
         if (est.pegos === 1) { falar(FALAS.primeiroFragmento); est.etapa = 'ancoras'; }
         if (f.memoria) { memoria(MEMORIAS[memoriasLidas % MEMORIAS.length]); memoriasLidas++; if (memoriasLidas === 1) dica('memoria'); }
         salvar();
@@ -331,7 +340,7 @@ export function criarCampanha({ cena, mapa, mundo, inimigos, jogador, respawn, c
     est.concluido = !!s.concluido || (s.concluidos ?? []).includes(CAPITULO_ATUAL);
     est.chefeVencido = !!s.chefeVencido; est.raviObservou = !!s.raviObservou; est.raviEmboscou = !!s.raviEmboscou;
     if (chefe && est.etapa === 'coracao' && !est.chefeVencido && !s.coracao) est.etapa = 'chefe';
-    est.vida = Math.max(1, s.vida ?? VIDA_MAX);
+    est.vida = Math.max(1, s.vida ?? vidaMax());
     if (s.checkpoint) est.checkpoint.fromArray(s.checkpoint);
     est.tempoTremor = s.coracao ? Infinity : 30 + (s.ancoras?.length ?? 0) * 25;
     // quem já jogou não precisa rever os tutoriais do começo
@@ -351,7 +360,7 @@ export function criarCampanha({ cena, mapa, mundo, inimigos, jogador, respawn, c
   }
   // "Tentar de novo": volta ao último ponto salvo com o fôlego cheio (o progresso continua)
   function reviver() {
-    est.vida = VIDA_MAX; atualizarVida();
+    est.vida = vidaMax(); atualizarVida();
     chefe?.reiniciar(); // a luta recomeça quando ela subir de novo
     est.falas.length = 0; proximaFala();
     respawn(est.checkpoint);
@@ -374,7 +383,7 @@ export function criarCampanha({ cena, mapa, mundo, inimigos, jogador, respawn, c
       est.etapa = 'coracao'; est.chefeVencido = true;
       falar(FALAS.chefeDerrota);
       est.checkpoint.copy(jogador.noChao ? jogador.pos : (jogador.seguro ?? jogador.pos)).add(new THREE.Vector3(0, 0.2, 0));
-      est.vida = VIDA_MAX; atualizarVida();
+      est.vida = vidaMax(); atualizarVida();
       salvar();
     };
   }
@@ -409,7 +418,7 @@ export function criarCampanha({ cena, mapa, mundo, inimigos, jogador, respawn, c
   function registrarCristal() { est.cristais++; aviso(AVISOS.cristalQuebrado, 1400); salvar(); }
 
   return {
-    atualizar, interagir, iniciar, fragmentos, estado: est, definirChefe, perderVida, reviver, registrarPurificado, registrarCristal, exportar, importar, salvar,
+    atualizar, interagir, iniciar, fragmentos, estado: est, definirChefe, silenciarDicas, perderVida, reviver, registrarPurificado, registrarCristal, exportar, importar, salvar,
     get tremor() { return est.tremor; },
     get lendo() { return !!est.lendo; },
   };

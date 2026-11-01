@@ -106,7 +106,7 @@ const DICAS_1 = {
   rocha: 'Rochas flutuantes balançam: pule nelas para alcançar fragmentos',
   memoria: 'Fragmentos lilases guardam lembranças da vila: são opcionais',
   carta: 'As casas guardam cartas dos moradores: entre e aperte E para ler',
-  luta: 'J soco · K chute · L esquivar rolando · Q defender (bem na hora = defesa perfeita e contra-ataque) · R Explosão de Fios quando a barra dourada encher · F pega armas (a lâmina da tesoura corta em combo)',
+  luta: 'J soco · K chute · L esquivar rolando · Q defender (bem na hora = defesa perfeita e contra-ataque) · V Explosão de Fios quando a barra dourada encher · F pega armas (a lâmina da tesoura corta em combo)',
 };
 
 const OBJETIVOS_1 = {

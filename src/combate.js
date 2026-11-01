@@ -3,6 +3,7 @@ import { texturaDeCanvas } from './canvasTextura.js';
 import { aplicarPose } from './cambalhota.js';
 import { linhaLivre } from './colisao.js';
 import { brilhoDeDia } from './dia.js';
+import { dificuldade } from './dificuldade.js';
 import { criarCorpo, lancar, passo as passoObjeto, aplicar, empurrar as empurrarCorpo } from './objetos.js';
 
 // Combate de Brisa: socos (combo de 5), chute, pegar um objeto do chão (galho ou a Agulha de
@@ -43,7 +44,7 @@ const ARMAS = {
   tesoura: { nome: 'Lâmina da Tesoura', dano: 2, alcance: 2.3, usos: 45, corte: true },
 };
 // Explosão de Fios (o poder da Brisa): a barra enche acertando golpes, defendendo e esquivando na
-// hora certa; cheia (R, RT ou o botão ✦), uma onda de fios de luz empurra e atordoa todos em volta
+// hora certa; cheia (V, RT ou o botão ✦), uma onda de fios de luz empurra e atordoa todos em volta
 const PODER = { raio: 6.5, dano: 4, empurrao: 10, atordoa: 2.2, lento: 0.9 };
 const GANHO_PODER = { acerto: 0.07, acertoArma: 0.09, defesaPerfeita: 0.25, esquivaPerfeita: 0.2, dano: 0.08 };
 const DURACAO_PEGAR = 0.8;
@@ -52,8 +53,7 @@ const INVULNERAVEL = 1.1;
 // esquiva: rolamento curto na direção do comando (sem comando, para trás). Os primeiros
 // INVENCIVEL_ESQUIVA s ninguém acerta; um ataque que passa nesse instante é "esquiva perfeita".
 const ESQUIVA = { duracao: 0.42, vel: 7.5, velFim: 2.2, invencivel: 0.3, espera: 0.55 };
-// defesa perfeita: a guarda levantada até DEFESA_PERFEITA s antes do golpe chegar
-const DEFESA_PERFEITA = 0.22;
+// defesa perfeita: a guarda levantada até dificuldade().janelaDefesa s (0,22 no normal) antes do golpe chegar
 // contra-ataque: depois de uma defesa ou esquiva perfeita, o próximo golpe dela vale o dobro
 const CONTRA = 1.4;
 // volume do golpe nos Retalhos: uma cápsula na altura da cintura, do corpo da Brisa até o alcance,
@@ -376,7 +376,7 @@ export function criarCombate({ cena, mapa, mundo, terreno, inimigos, campanha, j
     const frente = new THREE.Vector3(Math.sin(j.angulo), 0, Math.cos(j.angulo));
     if (j.defendendo && frente.dot(para) > 0.1) {
       // guarda levantada bem na hora: defesa perfeita (atordoa mais e abre o contra-ataque)
-      const perfeita = est.tempoDefesa < DEFESA_PERFEITA;
+      const perfeita = est.tempoDefesa < dificuldade().janelaDefesa;
       j.vel.addScaledVector(para, perfeita ? -1 : -3);
       e.vel.copy(para).multiplyScalar(perfeita ? 7 : 5); e.estado = 'atordoado'; e.atordoado = perfeita ? 1.6 : 0.8; e.flash = 0.6;
       e.golpe = null;
@@ -537,8 +537,8 @@ export function criarCombate({ cena, mapa, mundo, terreno, inimigos, campanha, j
   const hudPoder = $('poder'), botaoPoder = $('tPoder');
   function ganharPoder(x) {
     const antes = est.poder;
-    est.poder = Math.min(1, est.poder + x);
-    if (antes < 1 && est.poder >= 1) mostrar('Brilho carregado!');
+    est.poder = Math.min(1, est.poder + x * dificuldade().ganhoPoder);
+    if (antes < 1 && est.poder >= 1) mostrar(matchMedia('(pointer: coarse)').matches ? 'Brilho carregado! Toque em ✦' : 'Brilho carregado! Aperte V');
     atualizarPoder();
   }
   function atualizarPoder() {
