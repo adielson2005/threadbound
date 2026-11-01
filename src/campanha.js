@@ -10,6 +10,7 @@ import { CAPITULO_ATUAL } from './capitulo.js';
 // Everything here is lightweight and driven by the game loop (atualizar) and the E key (interagir).
 
 import { dificuldade } from './dificuldade.js';
+import { som } from './som.js';
 
 // fôlegos da Brisa: dependem da dificuldade (dificuldade.js), lida a cada uso
 const vidaMax = () => dificuldade().folego;
@@ -204,7 +205,7 @@ export function criarCampanha({ cena, mapa, mundo, inimigos, jogador, respawn, c
     // it); a fixed offset from the anchor could land over the edge on small islands
     est.checkpoint.copy(jogador.noChao ? jogador.pos : (jogador.seguro ?? jogador.pos)).add(new THREE.Vector3(0, 0.2, 0));
     est.vida = vidaMax(); atualizarVida();
-    aviso(AVISOS.ancoraRestaurada);
+    aviso(AVISOS.ancoraRestaurada); som.ancora();
     falar(FALAS.ancoraRestaurada[Math.min(n, 3) - 1]);
     est.tempoTremor = 30 + n * 25;
     if (n === mundo.ancoras.length) { est.etapa = chefe ? 'chefe' : 'coracao'; dica('coracao'); }
@@ -251,7 +252,7 @@ export function criarCampanha({ cena, mapa, mundo, inimigos, jogador, respawn, c
       f.grupo.position.y = y + Math.sin(t * 2 + f.fase) * 0.12;
       f.malha.rotation.y = t * 1.8 + f.fase;
       if (f.grupo.position.distanceToSquared(corpo) < 1.2) {
-        f.pega = true; f.grupo.visible = false; est.pegos++;
+        f.pega = true; f.grupo.visible = false; est.pegos++; som.fragmento();
         est.vida = Math.min(vidaMax(), est.vida + 1); atualizarVida(); atualizarFragmentos();
         if (est.pegos === 1) { falar(FALAS.primeiroFragmento); est.etapa = 'ancoras'; }
         if (f.memoria) { memoria(MEMORIAS[memoriasLidas % MEMORIAS.length]); memoriasLidas++; if (memoriasLidas === 1) dica('memoria'); }
@@ -381,7 +382,7 @@ export function criarCampanha({ cena, mapa, mundo, inimigos, jogador, respawn, c
     };
     c.v.aoDerrotar = () => {
       est.etapa = 'coracao'; est.chefeVencido = true;
-      falar(FALAS.chefeDerrota);
+      falar(FALAS.chefeDerrota); som.vitoria();
       est.checkpoint.copy(jogador.noChao ? jogador.pos : (jogador.seguro ?? jogador.pos)).add(new THREE.Vector3(0, 0.2, 0));
       est.vida = vidaMax(); atualizarVida();
       salvar();

@@ -1,8 +1,8 @@
 #!/bin/sh
-# Gera o APK do Threadbound (projeto em android/) sem Android Studio nem Gradle: aapt, javac, dx,
+# Gera o APK do Fiapo (projeto em android/) sem Android Studio nem Gradle: aapt, javac, dx,
 # zipalign e apksigner. No Ubuntu/Debian:
 #   sudo apt install aapt zipalign apksigner dalvik-exchange android-sdk-platform-23 default-jdk
-# uso: ferramentas/gerar-apk.sh          ->  build/Threadbound.apk
+# uso: ferramentas/gerar-apk.sh          ->  build/Fiapo.apk
 #
 # A chave de assinatura fica em build/assinatura.keystore (e a senha em build/assinatura.senha),
 # criadas na primeira vez e fora do git. Guarde as duas: para atualizar o app já instalado no
@@ -41,6 +41,6 @@ if [ ! -f build/assinatura.keystore ]; then
 fi
 SENHA_APK="$(cat build/assinatura.senha)"; export SENHA_APK
 apksigner sign --ks build/assinatura.keystore --ks-key-alias threadbound --ks-pass env:SENHA_APK --key-pass env:SENHA_APK \
-  --out build/Threadbound.apk "$B/alinhado.apk"
-apksigner verify --print-certs build/Threadbound.apk | head -1
-ls -la build/Threadbound.apk
+  --out build/Fiapo.apk "$B/alinhado.apk"
+apksigner verify --print-certs build/Fiapo.apk | head -1
+ls -la build/Fiapo.apk

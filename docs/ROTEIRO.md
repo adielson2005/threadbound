@@ -17,6 +17,21 @@ Antes de sumir, Aurélia costurou uma boneca com retalhos das roupas de todos os
 alguém se lembrasse deles. Essa boneca é **Brisa**, e ela acorda na praça vazia no dia em que os fios
 começam a se romper e a ilha começa a afundar.
 
+## O mistério do Capítulo 1
+
+Os Fios de Maré não estão rompendo sozinhos: **alguém está cortando**. Brisa percebe no primeiro minuto
+(a ponta do fio na praça está lisa) e nas âncoras (fios cortados rente). O Corta-Fios é **Ravi**, filho
+de Marisa, a rendeira da Casa das Redes, que virou névoa quando ele era menino. Ele cresceu ajudando
+Tomé no farol e acredita que, se a ilha cair, a névoa volta para o mar e os moradores voltam a ser
+gente. Ele não é mau: é um filho com saudade e com raiva, e tem razão de ter.
+
+- Pistas espalhadas: a carta de Marisa ("o Ravi, meu menino, foi ajudar o Tomé no farol"), a
+  lembrança do menino de jaqueta grande demais carregando a lanterna do farol.
+- Ravi aparece três vezes (observa, embosca, enfrenta no Coração) e, vencido, deixa a pergunta que
+  leva ao Cap. 2: "Pergunta ao Tomé o que ele fez naquela noite. Por que a Maré Negra parou no horizonte."
+- A carta de Aurélia no Coração fala dele: "ele cresceu sozinho e com raiva, e tem razão de ter.
+  Não deixe ele cortar o último fio."
+
 ## Personagens
 
 | Personagem | Quem é | O que quer | Personalidade |

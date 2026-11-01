@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Threadbound para Android: uma Activity em tela cheia com uma WebView que roda o jogo dos
+<!-- Fiapo para Android: uma Activity em tela cheia com uma WebView que roda o jogo dos
      arquivos dentro do próprio APK (assets/www), sem precisar de internet. -->
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.adielson.threadbound"
@@ -11,7 +11,7 @@
     <uses-feature android:glEsVersion="0x00030000" android:required="true" />
 
     <application
-        android:label="Threadbound"
+        android:label="Fiapo"
         android:icon="@drawable/icone"
         android:allowBackup="true"
         android:hardwareAccelerated="true"
