@@ -40,7 +40,7 @@ const ARMAS = {
   galho: { nome: 'Galho', dano: 2, alcance: 2.1, usos: 8 },
   agulha: { nome: 'Agulha de Prata', dano: 3, alcance: 2.4, usos: 16 },
   // metade da tesoura gigante da oficina de Aurélia: arma branca de verdade, com combo de 3 cortes
-  tesoura: { nome: 'Lâmina da Tesoura', dano: 3, alcance: 2.3, usos: 45, corte: true },
+  tesoura: { nome: 'Lâmina da Tesoura', dano: 2, alcance: 2.3, usos: 45, corte: true },
 };
 // Explosão de Fios (o poder da Brisa): a barra enche acertando golpes, defendendo e esquivando na
 // hora certa; cheia (R, RT ou o botão ✦), uma onda de fios de luz empurra e atordoa todos em volta
