@@ -790,9 +790,9 @@ Medido no perfil celular (Pixel 5 simulado, navegador sem placa de vídeo, entã
   rápido) e giro de 360° (acerta tudo em volta); K é o giro direto. Rastro de luz na lâmina durante
   os cortes.
 - Explosão de Fios (poder da Brisa): a barra dourada embaixo do fôlego enche acertando golpes
-  (mais com arma), com defesa e esquiva perfeitas e ao apanhar. Cheia, R (RT no controle, ✦ no
+  (mais com arma), com defesa e esquiva perfeitas e ao apanhar. Cheia, V (RT no controle, ✦ no
   celular): braços para cima, anel de luz no chão, empurra e atordoa todos em 6,5 m, dissolve
-  cristais e machuca o Ravi; câmera lenta por 0,9 s.
+  cristais e machuca o Ravi; câmera lenta por 0,9 s. (Tecla V: o R já era "voltar ao ponto seguro".)
 - Poderes do Ravi: Lâminas de Névoa (brilho roxo nas mãos e meias-luas arremessadas em leque: 1 na
   1ª fase, 3 na 2ª; dá para defender ou esquivar; batem em paredes) e, na 2ª fase, Passo de Névoa
   (some e reaparece atrás da Brisa, em guarda).
@@ -802,3 +802,20 @@ Medido no perfil celular (Pixel 5 simulado, navegador sem placa de vídeo, entã
 - Animações: o jogo não tem clipes novos de captura de movimento (sem internet para baixar); as
   melhorias de luta são feitas em código por cima dos clipes existentes. Andando e correndo a Brisa
   continua com o tronco reto (pedido anterior).
+
+### Mini tutorial, menos texto na tela e dificuldades
+
+- Mini tutorial no Novo jogo (`src/tutorial.js`): seis passos curtos, um de cada vez num cartão
+  embaixo (no celular, em cima): andar, correr, pular, golpear, esquivar, defender. Cada um termina
+  quando a Brisa faz o que ele pede; "Pular tutorial" (Esc). Depois dele a história começa (as falas
+  do despertar).
+- Menos texto durante o jogo: depois do tutorial (e no Continuar) as dicas de controle não aparecem
+  mais, só as que respondem a algo que ela tentou (a âncora presa por cristais, o primeiro Retalho);
+  a faixa de teclas embaixo da tela só aparece durante o tutorial.
+- Dificuldades (`src/dificuldade.js`), escolhidas no menu Jogar (◂ ▸ ou clique) e salvas no
+  navegador, do mais fácil ao mais difícil: Fio de Seda (7 fôlegos, vilão com 60% da vida, mais
+  lento e com mais aviso, poder enche 60% mais rápido, defesa perfeita mais larga), Ponto Corrido (o
+  normal), Nó de Marinheiro (4 fôlegos, vilão com 125% da vida e mais rápido) e Maré Negra (3
+  fôlegos, vilão com 150% da vida, quase sem aviso, defesa perfeita bem curta).
+- Testado no navegador: o menu troca a dificuldade e mostra a descrição; o tutorial passa pelos 6
+  passos com o teclado e termina em "Pronto!", e então começam as falas, sem dicas de controle.

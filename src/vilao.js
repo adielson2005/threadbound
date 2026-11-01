@@ -3,6 +3,7 @@ import { criarBoneca } from './boneca.js';
 import { moverComColisao, RAIO } from './fisica.js';
 import { linhaLivre } from './colisao.js';
 import { texturaDeCanvas } from './canvasTextura.js';
+import { dificuldade } from './dificuldade.js';
 
 // Ravi, o vilão do Capítulo 1 (modelo do release "vilão1": rapaz de jaqueta verde, Meshy, sem ossos).
 // A malha ganhou pesos de ossos fora do jogo (ferramentas/vilao/pesos.py) e é vestida no mesmo
@@ -108,12 +109,17 @@ export async function criarVilao({ renderer, nivel, cena, mapa, jogador, ui }) {
     if (anim) b.acoes[anim].crossFadeTo(nova, fade, false);
     anim = nome;
   }
-  const fase = () => FASES[v.modo === 'chefe' && v.vida <= VIDA / 2 ? 1 : 0];
+  // a fase com os tempos ajustados pela dificuldade (dificuldade.js)
+  const fase = () => {
+    const F = FASES[v.modo === 'chefe' && v.vida <= vidaTotal() / 2 ? 1 : 0], D = dificuldade();
+    return D.id === 'corrido' ? F : (F.ajustada?.id === D.id ? F.ajustada.f : (F.ajustada = { id: D.id, f: { ...F, pausa: F.pausa * D.pausaVilao, recuo: F.recuo * D.pausaVilao, aviso: F.aviso * D.avisoVilao, correr: F.correr * Math.sqrt(D.ritmoVilao) } }).f);
+  };
+  const vidaTotal = () => Math.round(VIDA * dificuldade().vidaVilao);
 
   function mostrarBarra(sim) {
     if (!ui) return;
     ui.style.opacity = sim ? 1 : 0;
-    ui.querySelector('i').style.transform = `scaleX(${Math.max(0, v.vida / VIDA)})`;
+    ui.querySelector('i').style.transform = `scaleX(${Math.max(0, v.vida / vidaTotal())})`;
   }
   function noChaoEm(p) {
     rc.set(o.set(p.x, p.y + 4, p.z), baixo); rc.far = 12;
@@ -127,7 +133,7 @@ export async function criarVilao({ renderer, nivel, cena, mapa, jogador, ui }) {
   function iniciar(perto, modo = 'chefe') {
     v.pos.copy(perto); noChaoEm(v.pos);
     v.vel.set(0, 0, 0); v.modo = modo; v.derrotado = false; v.golpe = null; v.postura = 0; v.tempoModo = 0;
-    if (modo === 'chefe' || v.vida <= 0) v.vida = VIDA;
+    if (modo === 'chefe' || v.vida <= 0) v.vida = vidaTotal();
     v.vidaInicio = v.vida;
     v.ativo = modo !== 'observar';
     v.estado = modo === 'observar' ? 'observando' : 'chegada'; v.tempo = modo === 'chefe' ? 2.6 : 1.4;
@@ -196,7 +202,7 @@ export async function criarVilao({ renderer, nivel, cena, mapa, jogador, ui }) {
     v.vel.addScaledVector(p.normalize(), Math.min(empurrao, 6) * (tonto ? 0.9 : 0.6));
     // apanhando no meio de um golpe dele: o golpe é interrompido (dá para trocar socos)
     // (na primeira fase sempre; na segunda, metade das vezes) e o aviso também
-    if ((v.estado === 'golpe' || v.estado === 'aviso') && (faseAntes === FASES[0] || Math.random() < 0.5)) { v.estado = 'perseguir'; v.golpe = null; v.tempo = 0.45; }
+    if ((v.estado === 'golpe' || v.estado === 'aviso') && (faseAntes.combo.length === 1 || Math.random() < 0.5)) { v.estado = 'perseguir'; v.golpe = null; v.tempo = 0.45; }
     // postura: três ou quatro golpes seguidos quebram a guarda dele
     if (!tonto) {
       v.postura += 22 + dano * 8;
@@ -251,7 +257,7 @@ export async function criarVilao({ renderer, nivel, cena, mapa, jogador, ui }) {
     let controla = true; // anda pelo chão com o "desejado"; na investida e no salto a velocidade é dele
 
     // emboscada: depois de meio minuto ou de perder um terço da vida, recua
-    if (v.modo === 'emboscada' && v.ativo && (v.tempoModo > 30 || v.vida <= v.vidaInicio - VIDA / 3) && ['perseguir', 'rodear'].includes(v.estado)) {
+    if (v.modo === 'emboscada' && v.ativo && (v.tempoModo > 30 || v.vida <= v.vidaInicio - vidaTotal() / 3) && ['perseguir', 'rodear'].includes(v.estado)) {
       recuar(); v.aoRecuar?.('emboscada');
     }
     // a Brisa começou um golpe perto dele: às vezes ele esquiva para trás
@@ -434,7 +440,7 @@ export async function criarVilao({ renderer, nivel, cena, mapa, jogador, ui }) {
   }
   function iniciarGolpe(nome, i, algum = false) {
     v.estado = 'golpe';
-    const ritmo = RITMO[fase() === FASES[1] ? 1 : 0];
+    const ritmo = RITMO[v.modo === 'chefe' && v.vida <= vidaTotal() / 2 ? 1 : 0] * dificuldade().ritmoVilao;
     v.golpe = { nome, t: 0, i, acertou: false, algum, ritmo };
     tocar(nome, 0.1, true);
     b.acoes[nome].setEffectiveTimeScale(ritmo);

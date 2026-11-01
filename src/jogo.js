@@ -26,6 +26,8 @@ import { criarCeu } from './ceu.js';
 import { carregarCachoeira, posicionarCachoeiras } from './cachoeira.js';
 import { criarInimigos } from './inimigos.js';
 import { criarVilao } from './vilao.js';
+import { criarTutorial } from './tutorial.js';
+import { DIFICULDADES, dificuldade, definirDificuldade } from './dificuldade.js';
 import { criarCampanha } from './campanha.js';
 import { criarCombate, GOLPES } from './combate.js';
 import { criarAjusteResolucao, ajustarResolucao } from './resolucao.js';
@@ -394,8 +396,8 @@ const T = {
   defender: ['KeyQ', 'GamepadDefender', 'ToqueDefesa'], // segurar
   devagar: ['KeyX'], // segurar: anda devagar
 };
-// golpes: J/clique esquerdo = combo (ou bater com o objeto na mão), K/clique direito = chute, F = pegar/soltar, L = esquivar, R = Explosão de Fios (o poder)
-const TECLAS_COMBATE = { KeyJ: 'combo', KeyK: 'chute', KeyF: 'pegar', KeyL: 'esquiva', KeyR: 'poder' };
+// golpes: J/clique esquerdo = combo (ou bater com o objeto na mão), K/clique direito = chute, F = pegar/soltar, L = esquivar, V = Explosão de Fios (o poder)
+const TECLAS_COMBATE = { KeyJ: 'combo', KeyK: 'chute', KeyF: 'pegar', KeyL: 'esquiva', KeyV: 'poder' };
 const camera3p = { yaw: 0, pitch: 0.35, dist: CAMERA.distancia, distAtual: CAMERA.distancia, alvo: new THREE.Vector3() };
 const analogico = { x: 0, y: 0, camX: 0, camY: 0 }; // gamepad / toque
 
@@ -422,6 +424,7 @@ addEventListener('keydown', e => {
   if (e.code === 'KeyY' && !e.repeat && estado === 'jogando') chuva.alternar();
   // R: volta ao último ponto seguro (se ficar presa em algum lugar)
   if (e.code === 'KeyR' && !e.repeat && estado === 'jogando') comEscuro(() => respawn());
+  if (e.code === 'Escape' && tutorial.ativo && !e.repeat) { tutorial.pular(); return; } // Esc no tutorial: pula
   if ((e.code === 'KeyP' || e.code === 'Escape') && !e.repeat) alternarPausa();
   teclas.add(e.code);
 });
@@ -465,7 +468,8 @@ canvas.addEventListener('wheel', e => {
   e.preventDefault();
 }, { passive: false });
 document.addEventListener('pointerlockchange', () => {
-  if (dica) dica.style.opacity = document.pointerLockElement === canvas ? 0 : 1;
+  // a faixa de teclas embaixo só aparece no tutorial (depois dele, menos texto na tela)
+  if (dica) dica.style.opacity = document.pointerLockElement === canvas || !tutorial.ativo ? 0 : 1;
 });
 function girarCamera(dx, dy) {
   camera3p.yaw -= dx * CAMERA.sensibilidade;
@@ -667,15 +671,36 @@ function reiniciar() {
   // tira o foco do botão: senão o Espaço (pulo) "clicaria" nele de novo
   botao.blur();
   teclas.clear();
-  if (primeiraVez) campanha.iniciar();
+  // primeira vez: o mini tutorial, depois a história (as falas do despertar)
+  if (primeiraVez) { campanha.silenciarDicas(); tutorial.iniciar(); dica.style.opacity = document.pointerLockElement === canvas ? 0 : 1; }
 }
 let campanhaTerminada = false, confirmandoNovo = false, proximoCapitulo = null;
+const tutorial = criarTutorial({ toque: matchMedia('(pointer: coarse)').matches, aoTerminar: () => { dica.style.opacity = 0; campanha?.iniciar(); } });
+
+// dificuldade (menu Jogar): ◂ ▸ ou clique trocam; vale para o próximo jogo e para o Continuar
+const botaoDificuldade = $('dificuldade');
+function mostrarDificuldade() {
+  const d = dificuldade();
+  botaoDificuldade.querySelector('b').textContent = d.nome;
+  botaoDificuldade.querySelector('small').textContent = d.resumo;
+  $('descDificuldade').textContent = d.descricao;
+}
+function trocarDificuldade(passo) {
+  const i = DIFICULDADES.indexOf(dificuldade());
+  definirDificuldade(DIFICULDADES[(i + passo + DIFICULDADES.length) % DIFICULDADES.length].id);
+  mostrarDificuldade();
+}
+botaoDificuldade.addEventListener('click', () => trocarDificuldade(1));
+botaoDificuldade.addEventListener('keydown', e => {
+  if (e.code === 'ArrowRight' || e.code === 'ArrowLeft') { e.preventDefault(); e.stopPropagation(); trocarDificuldade(e.code === 'ArrowRight' ? 1 : -1); }
+});
+mostrarDificuldade();
 botao.addEventListener('click', reiniciar);
 
 // menu inicial em dois passos: Jogar abre Continuar / Novo jogo. Se a ilha ainda estiver sendo
 // montada, mostra a barra de carregamento no lugar, e as opções entram sozinhas quando ela acabar.
 function primeiraOpcaoJogar() {
-  return [$('continuarJogo'), botao, $('voltarMenu')].find(b => getComputedStyle(b).display !== 'none');
+  return [$('continuarJogo'), botao, botaoDificuldade, $('voltarMenu')].find(b => getComputedStyle(b).display !== 'none');
 }
 function abrirJogar() {
   tela.dataset.modo = 'jogar';
@@ -701,6 +726,7 @@ function continuarJogo() {
   estado = 'jogando'; pausado = false;
   sumir(tela, () => { tela.style.display = 'none'; }, 150);
   $('continuarJogo').blur(); teclas.clear();
+  campanha.silenciarDicas(); // quem continua já passou pelo tutorial: sem dicas de controle na tela
   campanha.iniciar({ continuando: true });
 }
 $('continuarJogo').addEventListener('click', continuarJogo);
@@ -1707,7 +1733,7 @@ renderer.setAnimationLoop(() => {
   nevoa?.atualizar(dt, t);
   modeloCachoeira?.atualizar(t);
   cachoeiras?.atualizar(t);
-  if (estado === 'jogando' && campanha) { campanha.atualizar(dt, t); vilao?.atualizar(dt); }
+  if (estado === 'jogando' && campanha) { campanha.atualizar(dt, t); vilao?.atualizar(dt); tutorial.atualizar(dt, jogador); }
   combate?.atualizar(dt, t);
 
   animarPersonagem(dt);
