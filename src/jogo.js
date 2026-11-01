@@ -411,7 +411,7 @@ addEventListener('keydown', e => {
   if (paineis.classList.contains('aberto')) return;
   if ((estado === 'menu' || estado === 'carregando') && tela.dataset.modo !== 'fim') {
     if ((e.code === 'Enter' || e.code === 'Space') && !emControle && tela.dataset.modo === 'menu') abrirJogar();
-    if (e.code === 'Escape' && tela.dataset.modo === 'jogar') voltarAoMenu();
+    if (e.code === 'Escape' && (tela.dataset.modo === 'jogar' || tela.dataset.modo === 'dificuldade')) voltarAoMenu();
     return;
   }
   if (estado === 'fim') return;
@@ -659,6 +659,8 @@ function reiniciar() {
   if (estado === 'menu' && lerProgresso() && !confirmandoNovo) {
     confirmandoNovo = true; $('confirmarNovo').style.display = 'block'; return;
   }
+  // Novo jogo: antes de começar, a escolha da dificuldade (a tela abre, a opção escolhida volta aqui)
+  if (estado === 'menu' && !escolheuDificuldade) { abrirDificuldade(); return; }
   if (estado === 'menu') apagarProgresso();
   if (estado === 'fim') {
     if (campanhaTerminada && proximoCapitulo) { location.href = urlCapitulo(proximoCapitulo); return; }
@@ -674,39 +676,39 @@ function reiniciar() {
   // primeira vez: o mini tutorial, depois a história (as falas do despertar)
   if (primeiraVez) { campanha.silenciarDicas(); tutorial.iniciar(); dica.style.opacity = document.pointerLockElement === canvas ? 0 : 1; }
 }
-let campanhaTerminada = false, confirmandoNovo = false, proximoCapitulo = null;
+let campanhaTerminada = false, confirmandoNovo = false, proximoCapitulo = null, escolheuDificuldade = false;
 const tutorial = criarTutorial({ toque: matchMedia('(pointer: coarse)').matches, aoTerminar: () => { dica.style.opacity = 0; campanha?.iniciar(); } });
 
-// dificuldade (menu Jogar): ◂ ▸ ou clique trocam; vale para o próximo jogo e para o Continuar
-const botaoDificuldade = $('dificuldade');
-function mostrarDificuldade() {
-  const d = dificuldade();
-  botaoDificuldade.querySelector('b').textContent = d.nome;
-  botaoDificuldade.querySelector('small').textContent = d.resumo;
-  $('descDificuldade').textContent = d.descricao;
+// dificuldade: escolhida depois de Novo jogo, numa tela própria (uma opção por nível, do mais
+// fácil ao mais difícil); a escolha fica salva e vale também para o Continuar
+const listaDificuldade = $('escolhaDificuldade');
+for (const d of DIFICULDADES) {
+  const b = document.createElement('button');
+  b.className = 'botao opcao-dificuldade'; b.dataset.dificuldade = d.id;
+  b.innerHTML = `<b></b><small></small><span></span>`;
+  b.querySelector('b').textContent = d.nome; b.querySelector('small').textContent = d.resumo; b.querySelector('span').textContent = d.descricao;
+  b.addEventListener('click', () => { definirDificuldade(d.id); escolheuDificuldade = true; reiniciar(); });
+  listaDificuldade.appendChild(b);
 }
-function trocarDificuldade(passo) {
-  const i = DIFICULDADES.indexOf(dificuldade());
-  definirDificuldade(DIFICULDADES[(i + passo + DIFICULDADES.length) % DIFICULDADES.length].id);
-  mostrarDificuldade();
+function abrirDificuldade() {
+  tela.dataset.modo = 'dificuldade'; // (a confirmação de apagar o jogo salvo já foi dada: vale até começar)
+  $('confirmarNovo').style.display = 'none';
+  listaDificuldade.querySelector(`[data-dificuldade="${dificuldade().id}"]`)?.focus({ preventScroll: true, focusVisible: false });
 }
-botaoDificuldade.addEventListener('click', () => trocarDificuldade(1));
-botaoDificuldade.addEventListener('keydown', e => {
-  if (e.code === 'ArrowRight' || e.code === 'ArrowLeft') { e.preventDefault(); e.stopPropagation(); trocarDificuldade(e.code === 'ArrowRight' ? 1 : -1); }
-});
-mostrarDificuldade();
 botao.addEventListener('click', reiniciar);
 
 // menu inicial em dois passos: Jogar abre Continuar / Novo jogo. Se a ilha ainda estiver sendo
 // montada, mostra a barra de carregamento no lugar, e as opções entram sozinhas quando ela acabar.
 function primeiraOpcaoJogar() {
-  return [$('continuarJogo'), botao, botaoDificuldade, $('voltarMenu')].find(b => getComputedStyle(b).display !== 'none');
+  return [$('continuarJogo'), botao, $('voltarMenu')].find(b => getComputedStyle(b).display !== 'none');
 }
 function abrirJogar() {
   tela.dataset.modo = 'jogar';
   primeiraOpcaoJogar()?.focus({ preventScroll: true, focusVisible: false });
 }
 function voltarAoMenu() {
+  // da escolha da dificuldade, Voltar volta para Continuar / Novo jogo
+  if (tela.dataset.modo === 'dificuldade') { confirmandoNovo = false; abrirJogar(); return; }
   tela.dataset.modo = 'menu';
   confirmandoNovo = false; $('confirmarNovo').style.display = 'none';
   $('jogar').focus({ preventScroll: true, focusVisible: false });
