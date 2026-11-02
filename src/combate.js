@@ -399,6 +399,7 @@ export function criarCombate({ cena, mapa, mundo, terreno, inimigos, campanha, j
     }
     est.invulneravel = INVULNERAVEL;
     j.vel.set(-para.x * 7, 4.5, -para.z * 7); j.noChao = false;
+    j.dirGolpe = { x: para.x, z: para.z }; // de onde veio (para a reação do corpo: animLuta.js)
     j.golpe = null; j.pegando = null; j.machucado = 0.45; j.esquiva = null;
     tremer(0.5);
     ganharPoder(GANHO_PODER.dano); som.dano();

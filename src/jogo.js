@@ -28,6 +28,7 @@ import { criarInimigos } from './inimigos.js';
 import { criarVilao } from './vilao.js';
 import { criarTutorial } from './tutorial.js';
 import { criarFolhas } from './folhas.js';
+import { camadaGolpe, camadaReacao, LADO_GOLPE } from './animLuta.js';
 import { criarMapaMundi } from './mapaMundi.js';
 import { criarPegaso } from './pegaso.js';
 import { som, definirVolume, musicaLuta } from './som.js';
@@ -587,6 +588,13 @@ function entradaMovimento() {
 let mapa = null, terreno = null, personagem = null;
 let sombraBoneca = null; const _centroSombra = new THREE.Vector3();
 let distPassos = 0;
+// há luta perto? (o Ravi lutando a menos de 8 m, ou um Retalho ativo a menos de 5 m)
+function emLuta() {
+  const P = jogador.pos;
+  if (vilao?.lutando && vilao.v.pos.distanceTo(P) < 8) return true;
+  for (const e of inimigos?.lista ?? []) if (e.ativo && e.estado !== 'patrulha' && e.pos.distanceTo(P) < 5) return true;
+  return false;
+}
 let folhas = null, tempoFolhas = 0; // vegetação macia (folhas.js)
 let vilao = null; // Cap. 1: Ravi, a luta antes do Coração da Ilha (vilao.js)
 let mundo = null, inimigos = null, campanha = null, combate = null, oclusao = null;
@@ -1412,7 +1420,8 @@ function animarPersonagem(dt) {
     const aterrissando = tempoAterrissar > 0 && !(v > 0.5 && tempoAterrissar < 0.25);
     if (aterrissando) { /* mantém */ }
     else if (viradaNoLugar) tocar('andar', { vel: 0.9, fade: 0.15 });
-    else if (v < 0.4) tocar('parada', { fade: 0.35 });
+    // parada perto de um inimigo (ou do Ravi lutando): em guarda, pronta para a luta
+    else if (v < 0.4) tocar(emLuta() ? 'guarda' : 'parada', { fade: 0.35 });
     // velocidade de reprodução = velocidade real / velocidade natural do clipe (pés não escorregam)
     // (até 2,9 m/s é andar: o passo normal, 2,1 m/s, usa a animação de andar um pouco mais rápida)
     else if (v < 2.9) tocar('andar', { vel: THREE.MathUtils.clamp(v / velAndar, 0.6, 2.2), fade: 0.25 });
@@ -1448,7 +1457,11 @@ function animarPersonagem(dt) {
     const g = GOLPES[j.golpe.nome], f = j.golpe.t / j.golpe.duracao;
     const k = THREE.MathUtils.clamp((f - g.impacto[0] + 0.12) / (g.impacto[1] - g.impacto[0] + 0.3), 0, 1);
     corpo.rotation.x += Math.sin(k * Math.PI) * (g.giro ? 0.05 : 0.14);
+    // torção do quadril e do tronco (preparação, impacto, recuperação) e o peso descendo
+    corpo.position.y -= camadaGolpe(personagem.rig, f, g.impacto, LADO_GOLPE[j.golpe.nome] ?? 0, g.dano >= 2 ? 1.25 : 1);
   }
+  // atingida: o tronco tomba para longe do golpe e a cabeça dá o tranco
+  if (j.machucado > 0 && j.dirGolpe) camadaReacao(personagem.rig, j.machucado / 0.45, j.dirGolpe.x, j.dirGolpe.z);
   // inclinação do tronco ao acelerar e nas curvas, e a cabeça olhando o que está perto
   posturaViva(dt, v);
   // pés apoiados no chão em rampas (desligado no ar, na cambalhota e agachada pegando algo)

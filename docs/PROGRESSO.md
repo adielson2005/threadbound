@@ -874,3 +874,19 @@ Medido no perfil celular (Pixel 5 simulado, navegador sem placa de vídeo, entã
   tocar numa ilha ou Enter. "Embarcar" abre o capítulo. Também no menu ("Mapa das ilhas").
 - Testado no navegador: a cena da fuga (chegando, pousou, montada, voando) e o mapa (voo para a
   ilha 2, ▶ para a 3, trancada).
+
+### Animações de luta em camadas (`src/animLuta.js`)
+
+- Os clipes de luta são de captura de movimento e não dá para trocar aqui; por cima deles, em
+  código, para a Brisa e o Ravi (mesmo esqueleto):
+  - golpe: preparação (o tronco recua um pouco para o lado contrário), impacto (quadril e coluna
+    giram até ~33° para o lado do golpe, a cabeça segura o olhar no alvo, o peso desce 7 cm) e
+    recuperação suave; mais forte nos golpes de dano 2 (soco final, chute) e nos do Ravi. Chute
+    giratório e giro da lâmina sem torção extra (o clipe já gira o corpo);
+  - reação: atingida/atingido, o tronco tomba para longe de onde veio o golpe e a cabeça dá o
+    tranco;
+  - guarda de luta: parada com o Ravi lutando a menos de 8 m ou um Retalho em alerta a menos de
+    5 m, a Brisa fica em guarda (em vez da pose relaxada).
+- No Ravi, coluna, pescoço e cabeça voltam ao repouso antes de cada quadro (os clipes emprestados
+  não animam todos esses ossos e o giro acumularia).
+- Comparado filmando o combo (soco, soco, chute) quadro a quadro antes e depois.
