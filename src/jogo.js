@@ -587,7 +587,7 @@ function entradaMovimento() {
 // ---------- Mundo (preenchido ao carregar) ----------
 let mapa = null, terreno = null, personagem = null;
 let sombraBoneca = null; const _centroSombra = new THREE.Vector3();
-let distPassos = 0;
+let distPassos = 0, pesoPunho = 0;
 // há luta perto? (o Ravi lutando a menos de 8 m, ou um Retalho ativo a menos de 5 m)
 function emLuta() {
   const P = jogador.pos;
@@ -1403,7 +1403,8 @@ function animarPersonagem(dt) {
     tocar('cambalhota', { fade: 0.06, inicio: 0.08, vel: 0 });
   } else if (j.golpe) {
     // cada golpe recomeça do início (o mesmo soco de novo mistura com o anterior)
-    if (j.golpe.novo) { j.golpe.novo = false; tocar(j.golpe.nome, { fade: 0.12, vel: GOLPES[j.golpe.nome].vel, reiniciar: true }); }
+    // (golpes que usam um trecho do clipe começam no meio dele: a direita final, o chute baixo)
+    if (j.golpe.novo) { j.golpe.novo = false; const g = GOLPES[j.golpe.nome]; tocar(j.golpe.nome, { fade: 0.08, vel: g.vel, reiniciar: true, inicio: (g.inicio ?? 0) * personagem.acoes[j.golpe.nome].getClip().duration }); }
   } else if (j.pegando) {
     // a pose de pegar (combate.aplicarPoses) vai por cima da pose parada
     tocar('parada', { fade: 0.2 });
@@ -1450,6 +1451,14 @@ function animarPersonagem(dt) {
   } else corpo.rotation.z = 0;
   // agachar e alcançar o objeto do chão; braços para cima soltando o poder
   combate?.aplicarPoses();
+  // mão fechada (punho) nos socos e em guarda: a mão da boneca é uma peça só (sem ossos nos dedos),
+  // então o osso da mão encolhe ao longo dos dedos e engrossa um pouco, e lê como um punho
+  const querPunho = (j.golpe && j.golpe.nome.startsWith('soco')) || j.defendendo || animAtual === 'guarda' ? 1 : 0;
+  pesoPunho += (querPunho - pesoPunho) * Math.min(1, dt * 18);
+  for (const n of ['mixamorigLeftHand', 'mixamorigRightHand']) {
+    const mao = personagem.rig.ossos[n];
+    if (mao && !(combate?.segurando && n === 'mixamorigRightHand')) mao.scale.set(1 + 0.08 * pesoPunho, 1 - 0.38 * pesoPunho, 1 + 0.08 * pesoPunho);
+  }
   // montada no Nuvem (fuga do fim do capítulo): sentada, pernas dos lados, mãos para a frente
   if (fuga?.montada) aplicarPose(personagem.rig, { bacia: 0.1, quadril: 1.45, joelho: 1.55, pe: 0.3, coluna: 0.1, braco: 0.7, cotovelo: 0.9, cabeca: -0.1 }, 1, false);
   // golpe com peso: o corpo vai junto no momento do impacto (inclina para a frente e volta)

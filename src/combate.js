@@ -20,11 +20,17 @@ import { criarCorpo, lancar, passo as passoObjeto, aplicar, empurrar as empurrar
 // As janelas seguem o momento de alcance máximo medido em cada animação.
 export const GOLPES = {
   soco1: { vel: 1.5, cancela: 0.4, nome: 'Soco rápido', alcance: 1.4, dano: 1, impacto: [0.1, 0.45], avanco: 2.2, empurrao: 1.2 },
-  soco2: { vel: 1.5, cancela: 0.4, nome: 'Soco direto', alcance: 1.5, dano: 1, impacto: [0.3, 0.65], avanco: 2.2, empurrao: 1.2 },
+  // jab: o soco que sai de primeira (a mão esquerda chega ao máximo em ~1/3 do clipe: medido)
+  soco2: { vel: 1.5, cancela: 0.4, nome: 'Jab', alcance: 1.5, dano: 1, impacto: [0.15, 0.5], avanco: 2.2, empurrao: 1.4 },
   soco3: { vel: 1.5, cancela: 0.4, nome: 'Gancho', alcance: 1.4, dano: 1, impacto: [0.3, 0.7], avanco: 2, empurrao: 1.4 },
-  soco4: { vel: 1.5, cancela: 0.4, nome: 'Soco giratório', alcance: 1.6, dano: 1, impacto: [0.4, 0.72], avanco: 2, empurrao: 1.6 },
+  soco4: { vel: 1.5, cancela: 0.4, nome: 'Direto com passo', alcance: 1.6, dano: 1, impacto: [0.4, 0.75], avanco: 2.4, empurrao: 2 },
+  // direita final: só o fim do clipe soco1 (o começo dele é a guarda subindo, sem soco: medido)
+  socoFinal: { vel: 1.3, cancela: 0.45, nome: 'Direita final', alcance: 1.6, dano: 2, impacto: [0.5, 0.95], avanco: 2.6, empurrao: 5.5, clipe: 'soco1', inicio: 0.62 },
   soco5: { vel: 1.4, cancela: 0.45, nome: 'Golpe final', alcance: 1.7, dano: 2, impacto: [0.15, 0.5], avanco: 2.4, empurrao: 6 },
   chute: { vel: 1.5, cancela: 0.5, nome: 'Chute giratório', alcance: 1.9, dano: 2, impacto: [0.42, 0.66], avanco: 1.2, empurrao: 5.5 },
+  // chute baixo: o começo do chute giratório (o pé direito sobe baixo para a frente, medido em
+  // 0,25 do clipe), sem o giro; apertar de novo vira o chute giratório completo
+  chuteBaixo: { vel: 1.5, cancela: 0.4, nome: 'Chute baixo', alcance: 1.5, dano: 1, impacto: [0.4, 0.75], avanco: 1.2, empurrao: 2.5, clipe: 'chute', inicio: 0.08, fim: 0.38 },
   // (velocidades medidas: o "Attack" a 1,45× durava ~1,9 s, lento demais para a lâmina)
   // com objeto na mão: alcance e dano vêm do objeto
   golpeArma: { vel: 2.1, cancela: 0.4, nome: 'Golpe', alcance: 2, dano: 2, impacto: [0.28, 0.52], avanco: 1.2, empurrao: 6, arma: true },
@@ -34,9 +40,10 @@ export const GOLPES = {
   giroArma: { vel: 1.75, cancela: 0.45, nome: 'Giro da lâmina', alcance: 2.2, dano: 3, impacto: [0.35, 0.7], avanco: 1.4, empurrao: 8, arma: true, giro: true },
 };
 const COMBO_ARMA = ['golpeArma', 'golpeArma2', 'giroArma'];
-const COMBO = ['soco1', 'soco2', 'soco3', 'soco4', 'soco5'];
-const JANELA_COMBO = 0.3; // a partir de quanto do golpe atual o próximo toque já fica guardado
-const FOLGA_COMBO = 0.4;  // segundos depois de um soco em que um toque ainda continua a sequência
+// 1 toque = jab; 2 = jab e direto com passo; 3 = os dois e a direita final
+const COMBO = ['soco2', 'soco4', 'socoFinal'];
+const JANELA_COMBO = 0.3; // (lâmina) a partir de quanto do golpe atual o próximo toque já fica guardado
+const FOLGA_COMBO = 0.4;  // (lâmina) segundos depois de um golpe em que um toque ainda continua a sequência
 
 const ARMAS = {
   galho: { nome: 'Galho', dano: 2, alcance: 2.1, usos: 8 },
@@ -274,7 +281,9 @@ export function criarCombate({ cena, mapa, mundo, terreno, inimigos, campanha, j
   // ações extras para os golpes de lâmina (cópias de clipes que a boneca já tem)
   personagem.acoes.golpeArma2 ??= personagem.mixer.clipAction(personagem.acoes.golpeArma.getClip().clone());
   personagem.acoes.giroArma ??= personagem.mixer.clipAction(personagem.acoes.chute.getClip().clone());
-  const est = { invulneravel: 0, hitstop: 0, ultimoCombo: -1, ultimoArma: -1, desdeCombo: 9, acertados: null, esperaEsquiva: 0, tempoDefesa: 0, contra: 0, avisouEsquiva: false, poder: 0, lento: 0, poderAnim: 0 };
+  personagem.acoes.socoFinal ??= personagem.mixer.clipAction(personagem.acoes.soco1.getClip().clone());
+  personagem.acoes.chuteBaixo ??= personagem.mixer.clipAction(personagem.acoes.chute.getClip().clone());
+  const est = { filaSocos: 0, invulneravel: 0, hitstop: 0, ultimoCombo: -1, ultimoArma: -1, desdeCombo: 9, acertados: null, esperaEsquiva: 0, tempoDefesa: 0, contra: 0, avisouEsquiva: false, poder: 0, lento: 0, poderAnim: 0 };
   let pedido = null, proximo = null;
 
   function alvos() {
@@ -297,7 +306,9 @@ export function criarCombate({ cena, mapa, mundo, terreno, inimigos, campanha, j
       if (x < 3.2 && n < nota) { nota = n; melhor = a; }
     }
     if (melhor) jogador.angulo = Math.atan2(melhor.pos.x - jogador.pos.x, melhor.pos.z - jogador.pos.z);
-    jogador.golpe = { nome, t: 0, duracao: personagem.acoes[nome].getClip().duration / g.vel, cancela: g.cancela, novo: true };
+    // (golpes que usam só um trecho do clipe: inicio/fim em fração dele)
+    const trecho = (g.fim ?? 1) - (g.inicio ?? 0);
+    jogador.golpe = { nome, t: 0, duracao: personagem.acoes[nome].getClip().duration * trecho / g.vel, cancela: g.cancela, novo: true };
     som.golpe(g.arma && segurando?.corte ? 'corte' : nome === 'chute' || g.giro ? 'chute' : 'soco');
     est.acertados = new Set();
   }
@@ -478,12 +489,18 @@ export function criarCombate({ cena, mapa, mundo, terreno, inimigos, campanha, j
         } else if (i >= 0 && i < COMBO_ARMA.length - 1 && j.golpe.t / j.golpe.duracao > JANELA_COMBO) { proximo = COMBO_ARMA[i + 1]; feito = true; }
       } else if (pedido === 'combo' && segurando) { if (!j.golpe && livre) { iniciarGolpe('golpeArma'); feito = true; } }
       else if (pedido === 'combo') {
+        // cada toque é um soco: o primeiro sai na hora (jab); os toques durante um soco ficam na
+        // fila e viram o próximo do combo assim que ele acaba (até 3 seguidos). Depois que o combo
+        // para, o próximo toque começa de novo pelo jab
         const i = j.golpe ? COMBO.indexOf(j.golpe.nome) : -1;
-        if (!j.golpe && livre) {
-          const continua = est.ultimoCombo >= 0 && est.ultimoCombo < COMBO.length - 1 && est.desdeCombo < FOLGA_COMBO;
-          iniciarGolpe(COMBO[continua ? est.ultimoCombo + 1 : 0]); feito = true;
-        } else if (i >= 0 && i < COMBO.length - 1 && j.golpe.t / j.golpe.duracao > JANELA_COMBO) { proximo = COMBO[i + 1]; feito = true; }
-      } else if (!j.golpe && livre) { iniciarGolpe('chute'); feito = true; }
+        if (!j.golpe && livre) { iniciarGolpe(COMBO[0]); est.filaSocos = 0; feito = true; }
+        else if (i >= 0) { est.filaSocos = Math.min(est.filaSocos + 1, COMBO.length - 1 - i); feito = true; }
+      } else if (j.golpe?.nome === 'chuteBaixo') {
+        // apertou o chute de novo durante o chute baixo: vira o chute giratório (no começo, na hora;
+        // depois, emenda quando o baixo acabar)
+        if (j.golpe.t / j.golpe.duracao < 0.45) iniciarGolpe('chute'); else proximo = 'chute';
+        feito = true;
+      } else if (!j.golpe && livre) { iniciarGolpe('chuteBaixo'); feito = true; }
       if (feito) pedido = null;
     }
     if (j.golpe) {
@@ -491,9 +508,11 @@ export function criarCombate({ cena, mapa, mundo, terreno, inimigos, campanha, j
       aplicarGolpe();
       // termina um pouco antes do fim da animação, que se mistura com a próxima
       if (j.golpe && j.golpe.t >= j.golpe.duracao - 0.12) {
-        est.ultimoCombo = COMBO.indexOf(j.golpe.nome); est.ultimoArma = COMBO_ARMA.indexOf(j.golpe.nome); est.desdeCombo = 0;
+        est.ultimoCombo = COMBO.indexOf(j.golpe.nome); est.ultimoArma = COMBO_ARMA.indexOf(j.golpe.nome); est.desdeCombo = 0; est.ultimoNome = j.golpe.nome;
         j.golpe = null;
-        if (proximo && j.noChao) iniciarGolpe(proximo);
+        const iCombo = COMBO.indexOf(est.ultimoNome);
+        if (!proximo && est.filaSocos > 0 && iCombo >= 0 && iCombo < COMBO.length - 1 && j.noChao) { est.filaSocos--; iniciarGolpe(COMBO[iCombo + 1]); }
+        else if (proximo && j.noChao) iniciarGolpe(proximo);
         proximo = null;
       }
     }

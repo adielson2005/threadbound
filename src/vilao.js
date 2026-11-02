@@ -40,16 +40,17 @@ const PASTA = new URL('../assets/vilao/', import.meta.url).href;
 // (era 16: com a lâmina e a defesa perfeita, um jogador automático tirava 12 de vida em 6 s)
 const VIDA = 26;
 const G = -26;
-const ALCANCE = { soco1: 1.55, soco2: 1.6, chute: 1.9 };
-const IMPACTO = { soco1: [0.1, 0.45], soco2: [0.3, 0.65], chute: [0.42, 0.66] };
+const ALCANCE = { soco1: 1.55, soco2: 1.6, soco4: 1.75, chute: 1.9 };
+// (jab e direto com passo: o soco1 é quase só a guarda subindo, medido nos clipes)
+const IMPACTO = { soco1: [0.1, 0.45], soco2: [0.15, 0.5], soco4: [0.4, 0.75], chute: [0.42, 0.66] };
 const RITMO = [1.2, 1.4]; // velocidade dos golpes dele em cada fase (o clipe a 1× ficava arrastado)
 // aviso: antes de cada sequência de golpes ele se encolhe em guarda por esse tempo (dá para ler e
 // defender ou sair); depois de acertar a Brisa ele recua um instante (vez dela de bater).
 // Medido com um jogador automático que só soca e nunca defende: com os socos saindo sem aviso e o
 // combo de 3 golpes, a Brisa perdia os 5 fôlegos em 8 s tirando 2 de 16 de vida dele.
 const FASES = [
-  { correr: 3.6, pausa: 1.6, aviso: 0.45, investida: 8, combo: ['soco1'], recuo: 1.6, esquiva: 0.3, salto: false, laminas: 1, passo: false },
-  { correr: 4.6, pausa: 1.0, aviso: 0.3, investida: 9.5, combo: ['soco1', 'chute'], recuo: 1.1, esquiva: 0.5, salto: true, laminas: 3, passo: true },
+  { correr: 3.6, pausa: 1.6, aviso: 0.45, investida: 8, combo: ['soco2'], recuo: 1.6, esquiva: 0.3, salto: false, laminas: 1, passo: false },
+  { correr: 4.6, pausa: 1.0, aviso: 0.3, investida: 9.5, combo: ['soco2', 'soco4', 'chute'], recuo: 1.1, esquiva: 0.5, salto: true, laminas: 3, passo: true },
 ];
 const LAMINA = { vel: 12, vida: 1.3, raio: 0.45, espera: 6 };
 const COR_VERMELHA = new THREE.Color('#ff3020'), COR_NEVOA = new THREE.Color('#9b5cff');
@@ -85,7 +86,7 @@ function mancha() {
 
 export async function criarVilao({ renderer, nivel, cena, mapa, jogador, ui }) {
   const b = await criarBoneca(renderer, nivel, null, MODELO_VILAO);
-  for (const nome of ['soco1', 'soco2', 'chute', 'morte', 'puloInicio', 'aterrissar']) { b.acoes[nome].setLoop(THREE.LoopOnce, 1); b.acoes[nome].clampWhenFinished = true; }
+  for (const nome of ['soco1', 'soco2', 'soco4', 'chute', 'morte', 'puloInicio', 'aterrissar']) { b.acoes[nome].setLoop(THREE.LoopOnce, 1); b.acoes[nome].clampWhenFinished = true; }
   b.raiz.visible = false;
   const sombra = mancha(); sombra.visible = false;
   cena.add(b.raiz, sombra);

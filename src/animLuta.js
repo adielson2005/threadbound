@@ -25,7 +25,8 @@ export function girarNoMundo(osso, eixo, angulo) {
 
 // lado do golpe: +1 gira para a esquerda (golpe com o braço direito), −1 para a direita, 0 sem
 // torção (chute giratório e giro da lâmina: o clipe já gira o corpo inteiro)
-export const LADO_GOLPE = { soco1: 1, soco2: -1, soco3: 1, soco4: -1, soco5: 1, chute: 0, golpeArma: 1, golpeArma2: -1, giroArma: 0 };
+// (jab e direto com passo são da mão esquerda, a direita final é da direita: medido nos clipes)
+export const LADO_GOLPE = { soco1: 1, soco2: -1, soco3: 1, soco4: -1, soco5: 1, socoFinal: 1, chute: 0, chuteBaixo: 0, golpeArma: 1, golpeArma2: -1, giroArma: 0 };
 
 const suave = k => k * k * (3 - 2 * k);
 

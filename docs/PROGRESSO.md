@@ -890,3 +890,18 @@ Medido no perfil celular (Pixel 5 simulado, navegador sem placa de vídeo, entã
 - No Ravi, coluna, pescoço e cabeça voltam ao repouso antes de cada quadro (os clipes emprestados
   não animam todos esses ossos e o giro acumularia).
 - Comparado filmando o combo (soco, soco, chute) quadro a quadro antes e depois.
+
+### Soco e chute por número de toques, mão fechada
+
+- Medido nos clipes (mão e pé ao longo do tempo): o soco1 é quase só a guarda subindo (a mão direita
+  só avança no fim), por isso o primeiro toque "se armava" antes de bater. Agora:
+  - 1 toque = jab (soco2: a mão esquerda chega ao máximo em ~1/3 do clipe); 2 toques = jab + direto
+    com passo (soco4); 3 toques = jab + direto + direita final (o fim do soco1, dano 2). Os toques
+    durante um soco ficam na fila (até 3); depois que o combo para, recomeça pelo jab;
+  - chute: 1 toque = chute baixo (o começo do chute giratório, sem o giro); tocar de novo vira o
+    chute giratório completo (no começo, na hora; depois, emenda).
+- Mão fechada: a mão da boneca é uma peça só (sem ossos nos dedos); nos socos e em guarda o osso da
+  mão encolhe ao longo dos dedos (62%) e engrossa um pouco, e lê como um punho.
+- O Ravi também deixou o soco1: jab na 1ª fase; jab, direto com passo e chute na 2ª.
+- Testado com toques de teclado: 1/2/3 socos e 1/2 chutes saem nessa ordem; o primeiro golpe
+  começa a bater em 0,07 s.
