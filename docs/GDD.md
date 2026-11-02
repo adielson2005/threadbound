@@ -92,6 +92,11 @@ céu para reacender os Fios de Maré e descobrir quem os está cortando.
 5. **Terceira âncora:** a ilha para de tremer; o farol aponta o Coração.
 6. **Chefe no Coração:** a luta inteira com o Ravi (duas fases). Vencido, vira névoa.
 7. **Coração e carta de Aurélia:** fim do capítulo; o farol mostra o Recife das Vozes (Cap. 2).
+8. **Fuga com o Nuvem:** o pônei alado de Aurélia desce, Brisa monta e os dois decolam da ilha
+   (cena curta, sem HUD).
+9. **Mapa das ilhas:** as quatro ilhas no mar, ligadas por uma trilha de linha dourada; o Nuvem
+   voa sozinho para a próxima ilha liberada. ◀ ▶ (ou tocar numa ilha) escolhe; "Embarcar" abre o
+   capítulo. Ilhas trancadas ficam escuras. O mapa também abre pelo menu ("Mapa das ilhas").
 
 Opcional em todo o capítulo: cartas nas casas (5), lembranças nos fragmentos lilases, a Gruta dos
 Recados e o mirante do farol (escada em espiral). Recompensa: história e fôlego.

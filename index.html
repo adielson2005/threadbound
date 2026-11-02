@@ -7,7 +7,7 @@
 <!-- fontes da interface (sem internet, caem para a fonte do sistema) -->
 <link rel="icon" href="data:,">
 <link rel="stylesheet" href="vendor/fontes/fontes.css">
-<meta name="versao-site" content="1d7e68c8c0">
+<meta name="versao-site" content="aca21768ac">
 <script>
   // O GitHub Pages deixa o navegador reaproveitar esta página por até 10 minutos (e um endereço
   // que já foi aberto, como "?v=22", pode continuar vindo da memória). Aqui a página pergunta ao site,
@@ -476,6 +476,21 @@
   .opcao-dificuldade small { font: 600 11px var(--fonte); letter-spacing: 1px; text-transform: uppercase; color: var(--ouro); }
   .opcao-dificuldade span { flex-basis: 100%; padding-left: 34px; font: 500 12px/1.35 var(--fonte); color: var(--texto-2); text-align: left; } /* (34 px: o traço da opção marcada, 22 px, e o espaço depois dele) */
   @media (max-width: 760px), (pointer: coarse) { .opcao-dificuldade { font-size: 18px !important; } .opcao-dificuldade span { font-size: 11px; } }
+  /* cena (fuga do fim do capítulo) e mapa das ilhas: sem HUD, falas nem botões de toque */
+  body.cinema :is(#hud, #objetivo, #fala, #interagir, #golpe, #dicaTutorial, #dica, .toque, #tutorial, #chefe, #aviso, #memoria) { opacity: 0 !important; visibility: hidden !important; }
+  /* mapa das ilhas: nome da ilha no alto, setas e "Embarcar" embaixo */
+  #mapaMundi { position: fixed; inset: 0; display: none; flex-direction: column; justify-content: space-between; align-items: center; pointer-events: none; z-index: 30; opacity: 0; transition: opacity .25s; padding: 22px 16px; box-sizing: border-box; }
+  #mapaMundi > * { pointer-events: auto; }
+  .mm-topo { text-align: center; color: #fff; text-shadow: 0 2px 8px rgba(0, 0, 0, 0.5); background: rgba(16, 10, 26, 0.45); padding: 10px 22px; border-radius: 12px; }
+  .mm-topo small { display: block; font: 700 11px var(--fonte); letter-spacing: 2px; text-transform: uppercase; color: var(--ouro); }
+  .mm-topo b { display: block; font: 700 26px var(--titulo); margin: 2px 0; }
+  .mm-topo span { display: block; font-size: 13px; color: #f2e6d0; }
+  .mm-topo em { display: block; margin-top: 4px; font: 700 12px var(--fonte); font-style: normal; color: #bfe8b0; }
+  .mm-baixo { display: flex; gap: 14px; align-items: center; }
+  .mm-baixo .mm-esq, .mm-baixo .mm-dir { width: 52px; height: 52px; border-radius: 50%; border: 2px solid rgba(255, 255, 255, 0.7); background: rgba(16, 10, 26, 0.45); color: #fff; font-size: 20px; cursor: pointer; }
+  .mm-embarcar { width: auto !important; padding: 8px 22px !important; background: rgba(16, 10, 26, 0.55) !important; border-radius: 10px; font-size: 20px !important; color: #fff; }
+  .mm-embarcar:disabled { opacity: .5; }
+  .mm-voltar { position: absolute; left: 16px; bottom: 22px; width: auto; color: #fff; }
   /* mini tutorial: um passo por vez, embaixo, no meio */
   #tutorial { position: fixed; left: 50%; bottom: 96px; transform: translateX(-50%); width: min(420px, 86vw); padding: 12px 16px 10px; border-radius: 10px; text-align: center;
     background: rgba(10, 8, 14, 0.62); color: #fff; pointer-events: none; opacity: 0; transition: opacity .3s, box-shadow .2s; z-index: 6; zoom: var(--escala-texto); }
@@ -490,7 +505,7 @@
   #tSuper { bottom: 30px; right: 172px; width: 44px; height: 44px; border-color: rgba(143, 227, 255, 0.7); }
 </style>
 <!-- bibliotecas na própria pasta (vendor/): three 0.165.0, three-mesh-bvh 0.7.6, meshoptimizer 0.21.0. O jogo roda sem internet (e dentro do APK) -->
-<script type="importmap">{"imports":{"three":"./vendor/three/build/three.module.js","three/addons/":"./vendor/three/examples/jsm/","three-mesh-bvh":"./vendor/three-mesh-bvh/build/index.module.js","meshoptimizer/simplifier":"./vendor/meshoptimizer/meshopt_simplifier.module.js","./src/agua.js":"./src/agua.js?v=e2a2da6b9b","./src/altos.js":"./src/altos.js?v=ac761e4342","./src/boneca.js":"./src/boneca.js?v=0eef2507c2","./src/bonecaNova.js":"./src/bonecaNova.js?v=7ea290af16","./src/cachoeira.js":"./src/cachoeira.js?v=f700bc46b9","./src/cambalhota.js":"./src/cambalhota.js?v=aff8debf26","./src/campanha.js":"./src/campanha.js?v=bc67b33fd7","./src/canvasTextura.js":"./src/canvasTextura.js?v=8ddd89e18a","./src/capitulo.js":"./src/capitulo.js?v=5631f04f86","./src/casas.js":"./src/casas.js?v=96f7d875d0","./src/ceu.js":"./src/ceu.js?v=8ffb931fd1","./src/chuva.js":"./src/chuva.js?v=6cf0295986","./src/colisao.js":"./src/colisao.js?v=ac6260ec0b","./src/combate.js":"./src/combate.js?v=2b1b11637b","./src/dia.js":"./src/dia.js?v=e05b6cc395","./src/dificuldade.js":"./src/dificuldade.js?v=cfdf2ff62e","./src/distancia.js":"./src/distancia.js?v=9a5844420e","./src/estilo.js":"./src/estilo.js?v=0c453af42f","./src/fisica.js":"./src/fisica.js?v=7949a2cbcf","./src/folhas.js":"./src/folhas.js?v=0703e7d0dd","./src/graficos.js":"./src/graficos.js?v=7dc7bab243","./src/historia.js":"./src/historia.js?v=3d36b13d81","./src/ilha.js":"./src/ilha.js?v=670fb485d3","./src/inimigos.js":"./src/inimigos.js?v=0032bf0003","./src/jogo.js":"./src/jogo.js?v=9398f6a3a4","./src/lotes.js":"./src/lotes.js?v=f3831174bf","./src/mapa.js":"./src/mapa.js?v=6640d26460","./src/mundo.js":"./src/mundo.js?v=08560bc849","./src/nevoa.js":"./src/nevoa.js?v=9bccad8ac5","./src/objetos.js":"./src/objetos.js?v=a78546e0b2","./src/oclusao.js":"./src/oclusao.js?v=a1ec74f05f","./src/particulas.js":"./src/particulas.js?v=efad11a94e","./src/pes.js":"./src/pes.js?v=9f8ed5d180","./src/praia.js":"./src/praia.js?v=700cd3c717","./src/praiaForma.js":"./src/praiaForma.js?v=79c406a618","./src/reparos.js":"./src/reparos.js?v=e805cead1a","./src/resolucao.js":"./src/resolucao.js?v=0d1e50cb15","./src/salvar.js":"./src/salvar.js?v=0d75e7e284","./src/simplificar.js":"./src/simplificar.js?v=a439e6c6ca","./src/som.js":"./src/som.js?v=b03701df1b","./src/sombraBoneca.js":"./src/sombraBoneca.js?v=02b8ff3403","./src/suavizar.js":"./src/suavizar.js?v=042d8dcf4b","./src/terreno.js":"./src/terreno.js?v=30a71b0a42","./src/texturas.js":"./src/texturas.js?v=5b74c7049c","./src/tutorial.js":"./src/tutorial.js?v=1f1fb0bc8d","./src/vilao.js":"./src/vilao.js?v=d57792bd5f"}}</script>
+<script type="importmap">{"imports":{"three":"./vendor/three/build/three.module.js","three/addons/":"./vendor/three/examples/jsm/","three-mesh-bvh":"./vendor/three-mesh-bvh/build/index.module.js","meshoptimizer/simplifier":"./vendor/meshoptimizer/meshopt_simplifier.module.js","./src/agua.js":"./src/agua.js?v=e2a2da6b9b","./src/altos.js":"./src/altos.js?v=ac761e4342","./src/boneca.js":"./src/boneca.js?v=0eef2507c2","./src/bonecaNova.js":"./src/bonecaNova.js?v=7ea290af16","./src/cachoeira.js":"./src/cachoeira.js?v=f700bc46b9","./src/cambalhota.js":"./src/cambalhota.js?v=aff8debf26","./src/campanha.js":"./src/campanha.js?v=bc67b33fd7","./src/canvasTextura.js":"./src/canvasTextura.js?v=8ddd89e18a","./src/capitulo.js":"./src/capitulo.js?v=5631f04f86","./src/casas.js":"./src/casas.js?v=96f7d875d0","./src/ceu.js":"./src/ceu.js?v=8ffb931fd1","./src/chuva.js":"./src/chuva.js?v=6cf0295986","./src/colisao.js":"./src/colisao.js?v=ac6260ec0b","./src/combate.js":"./src/combate.js?v=2b1b11637b","./src/dia.js":"./src/dia.js?v=e05b6cc395","./src/dificuldade.js":"./src/dificuldade.js?v=cfdf2ff62e","./src/distancia.js":"./src/distancia.js?v=9a5844420e","./src/estilo.js":"./src/estilo.js?v=0c453af42f","./src/fisica.js":"./src/fisica.js?v=7949a2cbcf","./src/folhas.js":"./src/folhas.js?v=0703e7d0dd","./src/graficos.js":"./src/graficos.js?v=7dc7bab243","./src/historia.js":"./src/historia.js?v=3d36b13d81","./src/ilha.js":"./src/ilha.js?v=670fb485d3","./src/inimigos.js":"./src/inimigos.js?v=0032bf0003","./src/jogo.js":"./src/jogo.js?v=7ab12a659a","./src/lotes.js":"./src/lotes.js?v=f3831174bf","./src/mapa.js":"./src/mapa.js?v=6640d26460","./src/mapaMundi.js":"./src/mapaMundi.js?v=3eb13da7fc","./src/mundo.js":"./src/mundo.js?v=08560bc849","./src/nevoa.js":"./src/nevoa.js?v=9bccad8ac5","./src/objetos.js":"./src/objetos.js?v=a78546e0b2","./src/oclusao.js":"./src/oclusao.js?v=a1ec74f05f","./src/particulas.js":"./src/particulas.js?v=efad11a94e","./src/pegaso.js":"./src/pegaso.js?v=08c8aa3a88","./src/pes.js":"./src/pes.js?v=9f8ed5d180","./src/praia.js":"./src/praia.js?v=700cd3c717","./src/praiaForma.js":"./src/praiaForma.js?v=79c406a618","./src/reparos.js":"./src/reparos.js?v=e805cead1a","./src/resolucao.js":"./src/resolucao.js?v=0d1e50cb15","./src/salvar.js":"./src/salvar.js?v=0d75e7e284","./src/simplificar.js":"./src/simplificar.js?v=a439e6c6ca","./src/som.js":"./src/som.js?v=b03701df1b","./src/sombraBoneca.js":"./src/sombraBoneca.js?v=02b8ff3403","./src/suavizar.js":"./src/suavizar.js?v=042d8dcf4b","./src/terreno.js":"./src/terreno.js?v=30a71b0a42","./src/texturas.js":"./src/texturas.js?v=5b74c7049c","./src/tutorial.js":"./src/tutorial.js?v=1f1fb0bc8d","./src/vilao.js":"./src/vilao.js?v=d57792bd5f"}}</script>
 </head>
 <body>
 <!-- abertura: logo AA animada; depois, a tela de carregamento até o jogo ficar pronto (ver o script
@@ -586,7 +601,7 @@
     <!-- menu: Jogar abre a escolha entre Continuar e Novo jogo -->
     <nav class="menu-links">
       <button class="item-menu" id="jogar">Jogar</button>
-      <button class="item-menu" data-painel="capitulos">Capítulos</button>
+      <button class="item-menu" id="abrirMapa">Mapa das ilhas</button>
       <button class="item-menu" data-painel="config">Configurações</button>
       <button class="item-menu" id="abrir-graficos-menu">Gráficos</button>
       <button class="item-menu" data-painel="creditos">Créditos</button>
@@ -690,7 +705,7 @@
       </div>
       <p id="perfil-pc"></p>
       <div id="aviso-aa">O antisserrilhado deste nível só muda ao abrir o jogo de novo.</div>
-      <p id="versao">versão 01/11/2026 19:13 · 9398f6</p>
+      <p id="versao">versão 02/11/2026 01:50 · 7ab12a</p>
     </div>
     <footer><button id="fechar-graficos" class="voltar"><kbd>Esc</kbd>Voltar</button></footer>
   </div>
@@ -710,6 +725,16 @@
 </div>
 <div id="escuro"></div>
 <div id="dano"></div>
+<!-- mapa das ilhas (mapaMundi.js): o 3D é desenhado no canvas do jogo; aqui só a parte de texto -->
+<div id="mapaMundi" aria-live="polite">
+  <div class="mm-topo"><small>Mapa das ilhas</small><b class="mm-nome"></b><span class="mm-resumo"></span><em class="mm-estado"></em></div>
+  <div class="mm-baixo">
+    <button class="mm-esq" aria-label="Ilha anterior">◀</button>
+    <button class="mm-embarcar botao principal">Embarcar</button>
+    <button class="mm-dir" aria-label="Próxima ilha">▶</button>
+  </div>
+  <button class="mm-voltar voltar"><kbd>Esc</kbd>Voltar</button>
+</div>
 <div id="tutorial" aria-live="polite"><div class="pontos"></div><b></b><span></span><button class="voltar"><kbd>Esc</kbd>Pular tutorial</button></div>
 <div id="gameover">
   <h1>GAME OVER</h1>
@@ -747,6 +772,6 @@
     msg.appendChild(b);
   }, true);
 </script>
-<script type="module" src="src/jogo.js?v=9398f6a3a4"></script>
+<script type="module" src="src/jogo.js?v=7ab12a659a"></script>
 </body>
 </html>
