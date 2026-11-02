@@ -5,6 +5,7 @@ import { linhaLivre } from './colisao.js';
 import { texturaDeCanvas } from './canvasTextura.js';
 import { dificuldade } from './dificuldade.js';
 import { som } from './som.js';
+import { camadaGolpe, camadaReacao, LADO_GOLPE } from './animLuta.js';
 
 // Ravi, o vilão do Capítulo 1 (modelo do release "vilão1": rapaz de jaqueta verde, Meshy, sem ossos).
 // A malha ganhou pesos de ossos fora do jogo (ferramentas/vilao/pesos.py) e é vestida no mesmo
@@ -200,7 +201,7 @@ export async function criarVilao({ renderer, nivel, cena, mapa, jogador, ui }) {
     v.flash = 1; v.recuo = 1;
     const p = v.pos.clone().sub(de).setY(0); if (p.lengthSq() < 1e-6) p.set(0, 0, 1);
     // direção do golpe no espaço dele (x: de lado, y: de frente/de costas) para o corpo tombar
-    { const n = p.clone().normalize(), c = Math.cos(v.angulo), si = Math.sin(v.angulo); v.golpeDir.set(n.x * c - n.z * si, n.x * si + n.z * c); }
+    { const n = p.clone().normalize(), c = Math.cos(v.angulo), si = Math.sin(v.angulo); v.golpeDir.set(n.x * c - n.z * si, n.x * si + n.z * c); v.deOnde = { x: -n.x, z: -n.z }; }
     v.vel.addScaledVector(p.normalize(), Math.min(empurrao, 6) * (tonto ? 0.9 : 0.6));
     // apanhando no meio de um golpe dele: o golpe é interrompido (dá para trocar socos)
     // (na primeira fase sempre; na segunda, metade das vezes) e o aviso também
@@ -424,7 +425,18 @@ export async function criarVilao({ renderer, nivel, cena, mapa, jogador, ui }) {
       b.corpo.rotation.x += Math.sin(THREE.MathUtils.clamp((f - i0 + 0.12) / (i1 - i0 + 0.3), 0, 1) * Math.PI) * 0.16;
     } else if (v.estado === 'investida') b.corpo.rotation.x += 0.22;
     else if (v.estado === 'preparar' || v.estado === 'aviso') b.corpo.rotation.x += 0.08;
+    // coluna, pescoço e cabeça voltam ao repouso antes da animação: os clipes emprestados não animam
+    // todos eles, e o giro das camadas de luta acumularia de um quadro para o outro
+    for (const n of [...b.rig.papeis.coluna, b.rig.papeis.pescoco, b.rig.papeis.cabeca]) b.rig.ossos[n].quaternion.copy(b.rig.ligacao.get(n).q);
     b.mixer.update(dt);
+    // camadas de luta (animLuta.js): torção e peso nos golpes dele; o tronco tombando quando apanha
+    b.corpo.userData.pivo ??= b.corpo.position.y;
+    b.corpo.position.y = b.corpo.userData.pivo;
+    if (v.golpe) {
+      const f = v.golpe.t / b.acoes[v.golpe.nome].getClip().duration;
+      b.corpo.position.y -= camadaGolpe(b.rig, f, IMPACTO[v.golpe.nome], LADO_GOLPE[v.golpe.nome] ?? 0, 1.15);
+    }
+    if (v.recuo > 0 && v.deOnde) camadaReacao(b.rig, v.recuo, v.deOnde.x, v.deOnde.z);
     const m = b.malha.material;
     if (m.emissiveIntensity !== undefined) {
       m.emissive.copy(conjurando ? COR_NEVOA : COR_VERMELHA);
