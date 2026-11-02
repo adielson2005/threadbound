@@ -844,3 +844,33 @@ Medido no perfil celular (Pixel 5 simulado, navegador sem placa de vídeo, entã
   a frente e 6 m/s para cima; antes era só enfeite). Medido na corrente de ida e volta da ilha
   principal: sem cambalhota ela pousa na outra ponta, a 18,8 m; com cambalhota passa dela e pousa a
   24 m. Dá para corrigir a direção no ar como sempre.
+
+### Level design e game design: plantas que não prendem, farol do objetivo e o GDD
+
+- Bug: a Brisa travava em moitas (o miolo delas tinha colisão sólida, que a cápsula enroscava).
+  Agora moitas e algas que balançam são macias (`src/folhas.js`): sem colisão, mas ela fica até 55%
+  mais lenta no meio delas, as folhas caem por onde ela passa e o mato faz barulho. Testado andando
+  em linha reta pela mesma moita, por três lados: antes ela ficou presa por um lado (0,19 m/s) e
+  enroscou nos outros; agora passa pelos três, a 1,2 m/s no meio.
+- Pedras, paredes, árvores, móveis e corais continuam sólidos; bater neles ou pousar forte agora
+  tem um baque (som), além do tranco e da poeira que já existiam.
+- Farol do objetivo: coluna de luz dourada sobre a âncora apagada mais perto e, depois, sobre o
+  Coração; vista de longe, some perto e nas lutas (mistura normal: aditiva sumia no céu claro).
+- `docs/GDD.md`: o documento de game design (visão, pilares, regras, mecânicas, fluxo da
+  progressão, level design do Cap. 1, dificuldade, interface, áudio, desempenho, próximos passos).
+
+### Fuga com o Nuvem e o mapa das ilhas
+
+- Nuvem, o pônei alado de Aurélia (`src/pegaso.js`): modelado em código (corpo arredondado
+  perolado, crina e rabo em mechas coloridas que balançam, olhos grandes com brilho, cascos
+  dourados, asas de penas que batem; modos voando, pairando e parado).
+- Fim do capítulo: em vez da tela de "reiniciar", o Nuvem desce do céu, pousa ao lado da Brisa, ela
+  monta (pose sentada) e os dois decolam da ilha, com a câmera de lado; sem HUD nem falas.
+- Mapa das ilhas (`src/mapaMundi.js`), como o mapa do mundo de um jogo de plataforma: mar com
+  ondas, as quatro ilhas em miniatura com a cara de cada capítulo (vila com farol e o Coração; recife
+  com rochas, corais, casco e nuvem de tempestade; jardim de flores de pedra e colunas; ilha
+  flutuante com agulha, carretéis e fio dourado), trilha de pontinhos dourados, anel em volta de
+  cada ilha (dourado aberta, verde concluída, cinza trancada). O Nuvem voa pela trilha; ◀ ▶,
+  tocar numa ilha ou Enter. "Embarcar" abre o capítulo. Também no menu ("Mapa das ilhas").
+- Testado no navegador: a cena da fuga (chegando, pousou, montada, voando) e o mapa (voo para a
+  ilha 2, ▶ para a 3, trancada).

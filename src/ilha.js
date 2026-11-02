@@ -505,8 +505,9 @@ const MODELOS = {
   arbusto(rnd, longe) {
     const peca = new Peca(), r = 0.7 + rnd() * 0.4;
     copa(peca, rnd, new THREE.Vector3(0, r * 0.65, 0), new THREE.Vector3(r * 1.2, r * 0.75, r * 1.2), longe ? 4 : 10, 1.0, rnd() < 0.5 ? [0.75, 0.9, 0.7] : [0.9, 1.0, 0.78], longe);
-    // os galhos de dentro seguram: a ponta das folhas cede (a cápsula entra um pouco), o miolo não
-    return { geo: peca.geometria(), colisor: new THREE.CylinderGeometry(r * 0.55, r * 0.65, r * 1.2, 7).translate(0, r * 0.6, 0) };
+    // sem colisão: a moita é macia (folhas.js deixa a Brisa mais lenta lá dentro e solta folhas).
+    // Com um cilindro sólido no miolo a cápsula enroscava e ela ficava presa na planta
+    return { geo: peca.geometria() };
   },
   capim(rnd, longe) {
     if (longe) return { geo: null };
@@ -810,6 +811,7 @@ export async function gerarIlha(renderer, aoProgredir = () => {}) {
   const TAM_SETOR = 48;
   const setores = new Map(); // chave -> { perto: [], longe: [] }
   const colisores = []; // geometrias (mundo) que entram na malha de colisão
+  const macias = [];    // plantas que se atravessa com dificuldade (folhas.js): { x, y, z, r, alt }
   const oclusores = []; // [x, z, y, raio, força]: escurecem o chão em volta
   const colocar = (x, z, tipo, extra) => colocarCom(rnd, x, z, tipo, extra);
   const rndCapim = aleatorio(MAPA.semente ^ 0x5f3759d);
@@ -825,6 +827,8 @@ export async function gerarIlha(renderer, aoProgredir = () => {}) {
     if (perto.geo) s.perto.push(posicionar(perto.geo, x, y - 0.05, z, rot, esc));
     if (longe.geo) s.longe.push(posicionar(longe.geo, x, y - 0.05, z, rot, esc));
     if (perto.colisor) colisores.push(posicionar(perto.colisor, x, y - 0.05, z, rot, esc));
+    if (tipo === 'arbusto') macias.push({ x, y, z, r: 1.15 * esc, alt: 1.7 * esc });
+    else if (tipo === 'alga' && !extra) macias.push({ x, y, z, r: 0.75 * esc, alt: 2.6 * esc });
     // sombra suave no chão em volta (oclusão de ambiente feita uma vez, na geração)
     const raioSombra = { pinheiro: 3.2, frondosa: 3.6, betula: 2.4, arbusto: 1.4, pedra: extra ? 3 : 1.1, coral: 1.6, alga: 1.2, carretel: 1.8, novelo: 1.4 }[tipo];
     if (raioSombra) oclusores.push([x, z, y, raioSombra * esc, tipo === 'pedra' ? 0.35 : 0.5]);
@@ -1047,6 +1051,7 @@ export async function gerarIlha(renderer, aoProgredir = () => {}) {
     setores: setoresLod, // setores de vegetação (occlusion culling: oclusao.js)
     mar: MAR, // nível do mar e a forma da praia (agua.js, praia.js)
     nascimentoPreferido: new THREE.Vector3(VILA.x, alturaVila, VILA.z),
+    vegetacaoMacia: macias,
     pontos: { vila: VILA, morro: MORRO, ilhotas: ILHOTAS.map(i => ({ nome: i.nome, x: i.cx, z: i.cz, topo: alturaEm(i.cx, i.cz) })), casas },
     alturaEm,
     atualizarEnfeites(t, camera, noite = 0) {

@@ -106,6 +106,10 @@ export const som = {
   // aviso do vilão antes do golpe (o brilho vermelho): um tique grave
   aviso() { if (pronto()) tom({ freq: 196, dur: 0.12, forma: 'square', vol: 0.03 }); },
   pouso() { if (pronto()) { tom({ freq: 80, ate: 30, dur: 0.5, vol: 0.8 }); sopro({ dur: 0.4, tipo: 'lowpass', de: 1200, ate: 150, vol: 0.4 }); } },
+  // bater num sólido (pedra, parede) ou pousar forte: baque grave e o estalo do contato
+  batida(forca = 1) { if (pronto()) { tom({ freq: 95, ate: 35, dur: 0.22, vol: 0.4 * forca }); sopro({ dur: 0.08, tipo: 'lowpass', de: 1400, ate: 300, vol: 0.25 * forca }); } },
+  // atravessando uma moita: folhas roçando
+  folhas() { if (pronto()) sopro({ dur: 0.25, tipo: 'highpass', de: 2500, ate: 4500, q: 0.6, vol: 0.06, ataque: 0.05 }); },
   passo(forca = 1) { if (pronto()) sopro({ dur: 0.06, tipo: 'bandpass', de: 500 + Math.random() * 300, ate: 250, q: 1, vol: 0.05 * forca }); },
   pegar() { if (pronto()) { tom({ freq: 660, dur: 0.12, vol: 0.06 }); tom({ freq: 990, dur: 0.2, vol: 0.06, atraso: 0.06 }); } },
   fragmento() { if (pronto()) for (const [f, a] of [[880, 0], [1175, 0.06], [1568, 0.12]]) tom({ freq: f, dur: 0.35, vol: 0.08, atraso: a }); },

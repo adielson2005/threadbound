@@ -27,6 +27,9 @@ import { carregarCachoeira, posicionarCachoeiras } from './cachoeira.js';
 import { criarInimigos } from './inimigos.js';
 import { criarVilao } from './vilao.js';
 import { criarTutorial } from './tutorial.js';
+import { criarFolhas } from './folhas.js';
+import { criarMapaMundi } from './mapaMundi.js';
+import { criarPegaso } from './pegaso.js';
 import { som, definirVolume, musicaLuta } from './som.js';
 import { DIFICULDADES, dificuldade, definirDificuldade } from './dificuldade.js';
 import { criarCampanha } from './campanha.js';
@@ -584,6 +587,7 @@ function entradaMovimento() {
 let mapa = null, terreno = null, personagem = null;
 let sombraBoneca = null; const _centroSombra = new THREE.Vector3();
 let distPassos = 0;
+let folhas = null, tempoFolhas = 0; // vegetação macia (folhas.js)
 let vilao = null; // Cap. 1: Ravi, a luta antes do Coração da Ilha (vilao.js)
 let mundo = null, inimigos = null, campanha = null, combate = null, oclusao = null;
 const distancia = criarDistancia(); // objetos pequenos só são desenhados perto da câmera
@@ -683,6 +687,78 @@ function reiniciar() {
   if (primeiraVez) { campanha.silenciarDicas(); tutorial.iniciar(); dica.style.opacity = document.pointerLockElement === canvas ? 0 : 1; }
 }
 let campanhaTerminada = false, confirmandoNovo = false, proximoCapitulo = null, escolheuDificuldade = false;
+// ---------- mapa das ilhas (mapaMundi.js) ----------
+let mapaMundi = null, voltarDoMapa = null;
+function abrirMapaMundi(opcoes, aoFechar) {
+  mapaMundi ??= criarMapaMundi({
+    renderer,
+    aoEmbarcar: n => {
+      // a ilha deste capítulo, aberta pelo menu: volta ao menu com Continuar / Novo jogo
+      if (n === CAPITULO_ATUAL && estado === 'menu') { mapaMundi.fechar(); voltarDoMapa?.(); abrirJogar(); return; }
+      location.href = urlCapitulo(n);
+    },
+    aoFechar: () => { mapaMundi.fechar(); voltarDoMapa?.(); },
+  });
+  voltarDoMapa = () => { document.body.classList.remove('cinema'); aoFechar?.(); };
+  document.body.classList.add('cinema');
+  document.exitPointerLock?.();
+  mapaMundi.abrir(opcoes);
+}
+
+// ---------- a fuga com o Nuvem (fim do capítulo) ----------
+let fuga = null;
+function fugaComNuvem(aoFim) {
+  const j = jogador, nuvem = criarPegaso();
+  cena.add(nuvem.raiz);
+  const frente = new THREE.Vector3(Math.sin(j.angulo), 0, Math.cos(j.angulo)), lado = new THREE.Vector3(frente.z, 0, -frente.x);
+  const pouso = j.pos.clone().addScaledVector(lado, 1.6);
+  fuga = { nuvem, t: 0, fase: 'chegando', ini: j.pos.clone(), pouso, ceu: pouso.clone().add(new THREE.Vector3(-frente.x * 26, 18, -frente.z * 26)), frente, aoFim, montada: false, sela: new THREE.Vector3() };
+  estado = 'fuga'; j.vel.set(0, 0, 0); j.golpe = null; j.esquiva = null; j.defendendo = false;
+  document.body.classList.add('cinema'); // sem HUD nem falas na cena
+  document.exitPointerLock?.();
+  som.carregado();
+}
+const _q = new THREE.Vector3();
+function atualizarFuga(dt) {
+  const f = fuga, n = f.nuvem, j = jogador;
+  f.t += dt;
+  const suave = k => k * k * (3 - 2 * k);
+  if (f.fase === 'chegando') {
+    // desce do céu, por trás dela, e pousa ao lado
+    const k = Math.min(1, f.t / 2.8);
+    n.raiz.position.lerpVectors(f.ceu, f.pouso, suave(k));
+    n.raiz.lookAt(_q.copy(f.pouso).addScaledVector(f.frente, 4).setY(n.raiz.position.y - (1 - k) * 4));
+    n.atualizar(dt, k < 0.85 ? 'voando' : 'pairando');
+    j.angulo = Math.atan2(f.pouso.x - j.pos.x, f.pouso.z - j.pos.z);
+    if (k >= 1) { f.fase = 'montando'; f.t = 0; som.pegar(); }
+  } else if (f.fase === 'montando') {
+    // um pulinho até a sela
+    n.atualizar(dt, 'pairando');
+    const k = Math.min(1, f.t / 0.7);
+    n.raiz.localToWorld(f.sela.set(0, 1.0, -0.05));
+    j.pos.lerpVectors(f.ini, f.sela, suave(k)); j.pos.y += Math.sin(k * Math.PI) * 0.8;
+    j.angulo = Math.atan2(f.frente.x, f.frente.z);
+    if (k >= 1) { f.fase = 'partindo'; f.t = 0; f.montada = true; som.poder(); }
+  } else if (f.fase === 'partindo') {
+    // decola para a frente e para o alto, ganhando velocidade
+    const k = f.t / 4;
+    n.raiz.position.copy(f.pouso).addScaledVector(f.frente, k * k * 45).add(_q.set(0, k * 22, 0));
+    n.raiz.lookAt(_q.copy(n.raiz.position).addScaledVector(f.frente, 3).add(new THREE.Vector3(0, 1.2, 0)));
+    n.atualizar(dt, 'voando', 1.3);
+    n.raiz.localToWorld(f.sela.set(0, 1.0, -0.05));
+    j.pos.copy(f.sela);
+    if (k >= 1 && !f.saindo) { f.saindo = true; comEscuro(() => { cena.remove(n.raiz); fuga = null; personagem.raiz.visible = false; estado = 'fim'; f.aoFim(); }); }
+  }
+  j.noChao = true; j.vel.set(0, 0, 0);
+}
+function cameraFuga() {
+  const f = fuga, alvo = f.nuvem.raiz.position;
+  // de lado e um pouco atrás, olhando o Nuvem
+  const lado = _q.set(f.frente.z, 0, -f.frente.x);
+  camera.position.set(alvo.x + lado.x * 7 - f.frente.x * 4, alvo.y + 2.6, alvo.z + lado.z * 7 - f.frente.z * 4);
+  camera.lookAt(alvo.x, alvo.y + 1, alvo.z);
+}
+
 const tutorial = criarTutorial({ toque: matchMedia('(pointer: coarse)').matches, aoTerminar: () => { dica.style.opacity = 0; campanha?.iniciar(); } });
 
 // dificuldade: escolhida depois de Novo jogo, numa tela própria (uma opção por nível, do mais
@@ -720,6 +796,11 @@ function voltarAoMenu() {
   $('jogar').focus({ preventScroll: true, focusVisible: false });
 }
 $('jogar').addEventListener('click', abrirJogar);
+// menu: o mapa das ilhas (escolher o capítulo voando com o Nuvem)
+$('abrirMapa').addEventListener('click', () => {
+  tela.style.display = 'none';
+  abrirMapaMundi({ de: CAPITULO_ATUAL, concluidos: lerConcluidos() }, () => { mostrar(tela, () => { tela.style.display = 'flex'; }); $('abrirMapa').focus({ preventScroll: true, focusVisible: false }); });
+});
 $('voltarMenu').addEventListener('click', voltarAoMenu);
 $('jogar').focus({ preventScroll: true, focusVisible: false });
 // Continuar: refaz o progresso salvo (fragmentos, âncoras, cartas…) e volta ao último ponto seguro
@@ -820,7 +901,15 @@ $('cfgTremor').addEventListener('change', e => { config.tremor = e.target.checke
 aplicarConfig();
 $('continuar').addEventListener('click', () => { sumir(tela, () => { tela.style.display = 'none'; }, 150); estado = 'jogando'; $('continuar').style.display = 'none'; $('continuar').blur(); teclas.clear(); });
 
+// Fim do capítulo: o Nuvem (o pônei alado de Aurélia) desce, a Brisa monta e os dois voam para
+// longe da ilha; depois abre o mapa das ilhas, com o Nuvem já voando para a próxima. "Voltar" no
+// mapa mostra o resumo do capítulo (a tela antiga de fim).
 function terminarCapitulo(r) {
+  campanhaTerminada = true;
+  const concluidos = [...new Set([...lerConcluidos(), r.numero])];
+  fugaComNuvem(() => abrirMapaMundi({ de: r.numero, para: r.numero < TOTAL_CAPITULOS ? r.numero + 1 : null, concluidos }, () => mostrarFimCapitulo(r)));
+}
+function mostrarFimCapitulo(r) {
   campanhaTerminada = true;
   estado = 'fim';
   document.exitPointerLock?.();
@@ -956,6 +1045,7 @@ function impactoPouso(v) {
   impacto.mergulho = Math.max(impacto.mergulho, 0.06 + k * 0.3);
   impacto.amassar = Math.max(impacto.amassar, 0.06 + k * 0.16);
   jogador.impacto = Math.max(jogador.impacto || 0, 0.08 + k * 0.45);
+  som.batida(0.3 + k * 0.7); // pouso forte
   soltarPoeira(jogador.pos, Math.round(5 + k * 14), 1.2 + k * 2.2);
 }
 // v: velocidade com que entrou na parede (m/s); n: normal da parede (aponta para fora dela)
@@ -965,6 +1055,7 @@ function impactoParede(v, n) {
   jogador.vel.addScaledVector(n, v * 0.22);
   impacto.tremor = Math.max(impacto.tremor, 0.15 + k * 0.45);
   jogador.impacto = Math.max(jogador.impacto || 0, 0.1 + k * 0.2);
+  som.batida(0.4 + k * 0.6); // bater numa pedra ou parede: um baque surdo, mais forte quanto mais rápido
   if (n.y > -0.5) soltarPoeira(jogador.pos.clone().addScaledVector(n, -RAIO).add(new THREE.Vector3(0, 0.9, 0)), Math.round(3 + k * 6), 0.6 + k);
 }
 // Brisa e os Retalhos não se atravessam: cada um empurra o outro (ela é mais pesada que eles).
@@ -1077,7 +1168,9 @@ function passoFisica(dt) {
     // logo depois de um impacto forte as pernas ainda estão absorvendo o tranco: responde menos
     const tranco = j.impacto > 0 ? 0.25 : 1;
     const acel = (j.noChao ? FISICA.aceleracao : FISICA.aceleracaoAr * (j.lancado ? 0.4 : j.planando ? 1.4 : 1)) * tranco;
-    desejado.multiplyScalar(vmax);
+    // dentro de uma moita: anda com dificuldade (até 55% mais devagar no meio dela)
+    const mata = j.noChao ? folhas?.dentro(j.pos) : null;
+    desejado.multiplyScalar(vmax * (mata ? 1 - 0.55 * Math.min(1, mata.k * 1.8) : 1));
     if (passoGolpe > 0) desejado.set(Math.sin(j.angulo) * passoGolpe, 0, Math.cos(j.angulo) * passoGolpe);
     const dv = desejado.sub(horiz);
     const lim = acel * dt;
@@ -1348,6 +1441,8 @@ function animarPersonagem(dt) {
   } else corpo.rotation.z = 0;
   // agachar e alcançar o objeto do chão; braços para cima soltando o poder
   combate?.aplicarPoses();
+  // montada no Nuvem (fuga do fim do capítulo): sentada, pernas dos lados, mãos para a frente
+  if (fuga?.montada) aplicarPose(personagem.rig, { bacia: 0.1, quadril: 1.45, joelho: 1.55, pe: 0.3, coluna: 0.1, braco: 0.7, cotovelo: 0.9, cabeca: -0.1 }, 1, false);
   // golpe com peso: o corpo vai junto no momento do impacto (inclina para a frente e volta)
   if (j.golpe && j.noChao) {
     const g = GOLPES[j.golpe.nome], f = j.golpe.t / j.golpe.duracao;
@@ -1726,6 +1821,8 @@ let estavaParado = false;
 renderer.setAnimationLoop(() => {
   const dtBruto = relogio.getDelta();
   lerGamepad();
+  // o mapa das ilhas por cima de tudo: só ele é atualizado e desenhado
+  if (mapaMundi?.aberto) { mapaMundi.atualizar(Math.min(dtBruto, 0.05)); mapaMundi.desenhar(); return; }
   // Menus sem travar: com a capa do menu inicial (ou do fim de capítulo) por cima, o jogo não
   // aparece, então não é atualizado nem desenhado e a interface fica com a máquina toda. Na pausa e
   // nas janelas por cima do jogo parado, desenha só os quadros do fundo escurecido e para (volta a
@@ -1759,6 +1856,13 @@ renderer.setAnimationLoop(() => {
   if (estado === 'jogando' && campanha) { campanha.atualizar(dt, t); vilao?.atualizar(dt); tutorial.atualizar(dt, jogador); }
   // música de combate enquanto o Ravi luta (mais forte na 2ª fase); passos no chão
   musicaLuta(estado === 'jogando' && !pausado && !!vilao?.lutando, !!vilao?.segundaFase);
+  // passando por uma moita: as folhas caem e o mato roça
+  if (folhas) {
+    const v = Math.hypot(jogador.vel.x, jogador.vel.z), mata = v > 0.4 ? folhas.dentro(jogador.pos) : null;
+    tempoFolhas -= dt * (mata ? v : 0);
+    if (mata && tempoFolhas <= 0) { tempoFolhas = 0.9; folhas.soltar(jogador.pos.x, jogador.pos.y, jogador.pos.z, jogador.vel.x, jogador.vel.z, 4 + Math.round(v)); som.folhas(); }
+    folhas.atualizar(dt, t);
+  }
   if (estado === 'jogando' && jogador.noChao && !jogador.esquiva) {
     const v = Math.hypot(jogador.vel.x, jogador.vel.z);
     distPassos += v * dt;
@@ -1769,7 +1873,9 @@ renderer.setAnimationLoop(() => {
   animarPersonagem(dt);
   atualizarPoeira(dt);
   atualizarMancha();
+  if (fuga) atualizarFuga(dt);
   atualizarCamera(dtReal);
+  if (fuga) cameraFuga();
   // detalhe do mapa pela visão: costas no nível mais leve, o lado para onde a câmera vira já pronto
   if (mapa) atualizarLodPorVisao(mapa, camera, dtReal);
   distancia.atualizar(dtReal, camera);
@@ -1848,6 +1954,7 @@ Promise.all([
       cachoeiras = posicionarCachoeiras({ cena, mapa: m, terreno, mundo, agua, nevoa, modelo: cach, praia });
     }
     inimigos = criarInimigos({ cena, mapa: m, posicoes: mundo.posicoesInimigos });
+    folhas = criarFolhas({ cena, plantas: m.vegetacaoMacia ?? [] });
     campanha = criarCampanha({
       cena, mapa: m, mundo, inimigos, jogador,
       respawn: p => { respawn(p); jogador.seguro.copy(p); },
@@ -1947,6 +2054,7 @@ Promise.all([
     dispatchEvent(new Event('jogo-pronto'));
     window.__jogo = {
       jogador, personagem, get vilao() { return vilao; }, camera, camera3p, mapa, terreno, correntes, renderer, cena, sol, medidor, altos, mundo, inimigos, campanha, agua, nevoa, cachoeiras, praia, ceu: ceuJogo, get combate() { return combate; },
+      terminarCapitulo, get mapaMundi() { return mapaMundi; }, get fuga() { return fuga; },
       animacao: () => animAtual, estado: () => estado, nivel: () => nomeNivel, aplicarNivel, ocioso, get oclusao() { return oclusao; },
     };
     // veio do "Continuar" de outro capítulo: continua sem esperar outro clique
