@@ -4,7 +4,7 @@ export const NIVEIS = {
     nome: 'Low',
     // faixa da escala de resolução (ajustada sozinha pelo fps). Abaixo de ~0,75 tudo serrilha
     // e borra demais, então o mínimo fica aí mesmo no Low
-    resolucao: [0.75, 1],
+    resolucao: [0.85, 1],
     antialias: false,
     suavizacao: 'fxaa',          // antisserrilhado por pós-processo: bem mais barato que MSAA em GPU integrada
     sombra: 0,                   // sem sombra do mapa
@@ -21,7 +21,7 @@ export const NIVEIS = {
   },
   medium: {
     nome: 'Medium',
-    resolucao: [0.85, 1.25],     // acima de 1 = supersampling quando a GPU tem folga
+    resolucao: [1, 1.25],        // nunca abaixo da nativa (HD); acima de 1 = supersampling com folga
     antialias: true,
     suavizacao: 'msaa',          // MSAA do próprio contexto (bordas dos modelos)
     sombraSuave: true,           // borda da sombra filtrada (sem "escadinha")
@@ -94,7 +94,7 @@ export function ajustarAoHardware(base, hw = detectarHardware()) {
   const n = { ...base, resolucao: [...base.resolucao], neblina: [...base.neblina], lod: [...base.lod] };
   if (hw.perfil === 'normal') return n;
   // nenhum supersampling e sombra/texturas no máximo do Medium
-  n.resolucao = [Math.min(n.resolucao[0], 0.8), Math.min(n.resolucao[1], 1)];
+  n.resolucao = [Math.min(n.resolucao[0], 0.9), Math.min(n.resolucao[1], 1)];
   n.sombra = Math.min(n.sombra, 2048);
   if (base === NIVEIS.high) {
     n.texturaMapa = NIVEIS.medium.texturaMapa;

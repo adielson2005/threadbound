@@ -57,8 +57,9 @@ function trocarMateriais(grupo, simples, cache) {
 
 // telhas de barro: fileiras sobrepostas (a textura é girada para as fileiras seguirem o telhado)
 function texturaTelhas() {
-  const c = document.createElement('canvas'); c.width = c.height = 256;
-  const g = c.getContext('2d');
+  // (desenhada em 512 px com escala 2: a mesma arte, o dobro de nitidez de perto)
+  const c = document.createElement('canvas'); c.width = c.height = 512;
+  const g = c.getContext('2d'); g.setTransform(2, 0, 0, 2, 0, 0);
   g.fillStyle = '#7a3a28'; g.fillRect(0, 0, 256, 256);
   for (let col = 0; col < 8; col++) for (let lin = -1; lin < 6; lin++) {
     const x = col * 32, y = lin * 44 + (col % 2) * 22;
@@ -76,8 +77,9 @@ function texturaTelhas() {
 // onde o reboco caiu e aparecem os tijolos (antes as paredes usavam a pedra cinza com musgo, que
 // deixava as casas com cara de sujas). Desenhada uma vez, repete a cada 2 m, sem normal map
 function texturaReboco() {
-  const T = 256, c = document.createElement('canvas'); c.width = c.height = T;
-  const g = c.getContext('2d');
+  // (desenhada em 512 px com escala 2: antes 256 px a cada 2 m, borrada de perto)
+  const T = 256, c = document.createElement('canvas'); c.width = c.height = T * 2;
+  const g = c.getContext('2d'); g.setTransform(2, 0, 0, 2, 0, 0);
   let semente = 9137;
   const rnd = () => (semente = (semente * 16807) % 2147483647) / 2147483647;
   // desenha repetindo nas bordas, para a textura emendar sem costura
