@@ -905,3 +905,13 @@ Medido no perfil celular (Pixel 5 simulado, navegador sem placa de vídeo, entã
 - O Ravi também deixou o soco1: jab na 1ª fase; jab, direto com passo e chute na 2ª.
 - Testado com toques de teclado: 1/2/3 socos e 1/2 chutes saem nessa ordem; o primeiro golpe
   começa a bater em 0,07 s.
+
+### Luta: de volta ao natural (correção das camadas)
+
+- As camadas de luta deixavam o golpe esquisito: o corpo inteiro inclinava (os pés saíam do chão), o
+  corpo descia 7 cm (os pés afundavam) e o quadril girava junto (as pernas arrastavam). Medido
+  durante o combo de 3 socos: o pé mais baixo chegava a 4,1 cm dentro do chão e o corpo inclinava 8°.
+- Agora a animação (captura de movimento) manda; só o tronco acompanha um pouco o braço que bate
+  (até ~13°, a cabeça segura o olhar). Sem inclinar o corpo inteiro nem descer. Reação ao apanhar:
+  quem tomba é o tronco; o corpo inteiro só 0,08 rad. Mão fechada mais discreta (78%).
+- Medido de novo: o pé mais baixo fica sempre acima do chão (mínimo 1,4 cm) e o corpo não inclina.
