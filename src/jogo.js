@@ -1457,17 +1457,15 @@ function animarPersonagem(dt) {
   pesoPunho += (querPunho - pesoPunho) * Math.min(1, dt * 18);
   for (const n of ['mixamorigLeftHand', 'mixamorigRightHand']) {
     const mao = personagem.rig.ossos[n];
-    if (mao && !(combate?.segurando && n === 'mixamorigRightHand')) mao.scale.set(1 + 0.08 * pesoPunho, 1 - 0.38 * pesoPunho, 1 + 0.08 * pesoPunho);
+    if (mao && !(combate?.segurando && n === 'mixamorigRightHand')) mao.scale.set(1 + 0.05 * pesoPunho, 1 - 0.22 * pesoPunho, 1 + 0.05 * pesoPunho);
   }
   // montada no Nuvem (fuga do fim do capítulo): sentada, pernas dos lados, mãos para a frente
   if (fuga?.montada) aplicarPose(personagem.rig, { bacia: 0.1, quadril: 1.45, joelho: 1.55, pe: 0.3, coluna: 0.1, braco: 0.7, cotovelo: 0.9, cabeca: -0.1 }, 1, false);
-  // golpe com peso: o corpo vai junto no momento do impacto (inclina para a frente e volta)
+  // golpe: o tronco acompanha um pouco o braço que bate (animLuta.js); o corpo e os pés ficam
+  // como a animação manda (inclinar o corpo inteiro tirava os pés do chão)
   if (j.golpe && j.noChao) {
     const g = GOLPES[j.golpe.nome], f = j.golpe.t / j.golpe.duracao;
-    const k = THREE.MathUtils.clamp((f - g.impacto[0] + 0.12) / (g.impacto[1] - g.impacto[0] + 0.3), 0, 1);
-    corpo.rotation.x += Math.sin(k * Math.PI) * (g.giro ? 0.05 : 0.14);
-    // torção do quadril e do tronco (preparação, impacto, recuperação) e o peso descendo
-    corpo.position.y -= camadaGolpe(personagem.rig, f, g.impacto, LADO_GOLPE[j.golpe.nome] ?? 0, g.dano >= 2 ? 1.25 : 1);
+    camadaGolpe(personagem.rig, f, g.impacto, LADO_GOLPE[j.golpe.nome] ?? 0, g.dano >= 2 ? 1.2 : 1);
   }
   // atingida: o tronco tomba para longe do golpe e a cabeça dá o tranco
   if (j.machucado > 0 && j.dirGolpe) camadaReacao(personagem.rig, j.machucado / 0.45, j.dirGolpe.x, j.dirGolpe.z);
@@ -1479,7 +1477,8 @@ function animarPersonagem(dt) {
   assentarPes(personagem, mapa.malha, pesoPes);
   // atingida: o corpo recua um instante (por cima da animação)
   const recuo = Math.min(1, (j.machucado || 0) / 0.45);
-  if (recuo > 0) corpo.rotation.x -= 0.35 * Math.sin(recuo * Math.PI);
+  // (pouco: quem tomba é o tronco, em camadaReacao; o corpo inteiro inclinado tirava os pés do chão)
+  if (recuo > 0) corpo.rotation.x -= 0.08 * Math.sin(recuo * Math.PI);
   // cabelo solto: balança por cima de tudo o que mexeu no corpo neste quadro
   personagem.raiz.updateMatrixWorld(true);
   personagem.cabelo.atualizar(dt);

@@ -341,7 +341,7 @@ export function aplicarDetalhe(material, simples, renderer) {
     texDetalhe.colorSpace = THREE.NoColorSpace;
     texDetalhe.anisotropy = Math.min(8, renderer.capabilities.getMaxAnisotropy());
     texGrama = texturaGrama();
-    texGrama.anisotropy = Math.min(4, renderer.capabilities.getMaxAnisotropy());
+    texGrama.anisotropy = Math.min(8, renderer.capabilities.getMaxAnisotropy());
   }
   material.onBeforeCompile = sh => {
     sh.uniforms.uNivelMar = NIVEL_MAR;

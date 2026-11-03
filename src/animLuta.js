@@ -30,24 +30,23 @@ export const LADO_GOLPE = { soco1: 1, soco2: -1, soco3: 1, soco4: -1, soco5: 1, 
 
 const suave = k => k * k * (3 - 2 * k);
 
-// f: progresso do golpe (0..1); impacto: [início, fim] da janela de acerto; forca: 1 normal
-// devolve quanto o corpo desce (m), para quem chama somar na altura
+// f: progresso do golpe (0..1); impacto: [início, fim] da janela de acerto; forca: 1 normal.
+// Só o tronco, e pouco: o clipe é captura de movimento (já é natural) e esta camada só acompanha o
+// braço que bate. Antes ela girava também o quadril (arrastava as pernas e os pés escorregavam),
+// abaixava o corpo inteiro (os pés afundavam no chão) e quem chamava inclinava o corpo todo (os pés
+// saíam do chão): o golpe ficava duro e esquisito. Devolve 0 (nada de descer o corpo).
 export function camadaGolpe(rig, f, impacto, lado, forca = 1) {
   const [i0, i1] = impacto;
-  let giro;
-  if (f < i0) giro = -0.22 * suave(f / Math.max(0.01, i0));                     // preparação
-  else if (f < i1) giro = -0.22 + 0.8 * suave((f - i0) / Math.max(0.01, i1 - i0)); // impacto
-  else giro = 0.58 * (1 - suave((f - i1) / Math.max(0.01, 1 - i1)));           // recuperação
-  giro *= lado * forca;
+  // sobe até o impacto, segura na janela e volta devagar
+  let k;
+  if (f < i0) k = suave(f / Math.max(0.01, i0)) * 0.6;
+  else if (f < i1) k = 0.6 + 0.4 * suave((f - i0) / Math.max(0.01, i1 - i0));
+  else k = 1 - suave((f - i1) / Math.max(0.01, 1 - i1));
+  const giro = 0.22 * k * lado * forca;
   const coluna = rig.papeis.coluna.map(n => rig.ossos[n]);
-  // o quadril começa, a coluna completa (o giro se distribui de baixo para cima)
-  girarNoMundo(rig.ossos[rig.papeis.hips], CIMA, giro * 0.3);
-  for (const [k, osso] of coluna.entries()) girarNoMundo(osso, CIMA, giro * [0.25, 0.25, 0.2][k]);
-  // a cabeça segura o olhar no alvo (desfaz parte do giro)
-  girarNoMundo(rig.ossos[rig.papeis.cabeca], CIMA, -giro * 0.45);
-  // peso descendo no impacto
-  const desce = f > i0 - 0.1 && f < i1 + 0.25 ? Math.sin(THREE.MathUtils.clamp((f - i0 + 0.1) / (i1 - i0 + 0.35), 0, 1) * Math.PI) : 0;
-  return desce * 0.07 * forca;
+  for (const [n, osso] of coluna.entries()) girarNoMundo(osso, CIMA, giro * [0.3, 0.35, 0.35][n]);
+  girarNoMundo(rig.ossos[rig.papeis.cabeca], CIMA, -giro * 0.5); // o olhar fica no alvo
+  return 0;
 }
 
 // reação a um golpe: k 0..1 (1 no instante do golpe), dirX/dirZ = de onde veio, no mundo

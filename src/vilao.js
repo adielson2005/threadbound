@@ -417,15 +417,12 @@ export async function criarVilao({ renderer, nivel, cena, mapa, jogador, ui }) {
     b.raiz.position.copy(v.pos);
     b.raiz.rotation.y = v.angulo;
     // tomba para o lado contrário do golpe (de frente: para trás; de lado: para o lado)
-    b.corpo.rotation.x = -v.recuo * 0.28 * Math.max(0.3, v.golpeDir.y) + (v.estado === 'atordoado' ? Math.sin(v.atordoado * 9) * 0.05 : 0);
-    b.corpo.rotation.z = -v.recuo * 0.22 * v.golpeDir.x;
+    // (pouco: quem tomba é o tronco, em camadaReacao; o corpo inteiro inclinado tirava os pés do chão)
+    b.corpo.rotation.x = -v.recuo * 0.08 * Math.max(0.3, v.golpeDir.y) + (v.estado === 'atordoado' ? Math.sin(v.atordoado * 9) * 0.03 : 0);
+    b.corpo.rotation.z = -v.recuo * 0.06 * v.golpeDir.x;
     const conjurando = v.estado === 'conjurar' || v.estado === 'passo' || v.estado === 'reaparecer';
-    // golpe com peso: inclina para a frente no impacto; correndo na investida, bem inclinado
-    if (v.golpe) {
-      const f = v.golpe.t / b.acoes[v.golpe.nome].getClip().duration, [i0, i1] = IMPACTO[v.golpe.nome];
-      b.corpo.rotation.x += Math.sin(THREE.MathUtils.clamp((f - i0 + 0.12) / (i1 - i0 + 0.3), 0, 1) * Math.PI) * 0.16;
-    } else if (v.estado === 'investida') b.corpo.rotation.x += 0.22;
-    else if (v.estado === 'preparar' || v.estado === 'aviso') b.corpo.rotation.x += 0.08;
+    // correndo na investida, um pouco inclinado (nos golpes o corpo fica como a animação manda)
+    if (v.estado === 'investida') b.corpo.rotation.x += 0.1;
     // coluna, pescoço e cabeça voltam ao repouso antes da animação: os clipes emprestados não animam
     // todos eles, e o giro das camadas de luta acumularia de um quadro para o outro
     for (const n of [...b.rig.papeis.coluna, b.rig.papeis.pescoco, b.rig.papeis.cabeca]) b.rig.ossos[n].quaternion.copy(b.rig.ligacao.get(n).q);
@@ -435,7 +432,7 @@ export async function criarVilao({ renderer, nivel, cena, mapa, jogador, ui }) {
     b.corpo.position.y = b.corpo.userData.pivo;
     if (v.golpe) {
       const f = v.golpe.t / b.acoes[v.golpe.nome].getClip().duration;
-      b.corpo.position.y -= camadaGolpe(b.rig, f, IMPACTO[v.golpe.nome], LADO_GOLPE[v.golpe.nome] ?? 0, 1.15);
+      camadaGolpe(b.rig, f, IMPACTO[v.golpe.nome], LADO_GOLPE[v.golpe.nome] ?? 0, 1.1);
     }
     if (v.recuo > 0 && v.deOnde) camadaReacao(b.rig, v.recuo, v.deOnde.x, v.deOnde.z);
     const m = b.malha.material;

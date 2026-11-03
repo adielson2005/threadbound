@@ -905,3 +905,20 @@ Medido no perfil celular (Pixel 5 simulado, navegador sem placa de vídeo, entã
 - O Ravi também deixou o soco1: jab na 1ª fase; jab, direto com passo e chute na 2ª.
 - Testado com toques de teclado: 1/2/3 socos e 1/2 chutes saem nessa ordem; o primeiro golpe
   começa a bater em 0,07 s.
+
+### Luta: de volta ao natural (correção das camadas)
+
+- As camadas de luta deixavam o golpe esquisito: o corpo inteiro inclinava (os pés saíam do chão), o
+  corpo descia 7 cm (os pés afundavam) e o quadril girava junto (as pernas arrastavam). Medido
+  durante o combo de 3 socos: o pé mais baixo chegava a 4,1 cm dentro do chão e o corpo inclinava 8°.
+- Agora a animação (captura de movimento) manda; só o tronco acompanha um pouco o braço que bate
+  (até ~13°, a cabeça segura o olhar). Sem inclinar o corpo inteiro nem descer. Reação ao apanhar:
+  quem tomba é o tronco; o corpo inteiro só 0,08 rad. Mão fechada mais discreta (78%).
+- Medido de novo: o pé mais baixo fica sempre acima do chão (mínimo 1,4 cm) e o corpo não inclina.
+
+### Nitidez (HD) no Low e no Medium
+
+- Resolução mínima: Low 0,75 → 0,85 e Medium 0,85 → 1,0 (nunca abaixo da nativa); em GPU fraca o
+  piso sobe de 0,8 para 0,9. O ajuste automático continua baixando só se o fps cair.
+- Texturas das casas (reboco e telhas) desenhadas em 512 px (antes 256 px a cada 2 m) e o capim do
+  chão com filtragem anisotrópica 8× (antes 4×). Diferença pequena de perto; não mudou o desenho.
