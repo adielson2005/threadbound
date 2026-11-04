@@ -130,10 +130,10 @@ válvula contra ficar preso.
 | Área | Papel | Conteúdo |
 |---|---|---|
 | Praça e oficina | Início, tutorial | Agulha de Prata, Lâmina da Tesoura, casas com cartas. |
-| Campina e floresta | Exploração, fragmentos | Pinheiros, moitas (macias), pedras (sólidas), Retalhos patrulhando. |
+| Campina e floresta | Exploração, fragmentos | Pinheiros, moitas (macias), pedras (sólidas), Retalhos patrulhando. Na enseada da praia, ao pé do cais, uma garrafa com um bilhete de Tomé (carta opcional). |
 | Ilhota do Farol | Âncora 1 / área secreta | Torre reta do mirante ao lado do farol: 5 blocos de pedra em linha, cada um 3 m mais alto (pular e agarrar a borda); carta e moinha no alto. A espiral fica só para a Costura Final (Cap. 4). |
-| Ilhota das Ruínas | Âncora 2 | Colunas, arco, muros caídos; boa para a emboscada (cobertura). |
-| Ilhota do Pomar | Âncora 3 | Fileiras de árvores; correntes de vento de ida e volta. |
+| Ilhota das Ruínas | Âncora 2 | Colunas, arco, muros caídos; boa para a emboscada (cobertura). Um dos guardas é um **Retalho Armado**: leva um galho, alcança 0,8 m a mais no ataque e solta o galho quando é acalmado. |
+| Ilhota do Pomar | Âncora 3 | Fileiras de árvores; **ventos alternados**: as correntes que chegam ao Pomar e as que saem dele se revezam a cada 6 s (as fitas e a seta da corrente ligada aparecem; a desligada fica só no anel de pedra). Depois da 3ª âncora, um **atalho** de vento leva do Pomar direto ao pé do Morro do Coração. |
 | Morro do Coração | Chefe e fim | Clareira aberta para a luta; Lâmina da Tesoura no caminho e um galho na arena. |
 | Gruta dos Recados | Secreta | Escondida no morro da floresta. |
 

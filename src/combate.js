@@ -182,6 +182,8 @@ export function criarCombate({ cena, mapa, mundo, terreno, inimigos, campanha, j
       if (colocarNoChao(t2, q.x, q.z, q.y + 3) && Math.abs(t2.grupo.position.y - c.y) < 3) { objetos.push(t2); break; }
       if (t2.grupo.parent) cena.remove(t2.grupo);
     }
+    // o Retalho Armado (inimigos.js) solta o galho dele onde foi acalmado
+    if (inimigos) inimigos.aoSoltarArma = p => { const g = criarObjeto('galho'); if (colocarNoChao(g, p.x, p.z, p.y + 1)) objetos.push(g); };
     // e um galho garantido na própria arena do Ravi (quem chega sem arma tem com o que lutar)
     for (let k = 0; k < 12; k++) {
       const a = Math.PI + k * 0.52, q = new THREE.Vector3(c.x + Math.cos(a) * 6, c.y, c.z + Math.sin(a) * 6);

@@ -1395,7 +1395,7 @@ function passoFisica(dt) {
 
   for (const t of correntes) {
     const dx = j.pos.x - t.pos.x, dz = j.pos.z - t.pos.z, dy = j.pos.y - t.pos.y;
-    if (dx * dx + dz * dz < 0.8 && dy > -0.4 && dy < 0.7 && j.vel.y <= 0.5) lancar(t);
+    if (dx * dx + dz * dz < 0.8 && dy > -0.4 && dy < 0.7 && j.vel.y <= 0.5 && t.ativa()) lancar(t);
   }
 }
 

@@ -752,7 +752,15 @@ export function construirCais({ inicio, direcao, alturaEm, rnd }) {
   for (const lado of [-1, 1]) { const t = caixa(0.08, 0.4, 2.4, A.madeira, lado * 0.45, 0.2, 0); t.rotation.z = -lado * 0.25; barco.add(t); }
   barco.add(caixa(0.75, 0.06, 2.2, A.madeira, 0, 0.03, 0));
   barco.position.set(1.9, y - 0.6, COMP - 1.5); barco.rotation.set(0.05, 0.2, 0.1); g.add(barco);
+  // a garrafa com o bilhete de Tomé, encalhada na areia ao pé do cais (área opcional da enseada)
+  const garrafa = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.09, 0.32, 8), A.vidro);
+  garrafa.position.set(-1.6, y + 0.06, 0.6); garrafa.rotation.set(Math.PI / 2 - 0.15, 0, 0.6); g.add(garrafa);
   fundirEstaticos(g);
+  g.updateMatrixWorld(true);
+  const posBilhete = g.localToWorld(new THREE.Vector3(-1.6, y + 0.1, 0.6));
   const cache = new Map();
-  return { grupo, aplicarNivel: nivel => trocarMateriais(grupo, nivel.materialSimples, cache) };
+  return {
+    grupo, aplicarNivel: nivel => trocarMateriais(grupo, nivel.materialSimples, cache),
+    casas: [{ nome: 'Garrafa na Enseada', pos: posBilhete, frente: direcao.clone().negate() }],
+  };
 }

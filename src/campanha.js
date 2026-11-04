@@ -240,6 +240,8 @@ export function criarCampanha({ cena, mapa, mundo, inimigos, jogador, respawn, c
     falar(FALAS.ancoraRestaurada[Math.min(n, 3) - 1]);
     est.tempoTremor = 30 + n * 25;
     if (n === mundo.ancoras.length) { est.etapa = chefe ? 'chefe' : 'coracao'; dica('coracao'); }
+    // a corrente nova do Pomar até o pé do Morro (mundo.js, só no Cap. 1) liga agora
+    if (n === mundo.ancoras.length && mundo.correntes.some(c => c.atalho)) setTimeout(() => aviso(AVISOS.atalhoMorro, 3200), 2500);
     // Ravi aparece: depois da 1ª âncora, olhando de longe; depois da 2ª, numa emboscada
     if (chefe && n === 1 && !est.raviObservou) { est.raviObservou = true; setTimeout(() => aparecerRavi('observar'), 3500); }
     if (chefe && n === 2 && !est.raviEmboscou) { est.raviEmboscou = true; setTimeout(() => aparecerRavi('emboscada'), 4500); }

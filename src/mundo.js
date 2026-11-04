@@ -14,6 +14,12 @@ import { fundirEstaticos } from './lotes.js';
 //    magical lights, falling debris, and the distant island + light bridge revealed at the end
 
 import { CONFIG } from './capitulo.js';
+import { calcularLancamento } from './terreno.js';
+import { moverComColisao } from './fisica.js';
+
+// Cap. 1: ventos de ida e volta do Pomar trocam a cada VENTO_POMAR s; o Pomar é o que está a menos
+// de RAIO_POMAR m do centro da ilhota; GRAVIDADE_VOO é a do jogo (jogo.js FISICA.gravidade)
+const VENTO_POMAR = 6, RAIO_POMAR = 26, GRAVIDADE_VOO = -32;
 
 const MARCOS = CONFIG.marcos; // como são os objetivos deste capítulo (capitulo.js)
 const rnd = (() => { let s = 1234567; return () => ((s = (s * 16807) % 2147483647) / 2147483647); })(); // deterministic layout
@@ -533,7 +539,9 @@ export function criarMundo({ cena, mapa, terreno }) {
   coracao.bilhete = bilhete;
 
   // ----- wind currents (the launchers computed by the terrain analysis) -----
-  const correntes = terreno.trampolins.map(t => {
+  // (ativa(): a corrente lança agora? Os ventos alternados do Pomar e o atalho até o Morro só
+  // lançam em certos momentos; as outras sempre)
+  const criarCorrente = t => {
     const g = new THREE.Group(); g.position.copy(t.pos);
     const anelBase = new THREE.Mesh(new THREE.TorusGeometry(0.8, 0.08, 6, 24), M.pedraClara); anelBase.rotation.x = Math.PI / 2; anelBase.position.y = 0.05;
     const espiral = [];
@@ -555,9 +563,58 @@ export function criarMundo({ cena, mapa, terreno }) {
       g.children.forEach((f, k) => { if (espiral.includes(f)) f.rotation.y += dt * (2.2 + k * 0.4 + c.mola * 8); });
       seta.position.y = 4.6 + Math.sin(tt * 3) * 0.12;
       c.mola = Math.max(0, c.mola - dt * 2);
+      // desligada: as fitas param de girar e somem, a seta apaga (o anel de pedra fica)
+      const ligada = c.ativa();
+      if (ligada !== c.ligada) { c.ligada = ligada; for (const f of espiral) f.visible = ligada; seta.visible = ligada; }
     });
     return c;
-  });
+  };
+  const correntes = terreno.trampolins.map(t => criarCorrente({ ...t, ativa: () => true }));
+
+  // Cap. 1 — Pomar: ventos de ida e volta alternados. As correntes que chegam ao Pomar lançam
+  // num período de VENTO_POMAR s, as que saem dele no seguinte (as fitas mostram qual está ligada).
+  // Só alterna se houver as duas (senão a ilhota ficaria sem saída por metade do tempo).
+  const pomar = (mapa.pontos?.ilhotas ?? []).find(i => i.nome === 'pomar');
+  if (pomar) {
+    const perto = p => Math.hypot(p.x - pomar.x, p.z - pomar.z) < RAIO_POMAR;
+    const ida = correntes.filter(c => perto(c.alvo) && !perto(c.pos)), volta = correntes.filter(c => perto(c.pos) && !perto(c.alvo));
+    if (ida.length && volta.length) {
+      let relogio = 0;
+      animados.push(dt => { relogio += dt; });
+      const fase = () => Math.floor(relogio / VENTO_POMAR) % 2;
+      for (const c of ida) c.ativa = () => fase() === 0;
+      for (const c of volta) c.ativa = () => fase() === 1;
+    }
+  }
+  // Cap. 1 — atalho: depois da 3ª âncora, uma corrente leva do Pomar direto ao pé do Morro do
+  // Coração (não precisa voltar pela vila). O arco é conferido com a física do jogo antes.
+  let atalhoMorro = null;
+  if (pomar && mapa.pontos?.morro) {
+    const morro = mapa.pontos.morro, livres = terreno.areas.flatMap(a => a.livres);
+    const dirM = new THREE.Vector3(morro.x - pomar.x, 0, morro.z - pomar.z).normalize();
+    const origens = livres.filter(q => { const d = Math.hypot(q.x - pomar.x, q.z - pomar.z); return d > 6 && d < RAIO_POMAR - 6; })
+      .sort((a, b) => (b.x - pomar.x) * dirM.x + (b.z - pomar.z) * dirM.z - ((a.x - pomar.x) * dirM.x + (a.z - pomar.z) * dirM.z)).slice(0, 8);
+    const destinos = livres.filter(q => { const d = Math.hypot(q.x - morro.x, q.z - morro.z); return d > 18 && d < 34; })
+      .sort((a, b) => Math.hypot(a.x - pomar.x, a.z - pomar.z) - Math.hypot(b.x - pomar.x, b.z - pomar.z)).slice(0, 8);
+    const chega = (de, para, folga) => {
+      const pos = de.clone(), vel = calcularLancamento(de, para, GRAVIDADE_VOO, folga);
+      for (let k = 0; k < 8 * 120; k++) {
+        vel.y += GRAVIDADE_VOO / 120;
+        const r = moverComColisao(mapa, pos, vel, 1 / 120, false);
+        if (r.noChao && k > 10) return Math.hypot(pos.x - para.x, pos.z - para.z) < 1.5 && Math.abs(pos.y - para.y) < 1;
+        if (pos.y < para.y - 40) return false;
+      }
+      return false;
+    };
+    busca: for (const o of origens) for (const d of destinos) for (const folga of [6, 10, 14]) {
+      if (correntes.some(c => c.pos.distanceTo(o) < 4)) continue;
+      if (chega(o, d, folga)) {
+        atalhoMorro = criarCorrente({ pos: o.clone(), alvo: d.clone(), folga, ativa: () => ancoras.every(a => a.restaurada), atalho: true });
+        correntes.push(atalhoMorro);
+        break busca;
+      }
+    }
+  }
 
   // ----- floating rocks (bobbing platforms over the void, each holding a fragment) -----
   const rochas = [];
@@ -678,7 +735,9 @@ export function criarMundo({ cena, mapa, terreno }) {
   const posicoesInimigos = [];
   for (const a of ancoras) {
     const perto = a.area.livres.filter(p => p.distanceTo(a.pos) > 3.5 && p.distanceTo(a.pos) < 8 && Math.abs(p.y - a.pos.y) < 1.5);
-    for (let k = 0; k < 3 && perto.length; k++) posicoesInimigos.push({ pos: perto.splice(Math.floor(rnd() * perto.length), 1)[0], ancora: a });
+    // Cap. 1: um dos guardas da âncora das Ruínas está armado com um galho (inimigos.js)
+    const ruinas = ilhotas.find(i => i.nome === 'ruinas' && Math.hypot(a.pos.x - i.x, a.pos.z - i.z) < 32);
+    for (let k = 0; k < 3 && perto.length; k++) posicoesInimigos.push({ pos: perto.splice(Math.floor(rnd() * perto.length), 1)[0], ancora: a, armado: !!ruinas && k === 0 });
   }
   {
     const perto = coracao.area.livres.filter(p => p.distanceTo(coracao.pos) > 4 && p.distanceTo(coracao.pos) < 9);
