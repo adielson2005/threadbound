@@ -182,6 +182,13 @@ export function criarCombate({ cena, mapa, mundo, terreno, inimigos, campanha, j
       if (colocarNoChao(t2, q.x, q.z, q.y + 3) && Math.abs(t2.grupo.position.y - c.y) < 3) { objetos.push(t2); break; }
       if (t2.grupo.parent) cena.remove(t2.grupo);
     }
+    // e um galho garantido na própria arena do Ravi (quem chega sem arma tem com o que lutar)
+    for (let k = 0; k < 12; k++) {
+      const a = Math.PI + k * 0.52, q = new THREE.Vector3(c.x + Math.cos(a) * 6, c.y, c.z + Math.sin(a) * 6);
+      const g = criarObjeto('galho');
+      if (colocarNoChao(g, q.x, q.z, q.y + 3) && Math.abs(g.grupo.position.y - c.y) < 2.5) { objetos.push(g); break; }
+      if (g.grupo.parent) cena.remove(g.grupo);
+    }
     const livres = terreno.areas.flatMap(a => a.livres);
     const perto = (centro, min, max) => livres.filter(q => { const d = Math.hypot(q.x - centro.x, q.z - centro.z); return d > min && d < max && Math.abs(q.y - centro.y) < 2; });
     const lugares = [...perto(terreno.nascimento, 5, 11).slice(0, 40), ...mundo.ancoras.flatMap(a => perto(a.pos, 4.5, 8).slice(0, 15))];

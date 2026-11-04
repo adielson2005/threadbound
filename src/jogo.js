@@ -596,6 +596,11 @@ function emLuta() {
   return false;
 }
 let folhas = null, tempoFolhas = 0; // vegetação macia (folhas.js)
+// 3ª fase do Ravi (vilao.js): o vento atravessa a arena e troca de lado a cada "periodo" s. Empurra
+// a Brisa (a velocidade desejada dela ganha a do vento; segurando a guarda, só "guarda" dela) e é
+// mostrado na tela por uma seta com contagem (aviso "aviso" s antes da troca) e folhas voando.
+const VENTO_ARENA = { periodo: 6, velocidade: 2.6, guarda: 0.5, aviso: 1.2 };
+let ventoArena = null; // { dir, sentido, t, folhas }
 let vilao = null; // Cap. 1: Ravi, a luta antes do Coração da Ilha (vilao.js)
 let mundo = null, inimigos = null, campanha = null, combate = null, oclusao = null;
 const distancia = criarDistancia(); // objetos pequenos só são desenhados perto da câmera
@@ -703,6 +708,8 @@ function abrirMapaMundi(opcoes, aoFechar) {
     aoEmbarcar: n => {
       // a ilha deste capítulo, aberta pelo menu: volta ao menu com Continuar / Novo jogo
       if (n === CAPITULO_ATUAL && estado === 'menu') { mapaMundi.fechar(); voltarDoMapa?.(); abrirJogar(); return; }
+      // chamou o Nuvem no meio da ilha e embarcou de novo nela: volta ao último ponto salvo
+      if (n === CAPITULO_ATUAL && viagemNuvem) { mapaMundi.fechar(); voltarDoMapa?.(); return; }
       location.href = urlCapitulo(n);
     },
     aoFechar: () => { mapaMundi.fechar(); voltarDoMapa?.(); },
@@ -711,6 +718,73 @@ function abrirMapaMundi(opcoes, aoFechar) {
   document.body.classList.add('cinema');
   document.exitPointerLock?.();
   mapaMundi.abrir(opcoes);
+}
+
+// ---------- chamar o Nuvem (pausa) ----------
+// Válvula contra ficar preso: depois do 1º objetivo da ilha, o Nuvem vem buscar a Brisa e abre o
+// mapa das ilhas; o progresso já está salvo. Voltar (ou embarcar de novo nesta ilha) a deixa no
+// último ponto salvo. Não vale no meio de uma luta, perto da arena do chefe nem no ar.
+const NUVEM_RAIO_ARENA = 25;
+let viagemNuvem = false;
+function motivoSemNuvem() {
+  if (!campanha || !mundo) return 'indisponível';
+  if (!mundo.ancoras.some(a => a.restaurada)) return 'depois do 1º objetivo';
+  if (emLuta() || vilao?.lutando) return 'não no meio de uma luta';
+  if (campanha.estado.etapa === 'chefe' && mundo.coracao.pos.distanceTo(jogador.pos) < NUVEM_RAIO_ARENA) return 'não perto da arena';
+  if (!jogador.noChao || jogador.morta) return 'só com os pés no chão';
+  return '';
+}
+function atualizarBotaoNuvem() {
+  const m = motivoSemNuvem();
+  $('pausaNuvem').disabled = !!m;
+  $('pausaNuvemMotivo').textContent = m ? ` (${m})` : '';
+}
+function chamarNuvem() {
+  if (motivoSemNuvem()) return;
+  campanha.salvar?.();
+  alternarPausa();
+  viagemNuvem = true;
+  fugaComNuvem(() => abrirMapaMundi({ de: CAPITULO_ATUAL, concluidos: lerConcluidos() }, () => comEscuro(() => {
+    // de volta à ilha: no último ponto salvo, a pé
+    viagemNuvem = false;
+    personagem.raiz.visible = true;
+    const p = campanha.estado.checkpoint;
+    respawn(p); jogador.seguro.copy(p);
+    estado = 'jogando'; teclas.clear();
+  })));
+}
+$('pausaNuvem').addEventListener('click', chamarNuvem);
+
+// ---------- vento na arena (3ª fase do Ravi) ----------
+const hudVento = $('ventoArena'), _direitaCam = new THREE.Vector3();
+function atualizarVentoArena(dt) {
+  const ligado = !!vilao?.terceiraFase && estado === 'jogando' && !jogador.morta;
+  if (!ligado) { if (ventoArena) { ventoArena = null; hudVento.classList.remove('ativo', 'troca'); } return; }
+  if (!ventoArena) {
+    // atravessa a arena de lado: perpendicular à linha entre os dois quando começa
+    const d = new THREE.Vector3(jogador.pos.x - vilao.v.pos.x, 0, jogador.pos.z - vilao.v.pos.z);
+    if (d.lengthSq() < 1e-4) d.set(1, 0, 0);
+    d.normalize();
+    ventoArena = { dir: new THREE.Vector3(-d.z, 0, d.x), sentido: 1, t: 0, folhas: 0, ultimo: '' };
+    hudVento.classList.add('ativo');
+  }
+  const v = ventoArena;
+  v.t += dt;
+  if (v.t >= VENTO_ARENA.periodo) { v.t -= VENTO_ARENA.periodo; v.sentido *= -1; som.esquiva?.(); }
+  // folhas voando com o vento em volta dela (mostra o sentido sem depender da tela)
+  if ((v.folhas -= dt) <= 0 && folhas) {
+    v.folhas = 0.35;
+    const P = jogador.pos, k = v.sentido * 16;
+    folhas.soltar(P.x - v.dir.x * v.sentido * 4, P.y + 0.5, P.z - v.dir.z * v.sentido * 4, v.dir.x * k, v.dir.z * k, 3);
+  }
+  // seta na tela: o sentido do vento visto pela câmera, e três pontos que se apagam até a troca
+  _direitaCam.set(Math.cos(camera3p.yaw), 0, -Math.sin(camera3p.yaw));
+  const lado = v.dir.dot(_direitaCam) * v.sentido, frente = -(v.dir.x * -Math.sin(camera3p.yaw) + v.dir.z * -Math.cos(camera3p.yaw)) * v.sentido;
+  const seta = Math.abs(lado) >= Math.abs(frente) ? (lado > 0 ? '⟶' : '⟵') : (frente > 0 ? '↓' : '↑');
+  const resta = VENTO_ARENA.periodo - v.t, pontos = '●'.repeat(Math.ceil(resta / VENTO_ARENA.periodo * 3)).padEnd(3, '○');
+  const txt = seta + pontos;
+  if (txt !== v.ultimo) { v.ultimo = txt; hudVento.querySelector('b').textContent = seta; hudVento.querySelector('span').textContent = pontos; }
+  hudVento.classList.toggle('troca', resta < VENTO_ARENA.aviso);
 }
 
 // ---------- a fuga com o Nuvem (fim do capítulo) ----------
@@ -946,7 +1020,7 @@ function alternarPausa() {
   pausado = !pausado;
   if (pausado) mostrar(telaPausa, () => { telaPausa.style.display = 'flex'; });
   else sumir(telaPausa, () => { telaPausa.style.display = 'none'; });
-  if (pausado) $('pausaContinuar').focus({ preventScroll: true, focusVisible: false });
+  if (pausado) { atualizarBotaoNuvem(); $('pausaContinuar').focus({ preventScroll: true, focusVisible: false }); }
   else { fecharPaineis(); abrirMenu(false); document.activeElement?.blur(); }
   pedidoPulo = false;
   if (pausado) document.exitPointerLock?.();
@@ -1179,6 +1253,10 @@ function passoFisica(dt) {
     // dentro de uma moita: anda com dificuldade (até 55% mais devagar no meio dela)
     const mata = j.noChao ? folhas?.dentro(j.pos) : null;
     desejado.multiplyScalar(vmax * (mata ? 1 - 0.55 * Math.min(1, mata.k * 1.8) : 1));
+    if (ventoArena) {
+      const k = VENTO_ARENA.velocidade * ventoArena.sentido * (j.defendendo ? VENTO_ARENA.guarda : 1);
+      desejado.x += ventoArena.dir.x * k; desejado.z += ventoArena.dir.z * k;
+    }
     if (passoGolpe > 0) desejado.set(Math.sin(j.angulo) * passoGolpe, 0, Math.cos(j.angulo) * passoGolpe);
     const dv = desejado.sub(horiz);
     const lim = acel * dt;
@@ -1875,6 +1953,7 @@ renderer.setAnimationLoop(() => {
   modeloCachoeira?.atualizar(t);
   cachoeiras?.atualizar(t);
   if (estado === 'jogando' && campanha) { campanha.atualizar(dt, t); vilao?.atualizar(dt); tutorial.atualizar(dt, jogador); }
+  atualizarVentoArena(estado === 'jogando' && !pausado ? dt : 0);
   // música de combate enquanto o Ravi luta (mais forte na 2ª fase); passos no chão
   musicaLuta(estado === 'jogando' && !pausado && !!vilao?.lutando, !!vilao?.segundaFase);
   // passando por uma moita: as folhas caem e o mato roça

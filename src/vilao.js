@@ -29,6 +29,8 @@ import { camadaGolpe, camadaReacao, LADO_GOLPE } from './animLuta.js';
 //  - postura: golpes seguidos enchem a postura dele; cheia, a guarda quebra e ele fica tonto (os
 //    golpes valem mais tonto). Defesa perfeita e esquiva perfeita da Brisa também (combate.js);
 //  - metade da vida: segunda fase, mais rápido e com menos pausa entre os ataques;
+//  - um quarto da vida: terceira fase, só de ambiente (sem golpe novo): ele corta a corrente do
+//    Pomar e o vento atravessa a arena, trocando de lado (jogo.js, VENTO_ARENA);
 //  - sem vida: cai e se desfaz em névoa (foge: a história continua no Cap. 2).
 // Poderes (a névoa obedece a ele):
 //  - Lâminas de Névoa: de longe, junta névoa nas mãos (brilho roxo) e arremessa lâminas em leque
@@ -52,6 +54,9 @@ const FASES = [
   { correr: 3.6, pausa: 1.6, aviso: 0.45, investida: 8, combo: ['soco2'], recuo: 1.6, esquiva: 0.3, salto: false, laminas: 1, passo: false },
   { correr: 4.6, pausa: 1.0, aviso: 0.3, investida: 9.5, combo: ['soco2', 'soco4', 'chute'], recuo: 1.1, esquiva: 0.5, salto: true, laminas: 3, passo: true },
 ];
+// 3ª fase (só ambiente, sem golpe novo): abaixo deste tanto da vida ele corta a corrente do Pomar
+// e o vento atravessa a arena trocando de lado (o empurrão fica em jogo.js, VENTO_ARENA)
+const FASE3 = 0.25;
 const LAMINA = { vel: 12, vida: 1.3, raio: 0.45, espera: 6 };
 const COR_VERMELHA = new THREE.Color('#ff3020'), COR_NEVOA = new THREE.Color('#9b5cff');
 export const NOME_VILAO = 'Ravi, o Corta-Fios';
@@ -100,7 +105,7 @@ export async function criarVilao({ renderer, nivel, cena, mapa, jogador, ui }) {
     estado: 'oculto', modo: null, tempo: 0, atordoado: 0, flash: 0, ativo: false, golpe: null, acertou: false,
     noChao: true, aparecer: 0, recuo: 0, proximaInvestida: 4, derrotado: false, postura: 0, lado: 1,
     tempoModo: 0, vidaInicio: VIDA, proximasLaminas: 3, proximoPasso: 6, golpeDir: new THREE.Vector2(),
-    aoDerrotar: null, aoAtacar: null, aoMudarFase: null, aoRecuar: null, aoAviso: null,
+    aoDerrotar: null, aoAtacar: null, aoMudarFase: null, aoTerceiraFase: null, aoRecuar: null, aoAviso: null,
   };
   let anim = null;
   // (recomecar: o mesmo golpe de novo, do início)
@@ -196,7 +201,7 @@ export async function criarVilao({ renderer, nivel, cena, mapa, jogador, ui }) {
   // golpe da Brisa (combate.js): dano, empurrão, postura e um tranco no corpo
   function atingir(dano, de, empurrao = 3) {
     if (!v.ativo || ['chegada', 'caindo', 'sumindo', 'observando', 'passo'].includes(v.estado)) return false;
-    const faseAntes = fase();
+    const faseAntes = fase(), terceiraAntes = terceiraFase();
     const tonto = v.estado === 'atordoado';
     v.vida -= tonto ? dano * 1.25 : dano;
     v.flash = 1; v.recuo = 1;
@@ -219,8 +224,10 @@ export async function criarVilao({ renderer, nivel, cena, mapa, jogador, ui }) {
       return true;
     }
     if (fase() !== faseAntes) v.aoMudarFase?.();
+    if (terceiraFase() && !terceiraAntes) v.aoTerceiraFase?.();
     return true;
   }
+  function terceiraFase() { return v.modo === 'chefe' && v.ativo && v.vida > 0 && v.vida <= vidaTotal() * FASE3; }
   function atordoar(t, motivo) {
     v.estado = 'atordoado'; v.atordoado = t; v.golpe = null; v.flash = Math.max(v.flash, 0.6);
     v.aoAviso?.(motivo);
@@ -463,5 +470,6 @@ export async function criarVilao({ renderer, nivel, cena, mapa, jogador, ui }) {
     get lutando() { return v.ativo && !['caindo', 'sumindo', 'observando', 'oculto'].includes(v.estado); },
     get visivel() { return b.raiz.visible; },
     get segundaFase() { return v.modo === 'chefe' && v.vida <= vidaTotal() / 2; },
+    get terceiraFase() { return terceiraFase() && !['caindo', 'sumindo', 'oculto'].includes(v.estado); },
   };
 }

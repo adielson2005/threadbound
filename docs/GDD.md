@@ -77,7 +77,10 @@ céu para reacender os Fios de Maré e descobrir quem os está cortando.
 - **Ravi, o Corta-Fios (Cap. 1):** rodeia de guarda, avança com aviso (brilho vermelho), investe
   em linha reta (contra uma parede fica tonto), esquiva quando ela ataca perto, tem postura que
   quebra com golpes seguidos. Poderes: Lâminas de Névoa (de longe, brilho roxo antes) e, na 2ª fase,
-  Passo de Névoa (reaparece atrás dela) e salto com pouso que derruba.
+  Passo de Névoa (reaparece atrás dela) e salto com pouso que derruba. **3ª fase** (abaixo de 25% da
+  vida, só ambiente, sem golpe novo): ele corta a corrente do Pomar e o vento atravessa a arena,
+  trocando de lado a cada 6 s; empurra a Brisa a 2,6 m/s (metade segurando a guarda). Seta e
+  contagem no alto da tela avisam o sentido e a troca (não depende do som), e folhas voam com ele.
 
 ## 4. Fluxo da progressão
 
@@ -90,7 +93,8 @@ céu para reacender os Fios de Maré e descobrir quem os está cortando.
 4. **Segunda âncora:** emboscada do Ravi (luta curta, ele recua com um terço da vida a menos).
    Ensina a luta de verdade antes do chefe.
 5. **Terceira âncora:** a ilha para de tremer; o farol aponta o Coração.
-6. **Chefe no Coração:** a luta inteira com o Ravi (duas fases). Vencido, vira névoa.
+6. **Chefe no Coração:** a luta inteira com o Ravi (três fases: a 3ª é o vento na arena). Vencido,
+   vira névoa. Um galho fica garantido na arena.
 7. **Coração e carta de Aurélia:** fim do capítulo; o farol mostra o Recife das Vozes (Cap. 2).
 8. **Fuga com o Nuvem:** o pônei alado de Aurélia desce, Brisa monta e os dois decolam da ilha
    (cena curta, sem HUD).
@@ -99,7 +103,12 @@ céu para reacender os Fios de Maré e descobrir quem os está cortando.
    capítulo. Ilhas trancadas ficam escuras. O mapa também abre pelo menu ("Mapa das ilhas").
 
 Opcional em todo o capítulo: cartas nas casas (5), lembranças nos fragmentos lilases, a Gruta dos
-Recados e o mirante do farol (escada em espiral). Recompensa: história e fôlego.
+Recados e o mirante do farol (torre reta de patamares). Recompensa: história e fôlego.
+
+**Chamar o Nuvem** (na pausa): depois do 1º objetivo da ilha, o Nuvem busca a Brisa e abre o mapa
+das ilhas (o progresso já está salvo); voltar ou embarcar de novo nesta ilha a deixa no último ponto
+salvo. Apagado, com o motivo, no meio de uma luta, perto da arena do chefe ou fora do chão. É a
+válvula contra ficar preso.
 
 ## 5. Level design
 
@@ -122,10 +131,10 @@ Recados e o mirante do farol (escada em espiral). Recompensa: história e fôleg
 |---|---|---|
 | Praça e oficina | Início, tutorial | Agulha de Prata, Lâmina da Tesoura, casas com cartas. |
 | Campina e floresta | Exploração, fragmentos | Pinheiros, moitas (macias), pedras (sólidas), Retalhos patrulhando. |
-| Ilhota do Farol | Âncora 1 / área secreta | Escada em espiral até o mirante (parapeito sólido com abertura). |
+| Ilhota do Farol | Âncora 1 / área secreta | Torre reta do mirante ao lado do farol: 5 blocos de pedra em linha, cada um 3 m mais alto (pular e agarrar a borda); carta e moinha no alto. A espiral fica só para a Costura Final (Cap. 4). |
 | Ilhota das Ruínas | Âncora 2 | Colunas, arco, muros caídos; boa para a emboscada (cobertura). |
 | Ilhota do Pomar | Âncora 3 | Fileiras de árvores; correntes de vento de ida e volta. |
-| Morro do Coração | Chefe e fim | Clareira aberta para a luta; Lâmina da Tesoura no caminho. |
+| Morro do Coração | Chefe e fim | Clareira aberta para a luta; Lâmina da Tesoura no caminho e um galho na arena. |
 | Gruta dos Recados | Secreta | Escondida no morro da floresta. |
 
 ### Capítulos 2–4
@@ -149,7 +158,7 @@ mesmo sistema de luta do Ravi.
 | Defesa perfeita | 0,34 s | 0,22 s | 0,17 s | 0,13 s |
 
 Curva dentro do capítulo: Retalhos sozinhos → Retalhos guardando âncoras → emboscada → chefe com
-duas fases. Equilíbrio medido com um jogador automático (ver `PROGRESSO.md`).
+três fases (a 3ª com vento). Equilíbrio medido com um jogador automático (ver `PROGRESSO.md`).
 
 ## 7. Interface e orientação
 
