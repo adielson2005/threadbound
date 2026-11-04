@@ -285,6 +285,52 @@ export function construirVila({ centro, raio, alturaEm, rnd, nomes, antiga = fal
   return { grupo, casas, aplicarNivel: nivel => trocarMateriais(grupo, nivel.materialSimples, cache) };
 }
 
+// ---------------- torre do mirante (Cap. 1) ----------------
+// Torre reta de patamares ao lado do farol (antes era uma escada em espiral em volta dele: a
+// espiral ficou só para a Costura Final, Cap. 4). Cinco blocos de pedra em linha reta, cada um
+// PATAMAR mais alto que o anterior: sobe-se pulando e agarrando a borda (bordaMax em jogo.js).
+// No alto: parapeito, a carta do mirante e uma moinha de vento girando (marco visível de longe).
+const PATAMAR = 3, LADO_PATAMAR = 3, N_PATAMARES = 5, AFASTAMENTO_TORRE = 4.8;
+function torreMirante(g, centro, alturaEm, A) {
+  g.updateMatrixWorld(true);
+  const _p = new THREE.Vector3();
+  const chao = (lx, lz) => { g.localToWorld(_p.set(lx, 0, lz)); const h = alturaEm(_p.x, _p.z); return h === null ? null : h - centro.y; };
+  // a linha da torre sai para o lado (±z local: o +x é a casinha, o −x a âncora); fica com o lado
+  // que tem chão firme debaixo de todos os blocos (e um pouco além do último)
+  const centroBloco = (dir, k) => dir * (AFASTAMENTO_TORRE + LADO_PATAMAR / 2 + k * LADO_PATAMAR);
+  const cabe = dir => {
+    for (let k = 0; k < N_PATAMARES; k++) for (const dx of [-1.5, 1.5]) for (const dz of [-1.5, 1.5]) if (chao(dx, centroBloco(dir, k) + dz) === null) return false;
+    return chao(0, centroBloco(dir, N_PATAMARES - 1) + dir * 3) !== null;
+  };
+  const dir = cabe(-1) ? -1 : 1;
+  const alturaChao = (z) => {
+    let min = Infinity;
+    for (const dx of [-1.5, 0, 1.5]) for (const dz of [-1.5, 0, 1.5]) { const h = chao(dx, z + dz); if (h !== null) min = Math.min(min, h); }
+    return min === Infinity ? 0 : min;
+  };
+  const base0 = alturaChao(centroBloco(dir, 0));
+  let topo = 0;
+  for (let k = 0; k < N_PATAMARES; k++) {
+    const z = centroBloco(dir, k), pe = alturaChao(z) - 0.6; // afunda um pouco no chão
+    topo = base0 + PATAMAR * (k + 1);
+    const bloco = caixa(LADO_PATAMAR, topo - pe, LADO_PATAMAR, k % 2 ? A.pedraClara : A.pedra, 0, (topo + pe) / 2, z);
+    g.add(bloco);
+  }
+  // parapeito no alto: três lados fechados, aberto para o patamar de baixo
+  const zTopo = centroBloco(dir, N_PATAMARES - 1), meio = LADO_PATAMAR / 2 - 0.05;
+  g.add(caixa(LADO_PATAMAR, 0.9, 0.1, A.madeiraEscura, 0, topo + 0.45, zTopo + dir * meio));
+  for (const lado of [-1, 1]) g.add(caixa(0.1, 0.9, LADO_PATAMAR, A.madeiraEscura, lado * meio, topo + 0.45, zTopo));
+  // moinha de vento no canto de fora (não é sólida; gira em atualizar)
+  const moinha = new THREE.Group();
+  moinha.position.set(meio - 0.1, topo + 2.1, zTopo + dir * (meio - 0.1));
+  const mastro = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.06, 1.3, 6), A.madeiraEscura); mastro.position.y = -0.65;
+  const helice = new THREE.Group();
+  for (let k = 0; k < 4; k++) { const pa = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.7, 0.02), A.madeira); pa.position.y = 0.38; const braco = new THREE.Group(); braco.rotation.z = k * Math.PI / 2; braco.add(pa); helice.add(braco); }
+  moinha.add(mastro, helice); moinha.rotation.y = Math.PI / 2;
+  g.add(moinha);
+  return { moinha, helice, carta: new THREE.Vector3(-0.6, topo + 0.02, zTopo) };
+}
+
 // ---------------- farol ----------------
 export function construirFarol({ centro, alturaEm, rnd, evitar }) {
   const A = materiais(), grupo = new THREE.Group(); grupo.name = 'farol';
@@ -301,26 +347,12 @@ export function construirFarol({ centro, alturaEm, rnd, evitar }) {
   }
   const topo = 0.8 + H;
   const galeria = new THREE.Mesh(new THREE.CylinderGeometry(2.3, 2.3, 0.25, 14), A.pedra); galeria.position.y = topo; galeria.userData.solido = true; g.add(galeria);
-  // parapeito sólido (não dá para cair do mirante), aberto só onde a escada chega
-  const DEGRAU = 0.22, nDegraus = Math.ceil((topo + 0.12 - 0.8) / DEGRAU), r = 2.85, ANG0 = Math.PI * 0.75;
-  const chegada = ANG0 + (nDegraus - 1) * 0.52 / r, VAO = 0.95;
-  const fora = a => Math.abs(Math.atan2(Math.sin(a - chegada), Math.cos(a - chegada))) > VAO / 2 + 0.05;
-  for (let k = 0; k < 16; k++) { const a = (k / 16) * Math.PI * 2; if (fora(a)) g.add(caixa(0.07, 0.9, 0.07, A.madeiraEscura, Math.cos(a) * 2.15, topo + 0.55, Math.sin(a) * 2.15)); }
-  // (o arco do toro começa no ângulo chegada + VAO/2, no mesmo sentido dos postes)
-  const corrimao = new THREE.Mesh(new THREE.TorusGeometry(2.15, 0.05, 6, 30, Math.PI * 2 - VAO).rotateX(Math.PI / 2).rotateY(-(chegada + VAO / 2)), A.madeiraEscura);
+  // parapeito fechado em volta da galeria (ela não é mais o mirante: o mirante é a torre ao lado)
+  for (let k = 0; k < 16; k++) { const a = (k / 16) * Math.PI * 2; g.add(caixa(0.07, 0.9, 0.07, A.madeiraEscura, Math.cos(a) * 2.15, topo + 0.55, Math.sin(a) * 2.15)); }
+  const corrimao = new THREE.Mesh(new THREE.TorusGeometry(2.15, 0.05, 6, 30).rotateX(Math.PI / 2), A.madeiraEscura);
   corrimao.position.y = topo + 1.0; corrimao.userData.solido = true; g.add(corrimao);
   const lanterna = new THREE.Mesh(new THREE.CylinderGeometry(1.2, 1.2, 1.8, 10, 1, true), A.vidro); lanterna.position.y = topo + 1.05; g.add(lanterna);
-  // escada em espiral por fora da torre até a galeria (o mirante, área secreta): degraus de 22 cm,
-  // que a cápsula sobe andando; o raio é o da borda da galeria, para a cabeça não bater nela no fim
-  let angDegrau = ANG0;
-  for (let k = 1; k <= nDegraus; k++) {
-    const y = 0.8 + k * DEGRAU;
-    const d = caixa(1.05, DEGRAU, 0.62, A.madeira, Math.cos(angDegrau) * r, y - DEGRAU / 2, Math.sin(angDegrau) * r);
-    d.rotation.y = -angDegrau; g.add(d);
-    // um poste de corrimão a cada três degraus, na beira de fora (sólido: fica além da pisada)
-    if (k % 3 === 0) g.add(caixa(0.06, 0.9, 0.06, A.madeiraEscura, Math.cos(angDegrau) * (r + 0.48), y + 0.45, Math.sin(angDegrau) * (r + 0.48)));
-    angDegrau += 0.52 / r; // meio metro de pisada por degrau
-  }
+  const mirante = torreMirante(g, centro, alturaEm, A);
   const cupula = new THREE.Mesh(new THREE.ConeGeometry(1.55, 1.5, 10), A.vermelho); cupula.position.y = topo + 2.7; g.add(cupula);
   // porta de ferro (fechada) e casinha do faroleiro
   g.add(caixa(1.0, 1.9, 0.12, A.madeiraEscura, 0, 1.75, 2.27));
@@ -333,10 +365,10 @@ export function construirFarol({ centro, alturaEm, rnd, evitar }) {
     const cone = new THREE.Mesh(new THREE.ConeGeometry(2.6, 26, 16, 1, true).rotateZ(-Math.PI / 2).translate(13, 0, 0), A.feixe);
     cone.rotation.y = lado; feixe.add(cone);
   }
-  // a carta escondida no mirante, na galeria entre a lanterna e o parapeito
+  // a carta escondida no mirante: no alto da torre de patamares
   g.updateMatrixWorld(true);
-  const posCarta = g.localToWorld(new THREE.Vector3(-1.72, topo + 0.125 - 0.22, 0.4));
-  fundirEstaticos(g, [lanterna, ...feixe.children]);
+  const posCarta = g.localToWorld(mirante.carta.clone());
+  fundirEstaticos(g, [lanterna, ...feixe.children, mirante.moinha]);
   const cache = new Map();
   return {
     grupo, topo: new THREE.Vector3(centro.x, centro.y + topo + 1, centro.z),
@@ -344,6 +376,7 @@ export function construirFarol({ centro, alturaEm, rnd, evitar }) {
     // o feixe gira sempre, mas só aparece com pouca luz (entardecer e noite)
     atualizar(t, noite = 0) {
       feixe.rotation.y = t * 0.6;
+      mirante.helice.rotation.z = t * 1.4;
       A.feixe.opacity = 0.18 * noite; feixe.visible = noite > 0.02;
       A.vidro.emissiveIntensity = 0.4 + 1.4 * noite;
     },

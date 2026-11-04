@@ -407,6 +407,7 @@ export function criarCampanha({ cena, mapa, mundo, inimigos, jogador, respawn, c
     // jogo salvo antes do vilão existir, já na etapa do Coração: a luta vem antes
     if (est.etapa === 'coracao' && !est.chefeVencido && !mundo.coracao.restaurado) est.etapa = 'chefe';
     c.v.aoMudarFase = () => falar(FALAS.chefeFase2);
+    c.v.aoTerceiraFase = () => { falar(FALAS.chefeFase3); aviso(AVISOS.ventoArena, 2600); };
     c.v.aoRecuar = modo => { if (modo === 'emboscada') falar(FALAS.raviRecua); };
     c.v.aoAviso = motivo => {
       if (motivo === 'quebra') aviso(AVISOS.guardaQuebrada, 1300);

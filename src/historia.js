@@ -58,6 +58,8 @@ const FALAS_1 = {
     ['Ravi', 'Eu corto o último fio e ela volta para o mar. Sai da frente.'],
   ],
   chefeFase2: [['Ravi', 'Você é feita do vestido dela, sabia? Da rede da minha mãe! Você nem devia existir!']],
+  // 3ª fase: ele corta a corrente do Pomar e o vento atravessa o alto do morro
+  chefeFase3: [['Ravi', 'Então toma o vento que ela costurou! Vamos ver você ficar de pé!']],
   // as outras vezes em que ele aparece: olhando de longe (1ª âncora) e numa emboscada (2ª âncora)
   raviObserva: [
     ['Brisa', 'Tem alguém ali… um rapaz de jaqueta verde. Tem uma tesoura de fio no cinto dele.'],
@@ -169,6 +171,7 @@ const AVISOS_1 = {
   quedaForte: (altura, dano) => `Ai! Queda de ${Math.round(altura)} m · −${dano} de fôlego`,
   caiuNoVazio: 'Brisa caiu da ilha… o vento a trouxe de volta!',
   guardaQuebrada: 'Guarda quebrada! Agora!',
+  ventoArena: 'O vento atravessa o morro! Segure a guarda para firmar os pés.',
   raviNaParede: 'Ravi bateu de frente! Ele está tonto',
 };
 
