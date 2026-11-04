@@ -91,6 +91,7 @@ const CARTAS_1 = {
   // áreas secretas
   'Gruta dos Recados': '“Aqui embaixo a gente escondia os recados que o mar não podia ler. Se alguém achar este: a Aurélia não é bruxa, é só uma avó com medo. Cuidem dela.” — As crianças da vila',
   'Mirante do Farol': '“Daqui de cima dá para ver as três ilhotas e, num dia limpo, uma tempestade que nunca sai do lugar. Eu sei o que tem lá dentro. Um dia alguém vai ter que ir.” — Tomé',
+  'Garrafa na Enseada': '“Para quem achar: o sino de boia do Recife tocou sozinho de novo esta noite. Vou até lá ver. Se a névoa subir, alguém acenda o farol por mim.” — Tomé',
   'Casa da Costureira': '“Ilma, minha neta, hoje você riu tanto que o vestido rasgou no peito. Remendei com um retalho azul. Prometo que, aconteça o que acontecer, esse pedaço de você não vai se perder.” — Aurélia',
 };
 
@@ -172,6 +173,7 @@ const AVISOS_1 = {
   caiuNoVazio: 'Brisa caiu da ilha… o vento a trouxe de volta!',
   guardaQuebrada: 'Guarda quebrada! Agora!',
   ventoArena: 'O vento atravessa o morro! Segure a guarda para firmar os pés.',
+  atalhoMorro: 'Uma corrente nova sopra do Pomar até o pé do Morro do Coração.',
   raviNaParede: 'Ravi bateu de frente! Ele está tonto',
 };
 

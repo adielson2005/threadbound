@@ -22,6 +22,20 @@ const DESENHAR = 55, DORMIR = 32;
 export const RAIOS_CORPO = new THREE.Vector3(0.44, 0.38, 0.44);
 // a lunge connects when the body gets this close to Brisa's capsule (m)
 const CONTATO_INVESTIDA = 0.2;
+// Retalho Armado (Cap. 1, guarda das Ruínas): leva um galho, que alcança ALCANCE_ARMA m a mais no
+// ataque e na investida; acalmado, solta o galho no chão (aoSoltarArma, combate.js)
+const ALCANCE_ARMA = 0.8;
+const _corGalho = new THREE.MeshStandardMaterial({ color: '#6b4a2e', roughness: 0.9 });
+function galhoNaMao() {
+  const g = new THREE.Group();
+  const haste = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.055, 1.0, 6), _corGalho);
+  haste.position.y = 0.5; g.add(haste);
+  const ponta = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.03, 0.3, 5), _corGalho);
+  ponta.position.set(0.07, 0.75, 0); ponta.rotation.z = -0.7; g.add(ponta);
+  // segurado do lado direito, inclinado para a frente
+  g.position.set(0.38, 0.35, 0.1); g.rotation.set(0.9, 0, -0.25);
+  return g;
+}
 // sphere that keeps a Retalho out of walls and props: as wide as the body, raised so that the
 // ground on a gentle slope does not count as an obstacle
 const RAIO_BLOQUEIO = 0.42, ALTURA_BLOQUEIO = 0.64;
@@ -172,7 +186,10 @@ export function criarInimigos({ cena, mapa, posicoes }) {
     const m = criarModelo();
     m.g.position.copy(p.pos);
     grupo.add(m.g);
+    const arma = p.armado ? galhoNaMao() : null;
+    if (arma) m.g.add(arma);
     return {
+      armado: !!p.armado, arma,
       ...m, casa: p.pos.clone(), pos: m.g.position, vel: new THREE.Vector3(), vida: VIDA, estado: 'patrulha',
       tempo: Math.random() * 3, alvo: p.pos.clone(), ancora: p.ancora, coracao: p.coracao, ativo: true,
       flash: 0, atordoado: 0, fase: Math.random() * 6, viu: false,
@@ -181,8 +198,10 @@ export function criarInimigos({ cena, mapa, posicoes }) {
   });
 
   const particulas = [];
+  let api = null; // o objeto devolvido (aoSoltarArma é definido por quem usa: combate.js)
   function purificar(e) {
     e.ativo = false; e.estado = 'morrendo'; e.tempo = 0;
+    if (e.arma) { e.g.remove(e.arma); e.arma = null; api?.aoSoltarArma?.(e.pos.clone()); }
     for (let k = 0; k < 10; k++) {
       const s = new THREE.Sprite(materiais().luz.clone()); s.scale.setScalar(0.3 + Math.random() * 0.3);
       s.position.copy(e.pos).add(new THREE.Vector3((Math.random() - 0.5) * 0.6, 0.4 + Math.random() * 0.4, (Math.random() - 0.5) * 0.6));
@@ -260,14 +279,14 @@ export function criarInimigos({ cena, mapa, posicoes }) {
       } else if (e.estado === 'investida') {
         e.tempo -= dt;
         // connects on real contact between the body and her capsule, never through a wall
-        if (!e.acertou && distanciaJogadora(e, jogadora.pos) < CONTATO_INVESTIDA && alcanca(e, peitoJ)) { e.acertou = true; aoAcertarJogadora(e); }
+        if (!e.acertou && distanciaJogadora(e, jogadora.pos) < CONTATO_INVESTIDA + (e.armado ? ALCANCE_ARMA : 0) && alcanca(e, peitoJ)) { e.acertou = true; aoAcertarJogadora(e); }
         if (e.tempo <= 0) { e.estado = 'recuperando'; e.tempo = 0.8; e.acertou = false; }
       } else if (e.estado === 'recuperando') {
         e.tempo -= dt;
         if (e.tempo <= 0) e.estado = enxerga ? 'persegue' : 'patrulha';
       } else if (enxerga) {
         e.estado = 'persegue';
-        if (dh < ALCANCE_ATAQUE + 0.25) { e.estado = 'preparando'; e.tempo = 0.55; }
+        if (dh < ALCANCE_ATAQUE + 0.25 + (e.armado ? ALCANCE_ARMA : 0)) { e.estado = 'preparando'; e.tempo = 0.55; }
         else desejado.copy(paraJog).setY(0).normalize().multiplyScalar(VEL);
       } else {
         e.estado = 'patrulha';
@@ -329,8 +348,9 @@ export function criarInimigos({ cena, mapa, posicoes }) {
   }
 
   for (const e of lista) atualizarHitbox(e);
-  return {
-    lista, grupo, atingir, purificar, atualizar, get vivos() { return lista.filter(e => e.ativo); },
+  api = {
+    aoSoltarArma: null, lista, grupo, atingir, purificar, atualizar, get vivos() { return lista.filter(e => e.ativo); },
     distanciaCorpo, distanciaSegmento, distanciaJogadora, alcanca,
   };
+  return api;
 }

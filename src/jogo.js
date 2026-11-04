@@ -26,6 +26,7 @@ import { criarCeu } from './ceu.js';
 import { carregarCachoeira, posicionarCachoeiras } from './cachoeira.js';
 import { criarInimigos } from './inimigos.js';
 import { criarVilao } from './vilao.js';
+import { criarAnimais } from './animais.js';
 import { criarTutorial } from './tutorial.js';
 import { criarFolhas } from './folhas.js';
 import { camadaGolpe, camadaReacao, LADO_GOLPE } from './animLuta.js';
@@ -596,6 +597,7 @@ function emLuta() {
   return false;
 }
 let folhas = null, tempoFolhas = 0; // vegetação macia (folhas.js)
+let animais = null; // gaivotas, galinhas, gato, coelhos, borboletas, peixes de pano (animais.js)
 // 3ª fase do Ravi (vilao.js): o vento atravessa a arena e troca de lado a cada "periodo" s. Empurra
 // a Brisa (a velocidade desejada dela ganha a do vento; segurando a guarda, só "guarda" dela) e é
 // mostrado na tela por uma seta com contagem (aviso "aviso" s antes da troca) e folhas voando.
@@ -1395,7 +1397,7 @@ function passoFisica(dt) {
 
   for (const t of correntes) {
     const dx = j.pos.x - t.pos.x, dz = j.pos.z - t.pos.z, dy = j.pos.y - t.pos.y;
-    if (dx * dx + dz * dz < 0.8 && dy > -0.4 && dy < 0.7 && j.vel.y <= 0.5) lancar(t);
+    if (dx * dx + dz * dz < 0.8 && dy > -0.4 && dy < 0.7 && j.vel.y <= 0.5 && t.ativa()) lancar(t);
   }
 }
 
@@ -1962,6 +1964,7 @@ renderer.setAnimationLoop(() => {
     tempoFolhas -= dt * (mata ? v : 0);
     if (mata && tempoFolhas <= 0) { tempoFolhas = 0.9; folhas.soltar(jogador.pos.x, jogador.pos.y, jogador.pos.z, jogador.vel.x, jogador.vel.z, 4 + Math.round(v)); som.folhas(); }
     folhas.atualizar(dt, t);
+    animais?.atualizar(dt, t, jogador.pos);
   }
   if (estado === 'jogando' && jogador.noChao && !jogador.esquiva) {
     const v = Math.hypot(jogador.vel.x, jogador.vel.z);
@@ -2076,6 +2079,7 @@ Promise.all([
       distancia.adicionar(c.aura, 2, () => !c.quebrado);
     }
     for (const s of mundo.luzes.children) distancia.adicionar(s, 1);
+    animais = criarAnimais({ cena, mapa: m, terreno, distancia });
     distancia.definirAlcance(nivel.alcanceObjetos);
     // socos, chute, pegar/bater com objetos e defesa
     combate = criarCombate({
@@ -2153,7 +2157,7 @@ Promise.all([
     progressoCarga(1); textoCarga('Pronto');
     dispatchEvent(new Event('jogo-pronto'));
     window.__jogo = {
-      jogador, personagem, get vilao() { return vilao; }, camera, camera3p, mapa, terreno, correntes, renderer, cena, sol, medidor, altos, mundo, inimigos, campanha, agua, nevoa, cachoeiras, praia, ceu: ceuJogo, get combate() { return combate; },
+      jogador, personagem, get vilao() { return vilao; }, camera, camera3p, mapa, terreno, correntes, renderer, cena, sol, medidor, altos, mundo, inimigos, campanha, agua, nevoa, cachoeiras, praia, ceu: ceuJogo, get combate() { return combate; }, get animais() { return animais; },
       terminarCapitulo, get mapaMundi() { return mapaMundi; }, get fuga() { return fuga; },
       animacao: () => animAtual, estado: () => estado, nivel: () => nomeNivel, aplicarNivel, ocioso, get oclusao() { return oclusao; },
     };
