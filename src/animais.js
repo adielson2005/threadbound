@@ -94,7 +94,7 @@ function peixe(M, cores) {
   const gomos = cores.map((c, k) => { const s = esfera(0.16 - k * 0.025, c, 0.55, 0.9, 0.8, 10); s.position.z = 0.14 - k * 0.15; g.add(s); return s; });
   const costura = cilindro(0.11, 0.11, 0.012, M.linha, 10); costura.rotation.x = Math.PI / 2; costura.position.z = 0.06; g.add(costura);
   const rabo = new THREE.Group(); rabo.position.z = -0.3; g.add(rabo);
-  const barbatana = cone(0.12, 0.2, cores[0], 3); barbatana.rotation.x = -Math.PI / 2; barbatana.scale.set(0.25, 1, 1.2); barbatana.position.z = -0.08; rabo.add(barbatana);
+  const barbatana = cone(0.12, 0.2, cores[0], 3); barbatana.rotation.x = Math.PI / 2; // a ponta encosta no corpo, a base abre em leque atrás barbatana.scale.set(0.25, 1, 1.2); barbatana.position.z = -0.08; rabo.add(barbatana);
   for (const lado of [-1, 1]) { const olho = esfera(0.022, M.botao, 1, 1, 0.5, 8); olho.position.set(lado * 0.075, 0.03, 0.24); g.add(olho); }
   return { g: sem(g), rabo, gomos };
 }
@@ -184,7 +184,9 @@ export function criarAnimais({ cena, mapa, terreno, distancia }) {
       const cores = ['#f2c94c', '#9b6dd6', '#ffffff', '#f2994a', '#6fcf97', '#56ccf2'];
       for (let k = 0; k < 8; k++) {
         const a = adicionar(borboleta(M, cores[k % cores.length]));
-        const base = new THREE.Vector3(pomar.x + (rnd() - 0.5) * 24, (pomar.topo ?? alturaEm(pomar.x, pomar.z) ?? 0), pomar.z + (rnd() - 0.5) * 24);
+        // sempre sobre o chão do Pomar (nunca em cima do vazio, na beira da ilhota)
+        const chao = perto(new THREE.Vector3(pomar.x, 0, pomar.z), 0, 14);
+        const base = chao.length ? sortear(chao).clone() : new THREE.Vector3(pomar.x, pomar.topo ?? 0, pomar.z);
         Object.assign(a, { tipo: 'borboleta', base, fase: rnd() * 6, fx: 0.3 + rnd() * 0.3, fz: 0.25 + rnd() * 0.3, r: 1.5 + rnd() * 2.5 });
       }
     }
