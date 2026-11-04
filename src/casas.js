@@ -290,7 +290,9 @@ export function construirVila({ centro, raio, alturaEm, rnd, nomes, antiga = fal
 // espiral ficou só para a Costura Final, Cap. 4). Cinco blocos de pedra em linha reta, cada um
 // PATAMAR mais alto que o anterior: sobe-se pulando e agarrando a borda (bordaMax em jogo.js).
 // No alto: parapeito, a carta do mirante e uma moinha de vento girando (marco visível de longe).
-const PATAMAR = 3, LADO_PATAMAR = 3, N_PATAMARES = 5, AFASTAMENTO_TORRE = 4.8;
+// (3 m deixava o 1º bloco a 4–6 m do chão mais baixo em volta, fora do alcance: medido com bot.
+// O 1º bloco agora conta a partir do chão mais baixo dos lados por onde se chega, e o degrau é 2,6 m)
+const PATAMAR = 2.6, LADO_PATAMAR = 3, N_PATAMARES = 5, AFASTAMENTO_TORRE = 4.8;
 function torreMirante(g, centro, alturaEm, A) {
   g.updateMatrixWorld(true);
   const _p = new THREE.Vector3();
@@ -308,7 +310,11 @@ function torreMirante(g, centro, alturaEm, A) {
     for (const dx of [-1.5, 0, 1.5]) for (const dz of [-1.5, 0, 1.5]) { const h = chao(dx, z + dz); if (h !== null) min = Math.min(min, h); }
     return min === Infinity ? 0 : min;
   };
-  const base0 = alturaChao(centroBloco(dir, 0));
+  // chega-se ao 1º bloco pelos lados (±x local; atrás dele fica o farol): a base é o chão mais
+  // baixo ali, para o primeiro degrau não ficar alto demais de nenhum lado
+  let base0 = Infinity;
+  for (const dx of [-4.5, -3, 3, 4.5]) for (const dz of [-1.5, 0, 1.5]) { const h = chao(dx, centroBloco(dir, 0) + dz); if (h !== null) base0 = Math.min(base0, h); }
+  if (base0 === Infinity) base0 = alturaChao(centroBloco(dir, 0));
   let topo = 0;
   for (let k = 0; k < N_PATAMARES; k++) {
     const z = centroBloco(dir, k), pe = alturaChao(z) - 0.6; // afunda um pouco no chão
