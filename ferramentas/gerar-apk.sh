@@ -18,7 +18,7 @@ rm -rf "$B"; mkdir -p "$B/assets/www/assets/boneca" "$B/assets/www/assets/cachoe
 # 1. arquivos do jogo (sem o que só serve às ferramentas: as texturas originais gigantes, o FBX da
 #    cachoeira, que vira cachoeira.bin, e o mapa antigo do Meshy)
 W="$B/assets/www"
-cp index.html "$W/"; cp -r src vendor "$W/"
+cp index.html "$W/"; cp -r src vendor "$W/"; rm -f "$W/src/CLAUDE.md"
 for d in animacoes efeitos menu vilao; do cp -r "assets/$d" "$W/assets/"; done
 cp assets/boneca/boneca.fbx assets/boneca/boneca_nova.bin assets/boneca/boneca_nova.json assets/boneca/*_1024.* assets/boneca/*_2048.* assets/boneca/*_4096.* "$W/assets/boneca/"
 cp assets/cachoeira/cachoeira.bin assets/cachoeira/cachoeira_*.* "$W/assets/cachoeira/"

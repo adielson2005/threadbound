@@ -1,5 +1,4 @@
 # configurações locais do editor / ferramentas
-.claude/
 .vscode/
 .idea/
 *.log
@@ -9,3 +8,13 @@ desktop.ini
 /build/
 *.apk
 __pycache__/
+
+# Claude Code Game Studios: arquivos locais de cada pessoa
+.claude/settings.local.json
+.claude/agent-memory/
+.claude/worktrees/
+CLAUDE.local.md
+project.local.yaml
+production/session-logs/
+production/session-state/*
+!production/session-state/.gitkeep
