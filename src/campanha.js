@@ -25,6 +25,8 @@ export function criarCampanha({ cena, mapa, mundo, inimigos, jogador, respawn, c
     dica: $('dicaTutorial'), aviso: $('aviso'), interagir: $('interagir'), memoria: $('memoria'), bilhete: $('bilhete'),
     fragmentos: $('moedas'),
   };
+  // no toque o objetivo fica na coluna da esquerda, no fluxo, embaixo do fôlego (design/ux/hud.md, celular)
+  if (TOQUE) $('hud').querySelector('.esq').appendChild(ui.objetivo);
 
   // ---------- fragments ----------
   const geoFrag = new THREE.OctahedronGeometry(0.22, 0); geoFrag.scale(1, 1.7, 1);
@@ -97,29 +99,108 @@ export function criarCampanha({ cena, mapa, mundo, inimigos, jogador, respawn, c
   };
 
   // ---------- UI helpers ----------
+  // fôlego: um carretel por fôlego (cheio / vazio), o número "4/5" e, no último, o "!" (design/ux/hud.md).
+  // Os nós são criados só quando o total muda (dificuldade); o resto é troca de classe e de texto.
+  const SVG = 'http://www.w3.org/2000/svg';
+  const CARRETEL_CHEIO = '#i-carretel-cheio', CARRETEL_VAZIO = '#i-carretel-vazio', MS_DESENROLA = 320;
+  const icone = (href, classe) => {
+    const s = document.createElementNS(SVG, 'svg'), u = document.createElementNS(SVG, 'use');
+    s.setAttribute('class', classe); s.setAttribute('aria-hidden', 'true'); u.setAttribute('href', href); s.appendChild(u);
+    return s;
+  };
+  const vidaUi = { carreteis: [], num: null, vida: -1, max: -1 };
   function atualizarVida() {
-    ui.vida.innerHTML = '';
-    for (let i = 0; i < vidaMax(); i++) {
-      const s = document.createElement('i');
-      if (i >= est.vida) s.className = 'vazio';
-      ui.vida.appendChild(s);
+    const max = vidaMax();
+    if (max !== vidaUi.max) {
+      ui.vida.replaceChildren();
+      vidaUi.carreteis = [];
+      for (let i = 0; i < max; i++) { const c = icone(CARRETEL_CHEIO, 'carretel'); vidaUi.carreteis.push(c); ui.vida.appendChild(c); }
+      vidaUi.num = document.createElement('span'); vidaUi.num.className = 'num';
+      ui.vida.append(vidaUi.num, icone('#i-alerta', 'i alerta'));
+      vidaUi.vida = -1;
     }
+    if (est.vida === vidaUi.vida && max === vidaUi.max) return;
+    const perdeu = vidaUi.max === max && vidaUi.vida > est.vida;
+    vidaUi.carreteis.forEach((c, i) => {
+      const cheio = i < est.vida;
+      c.classList.toggle('vazio', !cheio);
+      c.firstChild.setAttribute('href', cheio ? CARRETEL_CHEIO : CARRETEL_VAZIO);
+      if (perdeu && i >= est.vida && i < vidaUi.vida) { c.classList.add('desenrola'); setTimeout(() => c.classList.remove('desenrola'), MS_DESENROLA); }
+    });
+    vidaUi.vida = est.vida; vidaUi.max = max;
+    vidaUi.num.textContent = `${est.vida}/${max}`;
+    ui.vida.setAttribute('aria-label', `Fôlego: ${est.vida} de ${max}`);
+    const baixo = est.vida === 1;
+    ui.vida.classList.toggle('baixo', baixo);
+    document.body.classList.toggle('folego-baixo', baixo); // o pulso do fôlego baixo tem a vez (os outros ficam fixos)
   }
+  const fragUi = { num: ui.fragmentos.querySelector('b'), total: ui.fragmentos.querySelector('.total'), pegos: -1 };
   function atualizarFragmentos() {
-    const k = Math.round((est.pegos / Math.max(1, fragmentos.length)) * 100);
-    ui.fragmentos.innerHTML = `<span class="icone">✦</span><b>${est.pegos}</b>/ ${fragmentos.length}<i class="barrinha"><i style="width:${k}%"></i></i>`;
+    if (est.pegos === fragUi.pegos) return;
+    const cresceu = fragUi.pegos >= 0 && est.pegos > fragUi.pegos;
+    fragUi.pegos = est.pegos;
+    fragUi.num.textContent = est.pegos; fragUi.total.textContent = `/ ${fragmentos.length}`;
+    ui.fragmentos.setAttribute('aria-label', `Fragmentos: ${est.pegos} de ${fragmentos.length}`);
+    if (cresceu) { ui.fragmentos.classList.remove('pegou'); void ui.fragmentos.offsetWidth; ui.fragmentos.classList.add('pegou'); }
   }
   // o HUD é atualizado todo quadro: só mexe no HTML quando o conteúdo muda
   const ultimoHtml = new Map();
   function html(el, conteudo) { if (ultimoHtml.get(el) !== conteudo) { ultimoHtml.set(el, conteudo); el.innerHTML = conteudo; } }
   const escapar = s => s.replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
   // "E — Purificar o Retalho" vira a tecla desenhada + o texto
-  const comTecla = t => { const m = /^(\w) — (.*)$/.exec(t); return m ? `<kbd>${m[1]}</kbd>${escapar(m[2])}` : escapar(t); };
-  let tempoAviso = null;
-  function aviso(texto, ms = 2600) {
-    ui.aviso.textContent = texto; ui.aviso.style.opacity = 1;
-    clearTimeout(tempoAviso); tempoAviso = setTimeout(() => { ui.aviso.style.opacity = 0; }, ms);
+  // (no toque a tecla vira o ícone "usar", o mesmo do botão)
+  const ICONE_USAR = '<svg class="i" aria-hidden="true"><use href="#i-usar"/></svg>';
+  const comTecla = t => { const m = /^(\w) — (.*)$/.exec(t); return m ? `<kbd>${TOQUE ? ICONE_USAR : m[1]}</kbd>${escapar(m[2])}` : escapar(t); };
+
+  // ---------- fila de aviso e memória (design/ux/hud.md, "Feedback"): os dois dividem a zona do meio.
+  // 1 na tela + 1 esperando de cada tipo; o aviso passa à frente (interrompe a memória, que volta
+  // depois); a memória espera a luta acabar. ----------
+  const MS_INTERVALO_FILA = 120, MS_MIN_MEMORIA_RETOMADA = 3000;
+  const ICONES_AVISO = { ok: '#i-ok', alerta: '#i-alerta', fragmento: '#i-fragmento' };
+  const avisoUi = { icone: ui.aviso.querySelector('svg'), uso: ui.aviso.querySelector('use'), texto: ui.aviso.querySelector('span') };
+  const memoriaUi = { titulo: ui.memoria.querySelector('h3 span'), uso: ui.memoria.querySelector('h3 use'), texto: ui.memoria.querySelector('p') };
+  const fila = { atual: null, fim: 0, tempo: null, aviso: null, memoria: null };
+  const emLuta = () => document.body.classList.contains('em-luta');
+  function exibir(item) {
+    fila.atual = item; fila.fim = performance.now() + item.ms;
+    if (item.tipo === 'aviso') {
+      avisoUi.uso.setAttribute('href', ICONES_AVISO[item.icone] ?? ICONES_AVISO.ok);
+      avisoUi.icone.setAttribute('class', `i ${item.icone}`);
+      avisoUi.texto.textContent = item.texto;
+      ui.aviso.classList.add('visivel');
+    } else {
+      memoriaUi.titulo.textContent = item.titulo; memoriaUi.uso.setAttribute('href', item.icone);
+      memoriaUi.texto.textContent = item.texto;
+      ui.memoria.classList.add('visivel');
+    }
+    clearTimeout(fila.tempo); fila.tempo = setTimeout(encerrar, item.ms);
   }
+  function encerrar() {
+    if (!fila.atual) return;
+    (fila.atual.tipo === 'aviso' ? ui.aviso : ui.memoria).classList.remove('visivel');
+    fila.atual = null;
+    setTimeout(proximoDaFila, MS_INTERVALO_FILA);
+  }
+  function proximoDaFila() {
+    if (fila.atual) return;
+    let item = fila.aviso;
+    if (item) fila.aviso = null;
+    else if (fila.memoria && !emLuta()) { item = fila.memoria; fila.memoria = null; }
+    if (item) exibir(item);
+  }
+  function enfileirar(item) {
+    if (!fila.atual) { if (item.tipo === 'memoria' && emLuta()) fila.memoria = item; else exibir(item); return; }
+    if (item.tipo === 'memoria') { fila.memoria = item; return; }
+    if (fila.atual.tipo === 'memoria') {
+      // o aviso passa à frente: a memória sai e volta depois com o tempo que faltava
+      const m = fila.atual;
+      ui.memoria.classList.remove('visivel');
+      if (!fila.memoria) fila.memoria = { ...m, ms: Math.max(MS_MIN_MEMORIA_RETOMADA, fila.fim - performance.now()) };
+      exibir(item);
+    } else fila.aviso = item;
+  }
+  // icone: 'ok' (conquista), 'alerta' (perigo) ou 'fragmento'
+  function aviso(texto, ms = 2600, icone = 'ok') { enfileirar({ tipo: 'aviso', texto, ms, icone }); }
   let tempoDica = null;
   // depois do mini tutorial (tutorial.js) as dicas de controle não aparecem mais: só as que
   // respondem a algo que ela tentou fazer (forcar), como a âncora ainda presa por cristais
@@ -136,9 +217,9 @@ export function criarCampanha({ cena, mapa, mundo, inimigos, jogador, respawn, c
   function proximaFala() {
     const f = est.falas.shift();
     est.falaAtual = f || null;
-    if (!f) { ui.fala.style.opacity = 0; return; }
+    if (!f) { ui.fala.classList.remove('visivel'); return; }
     ui.falaQuem.textContent = f[0]; ui.falaTexto.textContent = f[1];
-    ui.fala.style.opacity = 1;
+    ui.fala.classList.add('visivel');
     est.falaTempo = Math.max(2.8, f[1].length * 0.055);
   }
   function objetivo() {
@@ -160,13 +241,20 @@ export function criarCampanha({ cena, mapa, mundo, inimigos, jogador, respawn, c
     // primeira linha = o objetivo; o resto (cristais, guardiões, luz) vai menor embaixo
     const [titulo, ...detalhes] = txt.split('\n');
     // (os detalhes da âncora só de perto dela, numa linha curta: menos texto na tela durante o jogo)
-    html(ui.objetivo, `<small>Objetivo</small><b>${escapar(titulo)}</b>${detalhes.length ? `<span>${escapar(detalhes.join(' · '))}</span>` : ''}`);
+    html(ui.objetivo, `<svg class="i ok" aria-hidden="true"><use href="#i-ok"/></svg><b>${escapar(titulo)}</b>${detalhes.length ? `<span class="detalhe">${escapar(detalhes.join(' · '))}</span>` : ''}`);
+    // mudou: fio sólido por 1,5 s; ✓ por 1 s (o anterior foi cumprido)
+    if (objetivoUi.titulo !== null && titulo !== objetivoUi.titulo) {
+      ui.objetivo.classList.add('mudou', 'concluido');
+      clearTimeout(objetivoUi.tMudou); clearTimeout(objetivoUi.tOk);
+      objetivoUi.tMudou = setTimeout(() => ui.objetivo.classList.remove('mudou'), MS_OBJETIVO_MUDOU);
+      objetivoUi.tOk = setTimeout(() => ui.objetivo.classList.remove('concluido'), MS_OBJETIVO_OK);
+    }
+    objetivoUi.titulo = titulo;
   }
-  function memoria(texto, titulo = '✧ Fragmento de Lembrança ✧') {
-    ui.memoria.querySelector('h3').textContent = titulo;
-    ui.memoria.querySelector('p').textContent = texto;
-    ui.memoria.style.opacity = 1;
-    setTimeout(() => { ui.memoria.style.opacity = 0; }, 7500);
+  const MS_OBJETIVO_MUDOU = 1500, MS_OBJETIVO_OK = 1000, MS_MEMORIA = 7500;
+  const objetivoUi = { titulo: null, tMudou: null, tOk: null };
+  function memoria(texto, titulo = 'Fragmento de Lembrança', icone = '#i-fragmento') {
+    enfileirar({ tipo: 'memoria', texto, titulo, icone, ms: MS_MEMORIA });
   }
 
   function ancoraProxima(raio) {
@@ -221,7 +309,7 @@ export function criarCampanha({ cena, mapa, mundo, inimigos, jogador, respawn, c
     ui.interagir.style.opacity = interacao ? 1 : 0;
   }
   function lerCarta(c) {
-    memoria(CARTAS[c.nome], `✉ ${c.nome}`);
+    memoria(CARTAS[c.nome], c.nome, '#i-carta');
     if (!c.lida) { c.lida = true; cartasLidas++; c.brilho.visible = false; if (cartasLidas === 1) falar(FALAS.primeiraCarta); salvar(); }
   }
   function tentarAncora(a) {
@@ -260,6 +348,8 @@ export function criarCampanha({ cena, mapa, mundo, inimigos, jogador, respawn, c
     ui.bilhete.style.display = 'flex';
     est.lendo = true;
   }
+  // carta: no toque, o botão Fechar (48 dp); no teclado, Enter ou E
+  ui.bilhete.querySelector('.fechar-carta').addEventListener('click', () => fecharBilhete());
   function fecharBilhete() {
     if (!est.lendo) return false;
     est.lendo = false; ui.bilhete.style.display = 'none';
@@ -323,7 +413,7 @@ export function criarCampanha({ cena, mapa, mundo, inimigos, jogador, respawn, c
       const n = mundo.ancoras.filter(x => x.restaurada).length;
       est.tempoTremor = 32 + n * 25; est.tremor = 1;
       mundo.sacudir(jogador.pos);
-      if (!est.avisouTremor) { est.avisouTremor = true; aviso(AVISOS.tremor); }
+      if (!est.avisouTremor) { est.avisouTremor = true; aviso(AVISOS.tremor, 2600, 'alerta'); }
     }
     est.tremor = Math.max(0, est.tremor - dt * 1.1);
     // salvamento automático de tempos em tempos (o ponto seguro onde ela está agora)
@@ -332,9 +422,12 @@ export function criarCampanha({ cena, mapa, mundo, inimigos, jogador, respawn, c
 
     procurarInteracao();
     objetivo();
+    if (!fila.atual && fila.memoria && !emLuta()) proximoDaFila(); // memória que esperou a luta acabar
   }
 
+  const MS_APERTADO = 140;
   function interagir() {
+    if (interacao) { ui.interagir.classList.add('apertado'); setTimeout(() => ui.interagir.classList.remove('apertado'), MS_APERTADO); }
     if (fecharBilhete()) return;
     if (est.falaAtual) { proximaFala(); return; }
     interacao?.acao();
@@ -390,7 +483,7 @@ export function criarCampanha({ cena, mapa, mundo, inimigos, jogador, respawn, c
     est.vida = Math.max(0, est.vida - n); atualizarVida();
     const flash = $('dano');
     if (flash) { flash.style.opacity = 1; clearTimeout(tempoDano); tempoDano = setTimeout(() => { flash.style.opacity = 0; }, 260); }
-    if (texto && est.vida > 0) aviso(texto, 1600);
+    if (texto && est.vida > 0) aviso(texto, 1600, 'alerta');
     return est.vida;
   }
   // "Tentar de novo": volta ao último ponto salvo com o fôlego cheio (o progresso continua)
@@ -409,7 +502,7 @@ export function criarCampanha({ cena, mapa, mundo, inimigos, jogador, respawn, c
     // jogo salvo antes do vilão existir, já na etapa do Coração: a luta vem antes
     if (est.etapa === 'coracao' && !est.chefeVencido && !mundo.coracao.restaurado) est.etapa = 'chefe';
     c.v.aoMudarFase = () => falar(FALAS.chefeFase2);
-    c.v.aoTerceiraFase = () => { falar(FALAS.chefeFase3); aviso(AVISOS.ventoArena, 2600); };
+    c.v.aoTerceiraFase = () => { falar(FALAS.chefeFase3); aviso(AVISOS.ventoArena, 2600, 'alerta'); };
     c.v.aoRecuar = modo => { if (modo === 'emboscada') falar(FALAS.raviRecua); };
     c.v.aoAviso = motivo => {
       if (motivo === 'quebra') aviso(AVISOS.guardaQuebrada, 1300);

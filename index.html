@@ -7,7 +7,7 @@
 <!-- fontes da interface (sem internet, caem para a fonte do sistema) -->
 <link rel="icon" href="data:,">
 <link rel="stylesheet" href="vendor/fontes/fontes.css">
-<meta name="versao-site" content="8770bb8b7e">
+<meta name="versao-site" content="38258ca6ed">
 <script>
   // O GitHub Pages deixa o navegador reaproveitar esta página por até 10 minutos (e um endereço
   // que já foi aberto, como "?v=22", pode continuar vindo da memória). Aqui a página pergunta ao site,
@@ -117,7 +117,7 @@
   #poder .trilho i { display: block; height: 100%; background: var(--lilas); transform-origin: 0 50%; transform: scaleX(0); transition: transform .2s; }
   #poder kbd { margin: 0; }
   #poder .pronto { display: none; padding: 1px 8px; border-radius: 8px; background: var(--hud-fundo-forte); color: var(--ouro); font: 800 14px var(--fonte); }
-  #poder.cheio { outline: 2px solid var(--ouro); outline-offset: -3px; animation: pulsoPoder 1s ease-in-out infinite alternate; }
+  #poder.cheio { outline: 2px solid var(--ouro); outline-offset: -3px; animation: pulsoPoder .5s ease-in-out infinite alternate; /* ida e volta = 1 Hz */ }
   #poder.cheio .pronto { display: block; }
   #poder.cheio .trilho i { background: var(--ouro-claro); }
   #poder.cheio .i { color: var(--ouro-claro); }
@@ -148,7 +148,7 @@
     font: 700 14px var(--fonte); font-variant-numeric: tabular-nums; pointer-events: none; z-index: 2; }
   #fps[hidden] { display: none; }
   /* topo central: barra do chefe e, logo abaixo, o vento da arena */
-  #topoCentro { position: fixed; top: calc(var(--m-hud) + env(safe-area-inset-top, 0px)); left: 50%; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; gap: 6px; pointer-events: none; z-index: 6; }
+  #topoCentro { position: fixed; top: calc((var(--m-hud) + env(safe-area-inset-top, 0px)) * var(--ez)); left: 50%; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; gap: 6px; pointer-events: none; z-index: 6; }
   #chefe { width: calc(min(360px, 46vw) * var(--ez)); box-sizing: border-box; padding: 8px 14px 10px; border-radius: 12px; opacity: 0; transition: opacity .4s var(--ease-fora); }
   #chefe .topo { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
   #chefe .nome { font: 600 14px var(--titulo); letter-spacing: 0; text-transform: uppercase; }
@@ -173,9 +173,10 @@
   #ventoArena.troca .seta { animation: piscaVento .5s steps(1) infinite; outline: 2px solid var(--ouro); outline-offset: 1px; }
   @keyframes piscaVento { 50% { opacity: .25; } }
   /* objetivo: uma linha (até 2), à direita no PC e à esquerda no celular; mudou = fio sólido 1,5 s; ✓ 1 s */
-  #objetivo { position: fixed; top: calc((var(--m-hud) + env(safe-area-inset-top, 0px)) * var(--ez) + 56px); right: calc((var(--m-hud) + env(safe-area-inset-right, 0px)) * var(--ez)); width: min(260px, 40vw); box-sizing: border-box;
+  #objetivo { position: fixed; top: calc((var(--m-hud) + env(safe-area-inset-top, 0px) + 56px) * var(--ez)); right: calc((var(--m-hud) + env(safe-area-inset-right, 0px)) * var(--ez)); width: min(260px, 40vw); box-sizing: border-box;
     padding: 6px 12px; border-radius: 12px; text-align: right; pointer-events: none; z-index: 2; transition: outline-color .3s, background .3s, opacity .3s; }
   #objetivo:empty { display: none; }
+  #hud .esq #objetivo { position: static; zoom: 1; width: auto; max-width: min(260px, 44vw); text-align: left; }
   #objetivo b { font: 700 14px/1.3 var(--fonte); }
   #objetivo span.detalhe { display: block; font: 700 14px/1.3 var(--fonte); }
   #objetivo .ok { display: none; width: 16px; height: 16px; margin-right: 6px; vertical-align: -3px; padding: 2px; box-sizing: border-box; border-radius: 50%; background: var(--ouro); color: var(--hud-noite-cor); }
@@ -223,11 +224,11 @@
   .fechar-carta { display: flex; align-items: center; justify-content: center; gap: 8px; min-width: 48px; min-height: 48px; margin: 14px 0 0 auto; padding: 0 20px; border: 0; border-radius: 10px; cursor: pointer;
     background: var(--papel-texto); color: var(--papel); font: 800 16px var(--fonte); outline: 1.5px dashed var(--ouro); outline-offset: -4px; }
   .fechar-carta .i { width: 20px; height: 20px; }
-  @media (pointer: coarse) { #bilhete small { display: none; } }
+  @media (pointer: coarse) { #bilhete small { display: none; } #poder kbd { display: none; } }
   #golpe { position: fixed; top: 58%; left: 50%; transform: translateX(-50%); color: var(--texto); font: 600 18px var(--titulo); text-shadow: var(--sombra-texto); opacity: 0; transition: opacity .2s; pointer-events: none; z-index: 2; }
   #golpe.pequeno { top: auto; bottom: 112px; font: 700 14px var(--fonte); }
   /* a escala de texto vale para todo o HUD */
-  #hud .esq, #hud .dir, #topoCentro, #objetivo, #dica, #dicaTutorial, #fala, #aviso, #interagir, #memoria, #bilhete .papel, #golpe, #fps { zoom: var(--escala-texto); }
+  #hud .esq, #topoCentro, #objetivo, #dica, #dicaTutorial, #fala, #aviso, #interagir, #memoria, #bilhete .papel, #golpe, #fps { zoom: var(--escala-texto); }
   /* contexto: luta (objetivo a 60%) e chefe (objetivo e fragmentos somem); fôlego baixo tem a vez de pulsar */
   body.em-luta #objetivo { opacity: .6; }
   body.no-chefe :is(#objetivo, #moedas) { display: none; }
@@ -418,7 +419,7 @@
   #tUsar { --col: 0; --lin: 2; } #tDefesa { --col: 1; --lin: 2; }
   #tEsquiva { --col: 0; --lin: 3; } #tPoder { --col: 1; --lin: 3; }
   /* poder pronto: borda sólida de 3 px + "Pronto!" acima do botão; pulso de brilho a 1 Hz */
-  #tPoder.pronto { outline: none; border: 3px solid var(--ouro-claro); animation: brilhoPoder 1s ease-in-out infinite alternate; }
+  #tPoder.pronto { outline: none; border: 3px solid var(--ouro-claro); animation: brilhoPoder .5s ease-in-out infinite alternate; }
   #tPoder.pronto::after { content: 'Pronto!'; position: absolute; bottom: calc(100% + 4px); left: 50%; transform: translateX(-50%); padding: 1px 8px; border-radius: 8px; background: var(--hud-fundo-forte); color: var(--ouro);
     font: 800 14px var(--fonte); text-shadow: var(--sombra-texto); white-space: nowrap; pointer-events: none; }
   @keyframes brilhoPoder { from { box-shadow: 0 0 4px rgba(255, 227, 163, .5); } to { box-shadow: 0 0 14px rgba(255, 227, 163, 1); } }
@@ -442,15 +443,15 @@
   }
   @media (pointer: coarse) and (orientation: landscape) {
     #objetivo { right: auto; left: calc((var(--m-hud) + env(safe-area-inset-left, 0px)) * var(--ez)); text-align: left; }
-    #fala { left: 12px; right: var(--largura-toque); width: auto; transform: none; bottom: 10px; }
-    #dicaTutorial { left: 12px; right: var(--largura-toque); transform: none; max-width: none; top: auto; bottom: 86px; text-align: left; }
+    #fala { left: calc(12px * var(--ez)); right: calc(var(--largura-toque) * var(--ez)); width: auto; transform: none; bottom: calc(10px * var(--ez)); }
+    #dicaTutorial { left: calc(12px * var(--ez)); right: calc(var(--largura-toque) * var(--ez)); transform: none; max-width: none; top: auto; bottom: 86px; text-align: left; }
     #interagir { bottom: 150px; left: calc(50% - 80px); }
-    body.inverter #fala, body.inverter #dicaTutorial { left: var(--largura-toque); right: 12px; }
+    body.inverter :is(#fala, #dicaTutorial) { left: calc(var(--largura-toque) * var(--ez)); right: calc(12px * var(--ez)); }
   }
   @media (pointer: coarse) and (orientation: portrait) {
-    #fala { bottom: var(--altura-toque); }
-    #dicaTutorial { top: auto; bottom: calc(var(--altura-toque) + 90px); }
-    #interagir { bottom: calc(var(--altura-toque) + 180px); }
+    #fala { bottom: calc(var(--altura-toque) * var(--ez)); }
+    #dicaTutorial { top: auto; bottom: calc((var(--altura-toque) + 90px) * var(--ez)); }
+    #interagir { bottom: calc((var(--altura-toque) + 180px) * var(--ez)); }
   }
   /* celular deitado (tela baixa): texto à esquerda, opções à direita, sem rolar */
   @media (max-height: 520px) and (min-width: 600px) {
@@ -599,19 +600,19 @@
   .mm-embarcar:disabled { opacity: .5; }
   .mm-voltar { position: absolute; left: 16px; bottom: 22px; width: auto; color: #fff; }
   /* mini tutorial: um passo por vez, embaixo, no meio */
-  #tutorial { position: fixed; left: 50%; bottom: 96px; transform: translateX(-50%); width: min(420px, 86vw); padding: 12px 16px 10px; border-radius: 10px; text-align: center;
-    background: rgba(10, 8, 14, 0.62); color: #fff; pointer-events: none; opacity: 0; transition: opacity .3s, box-shadow .2s; z-index: 6; zoom: var(--escala-texto); }
-  #tutorial b { display: block; font: 700 12px var(--fonte); letter-spacing: 2px; text-transform: uppercase; color: var(--ouro); margin: 6px 0 3px; }
+  #tutorial { position: fixed; left: 50%; bottom: 96px; transform: translateX(-50%); width: calc(min(420px, 86vw) * var(--ez)); padding: 12px 16px 10px; border-radius: 10px; text-align: center;
+    background: var(--hud-fundo); color: #fff; pointer-events: none; opacity: 0; transition: opacity .3s, box-shadow .2s; z-index: 6; zoom: var(--escala-texto); }
+  #tutorial b { display: block; font: 700 14px var(--fonte); letter-spacing: 2px; text-transform: uppercase; color: var(--ouro); margin: 6px 0 3px; }
   #tutorial span { display: block; font-size: 15px; line-height: 1.35; }
   #tutorial .pontos { display: flex; gap: 6px; justify-content: center; }
   #tutorial .pontos i { width: 18px; height: 3px; border-radius: 2px; background: rgba(255, 255, 255, 0.22); }
   #tutorial .pontos i.atual { background: #fff; } #tutorial .pontos i.feito { background: var(--ouro); }
   #tutorial.certo { box-shadow: 0 0 0 2px rgba(255, 214, 140, 0.8); }
-  #tutorial button { pointer-events: auto; margin: 8px auto 0; font-size: 12px; min-height: 26px; width: auto; justify-content: center; color: var(--texto-2); }
+  #tutorial button { pointer-events: auto; margin: 8px auto 0; font-size: 14px; min-height: 48px; width: auto; justify-content: center; color: var(--texto-2); }
   @media (pointer: coarse) { #tutorial { bottom: auto; top: 64px; } }
 </style>
 <!-- bibliotecas na própria pasta (vendor/): three 0.165.0, three-mesh-bvh 0.7.6, meshoptimizer 0.21.0. O jogo roda sem internet (e dentro do APK) -->
-<script type="importmap">{"imports":{"three":"./vendor/three/build/three.module.js","three/addons/":"./vendor/three/examples/jsm/","three-mesh-bvh":"./vendor/three-mesh-bvh/build/index.module.js","meshoptimizer/simplifier":"./vendor/meshoptimizer/meshopt_simplifier.module.js","./src/agua.js":"./src/agua.js?v=e2a2da6b9b","./src/altos.js":"./src/altos.js?v=ac761e4342","./src/animLuta.js":"./src/animLuta.js?v=ba5d6f9de7","./src/animais.js":"./src/animais.js?v=5a63b0bc33","./src/boneca.js":"./src/boneca.js?v=0eef2507c2","./src/bonecaNova.js":"./src/bonecaNova.js?v=7ea290af16","./src/cachoeira.js":"./src/cachoeira.js?v=f700bc46b9","./src/cambalhota.js":"./src/cambalhota.js?v=aff8debf26","./src/campanha.js":"./src/campanha.js?v=983babcac9","./src/canvasTextura.js":"./src/canvasTextura.js?v=8ddd89e18a","./src/capitulo.js":"./src/capitulo.js?v=5631f04f86","./src/casas.js":"./src/casas.js?v=f3dfa565ca","./src/ceu.js":"./src/ceu.js?v=8ffb931fd1","./src/chuva.js":"./src/chuva.js?v=6cf0295986","./src/colisao.js":"./src/colisao.js?v=ac6260ec0b","./src/combate.js":"./src/combate.js?v=6ad26f3497","./src/dia.js":"./src/dia.js?v=e05b6cc395","./src/dificuldade.js":"./src/dificuldade.js?v=cfdf2ff62e","./src/distancia.js":"./src/distancia.js?v=9a5844420e","./src/estilo.js":"./src/estilo.js?v=0c453af42f","./src/fisica.js":"./src/fisica.js?v=7949a2cbcf","./src/folhas.js":"./src/folhas.js?v=0703e7d0dd","./src/graficos.js":"./src/graficos.js?v=66a6779bf1","./src/historia.js":"./src/historia.js?v=7aff3796aa","./src/ilha.js":"./src/ilha.js?v=670fb485d3","./src/inimigos.js":"./src/inimigos.js?v=39857a4c33","./src/jogo.js":"./src/jogo.js?v=d77fae37b3","./src/lotes.js":"./src/lotes.js?v=f3831174bf","./src/mapa.js":"./src/mapa.js?v=eb1d8bbcc0","./src/mapaMundi.js":"./src/mapaMundi.js?v=3eb13da7fc","./src/mundo.js":"./src/mundo.js?v=262a267749","./src/nevoa.js":"./src/nevoa.js?v=9bccad8ac5","./src/objetos.js":"./src/objetos.js?v=a78546e0b2","./src/oclusao.js":"./src/oclusao.js?v=a1ec74f05f","./src/particulas.js":"./src/particulas.js?v=efad11a94e","./src/pegaso.js":"./src/pegaso.js?v=08c8aa3a88","./src/pes.js":"./src/pes.js?v=9f8ed5d180","./src/praia.js":"./src/praia.js?v=700cd3c717","./src/praiaForma.js":"./src/praiaForma.js?v=79c406a618","./src/reparos.js":"./src/reparos.js?v=e805cead1a","./src/resolucao.js":"./src/resolucao.js?v=0d1e50cb15","./src/salvar.js":"./src/salvar.js?v=0d75e7e284","./src/simplificar.js":"./src/simplificar.js?v=a439e6c6ca","./src/som.js":"./src/som.js?v=b03701df1b","./src/sombraBoneca.js":"./src/sombraBoneca.js?v=02b8ff3403","./src/suavizar.js":"./src/suavizar.js?v=042d8dcf4b","./src/terreno.js":"./src/terreno.js?v=30a71b0a42","./src/texturas.js":"./src/texturas.js?v=5b74c7049c","./src/tutorial.js":"./src/tutorial.js?v=1f1fb0bc8d","./src/vilao.js":"./src/vilao.js?v=371b1a1e1f"}}</script>
+<script type="importmap">{"imports":{"three":"./vendor/three/build/three.module.js","three/addons/":"./vendor/three/examples/jsm/","three-mesh-bvh":"./vendor/three-mesh-bvh/build/index.module.js","meshoptimizer/simplifier":"./vendor/meshoptimizer/meshopt_simplifier.module.js","./src/agua.js":"./src/agua.js?v=e2a2da6b9b","./src/altos.js":"./src/altos.js?v=ac761e4342","./src/animLuta.js":"./src/animLuta.js?v=ba5d6f9de7","./src/animais.js":"./src/animais.js?v=5a63b0bc33","./src/boneca.js":"./src/boneca.js?v=0eef2507c2","./src/bonecaNova.js":"./src/bonecaNova.js?v=7ea290af16","./src/cachoeira.js":"./src/cachoeira.js?v=f700bc46b9","./src/cambalhota.js":"./src/cambalhota.js?v=aff8debf26","./src/campanha.js":"./src/campanha.js?v=59024aa38b","./src/canvasTextura.js":"./src/canvasTextura.js?v=8ddd89e18a","./src/capitulo.js":"./src/capitulo.js?v=5631f04f86","./src/casas.js":"./src/casas.js?v=f3dfa565ca","./src/ceu.js":"./src/ceu.js?v=8ffb931fd1","./src/chuva.js":"./src/chuva.js?v=6cf0295986","./src/colisao.js":"./src/colisao.js?v=ac6260ec0b","./src/combate.js":"./src/combate.js?v=07b4497810","./src/dia.js":"./src/dia.js?v=e05b6cc395","./src/dificuldade.js":"./src/dificuldade.js?v=cfdf2ff62e","./src/distancia.js":"./src/distancia.js?v=9a5844420e","./src/estilo.js":"./src/estilo.js?v=0c453af42f","./src/fisica.js":"./src/fisica.js?v=7949a2cbcf","./src/folhas.js":"./src/folhas.js?v=0703e7d0dd","./src/graficos.js":"./src/graficos.js?v=66a6779bf1","./src/historia.js":"./src/historia.js?v=7aff3796aa","./src/ilha.js":"./src/ilha.js?v=670fb485d3","./src/inimigos.js":"./src/inimigos.js?v=39857a4c33","./src/jogo.js":"./src/jogo.js?v=f80705ba56","./src/lotes.js":"./src/lotes.js?v=f3831174bf","./src/mapa.js":"./src/mapa.js?v=eb1d8bbcc0","./src/mapaMundi.js":"./src/mapaMundi.js?v=3eb13da7fc","./src/mundo.js":"./src/mundo.js?v=262a267749","./src/nevoa.js":"./src/nevoa.js?v=9bccad8ac5","./src/objetos.js":"./src/objetos.js?v=a78546e0b2","./src/oclusao.js":"./src/oclusao.js?v=a1ec74f05f","./src/particulas.js":"./src/particulas.js?v=efad11a94e","./src/pegaso.js":"./src/pegaso.js?v=08c8aa3a88","./src/pes.js":"./src/pes.js?v=9f8ed5d180","./src/praia.js":"./src/praia.js?v=700cd3c717","./src/praiaForma.js":"./src/praiaForma.js?v=79c406a618","./src/reparos.js":"./src/reparos.js?v=e805cead1a","./src/resolucao.js":"./src/resolucao.js?v=0d1e50cb15","./src/salvar.js":"./src/salvar.js?v=c6cce24000","./src/simplificar.js":"./src/simplificar.js?v=a439e6c6ca","./src/som.js":"./src/som.js?v=b03701df1b","./src/sombraBoneca.js":"./src/sombraBoneca.js?v=02b8ff3403","./src/suavizar.js":"./src/suavizar.js?v=042d8dcf4b","./src/terreno.js":"./src/terreno.js?v=30a71b0a42","./src/texturas.js":"./src/texturas.js?v=5b74c7049c","./src/tutorial.js":"./src/tutorial.js?v=1f1fb0bc8d","./src/vilao.js":"./src/vilao.js?v=5742a89aa1"}}</script>
 </head>
 <body>
 <!-- ícones do HUD (sprite único: <use href="#i-...">): traço 2, pontas redondas, 24x24 (carretéis 14x20) -->
@@ -841,7 +842,7 @@
       <p id="perfil-pc"></p>
       <label class="opcao marcar"><input type="checkbox" id="cfgFps"> Mostrar desempenho (fps)</label>
       <div id="aviso-aa">O antisserrilhado deste nível só muda ao abrir o jogo de novo.</div>
-      <p id="versao">versão 04/11/2026 02:45 · d77fae</p>
+      <p id="versao">versão 05/11/2026 00:23 · f80705</p>
     </div>
     <footer><button id="fechar-graficos" class="voltar"><kbd>Esc</kbd>Voltar</button></footer>
   </div>
@@ -910,6 +911,6 @@
     msg.appendChild(b);
   }, true);
 </script>
-<script type="module" src="src/jogo.js?v=d77fae37b3"></script>
+<script type="module" src="src/jogo.js?v=f80705ba56"></script>
 </body>
 </html>

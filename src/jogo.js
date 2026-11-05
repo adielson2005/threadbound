@@ -361,8 +361,6 @@ function desenhar() {
 // a névoa, as nuvens baixas do High e a luz de ambiente. A direção da luz não muda (sombra fixa):
 // de dia é o sol, à noite o luar.
 const tintaHora = new THREE.Color(), tintaNuvens = new THREE.Color(), branco = new THREE.Color(1, 1, 1);
-const hudHora = $('hora');
-let horaMostrada = '';
 function aplicarHora() {
   const e = ceuJogo.estado;
   sol.color.copy(e.corLuz);
@@ -384,10 +382,14 @@ function aplicarHora() {
   }
   agua?.definirCeu(e);
   nevoa?.definirLuz(tintaHora);
-  // relógio no HUD: ☀ de dia, ☾ à noite
-  const h = Math.floor(e.hora), m = Math.floor((e.hora % 1) * 6) * 10;
-  const texto = `${h >= 6 && h < 18 ? '☀' : '☾'} ${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
-  if (hudHora && texto !== horaMostrada) { horaMostrada = texto; hudHora.textContent = texto; }
+}
+// a hora do dia fica na pausa (design/ux/hud.md: "ALWAYS HIDE" no jogo); sol de dia, lua à noite
+const INICIO_DIA = 6, FIM_DIA = 18;
+function mostrarHoraNaPausa() {
+  const hora = ceuJogo.estado.hora, h = Math.floor(hora), m = Math.floor((hora % 1) * 6) * 10;
+  $('pausaHoraTexto').textContent = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+  $('pausaHoraIcone').setAttribute('href', h >= INICIO_DIA && h < FIM_DIA ? '#i-sol' : '#i-lua');
+  $('pausaHora').setAttribute('aria-label', `Hora do dia: ${$('pausaHoraTexto').textContent}`);
 }
 
 function redimensionarPos() { altos?.redimensionar(); suavizacao.redimensionar(); }
@@ -491,8 +493,9 @@ const toques = new Map();
 const bastao = $('bastao');
 canvas.addEventListener('pointerdown', e => {
   if (e.pointerType !== 'touch') return;
-  toques.set(e.pointerId, { x: e.clientX, y: e.clientY, x0: e.clientX, y0: e.clientY, esquerda: e.clientX < innerWidth / 2 });
-  if (e.clientX < innerWidth / 2 && bastao) { bastao.style.display = 'block'; bastao.style.left = `${e.clientX - 50}px`; bastao.style.top = `${e.clientY - 50}px`; }
+  const ladoBastao = config.inverterLados ? e.clientX >= innerWidth / 2 : e.clientX < innerWidth / 2;
+  toques.set(e.pointerId, { x: e.clientX, y: e.clientY, x0: e.clientX, y0: e.clientY, esquerda: ladoBastao });
+  if (ladoBastao && bastao) { bastao.style.display = 'block'; bastao.style.left = `${e.clientX - 50}px`; bastao.style.top = `${e.clientY - 50}px`; }
 });
 canvas.addEventListener('pointermove', e => {
   const t = toques.get(e.pointerId);
@@ -759,6 +762,7 @@ $('pausaNuvem').addEventListener('click', chamarNuvem);
 
 // ---------- vento na arena (3ª fase do Ravi) ----------
 const hudVento = $('ventoArena'), _direitaCam = new THREE.Vector3();
+const setaVento = hudVento.querySelector('.seta'), folhasVento = hudVento.querySelectorAll('.folha'), FOLHAS_VENTO = 3;
 function atualizarVentoArena(dt) {
   const ligado = !!vilao?.terceiraFase && estado === 'jogando' && !jogador.morta;
   if (!ligado) { if (ventoArena) { ventoArena = null; hudVento.classList.remove('ativo', 'troca'); } return; }
@@ -767,7 +771,7 @@ function atualizarVentoArena(dt) {
     const d = new THREE.Vector3(jogador.pos.x - vilao.v.pos.x, 0, jogador.pos.z - vilao.v.pos.z);
     if (d.lengthSq() < 1e-4) d.set(1, 0, 0);
     d.normalize();
-    ventoArena = { dir: new THREE.Vector3(-d.z, 0, d.x), sentido: 1, t: 0, folhas: 0, ultimo: '' };
+    ventoArena = { dir: new THREE.Vector3(-d.z, 0, d.x), sentido: 1, t: 0, folhas: 0, ultimo: -1 };
     hudVento.classList.add('ativo');
   }
   const v = ventoArena;
@@ -782,10 +786,15 @@ function atualizarVentoArena(dt) {
   // seta na tela: o sentido do vento visto pela câmera, e três pontos que se apagam até a troca
   _direitaCam.set(Math.cos(camera3p.yaw), 0, -Math.sin(camera3p.yaw));
   const lado = v.dir.dot(_direitaCam) * v.sentido, frente = -(v.dir.x * -Math.sin(camera3p.yaw) + v.dir.z * -Math.cos(camera3p.yaw)) * v.sentido;
-  const seta = Math.abs(lado) >= Math.abs(frente) ? (lado > 0 ? '⟶' : '⟵') : (frente > 0 ? '↓' : '↑');
-  const resta = VENTO_ARENA.periodo - v.t, pontos = '●'.repeat(Math.ceil(resta / VENTO_ARENA.periodo * 3)).padEnd(3, '○');
-  const txt = seta + pontos;
-  if (txt !== v.ultimo) { v.ultimo = txt; hudVento.querySelector('b').textContent = seta; hudVento.querySelector('span').textContent = pontos; }
+  // seta: ângulo (0 = direita, 90 = para baixo...); folhas cheias = quanto resta até a troca
+  const giro = Math.abs(lado) >= Math.abs(frente) ? (lado > 0 ? 0 : 180) : (frente > 0 ? 90 : -90);
+  const resta = VENTO_ARENA.periodo - v.t, cheias = Math.ceil(resta / VENTO_ARENA.periodo * FOLHAS_VENTO);
+  const chave = giro * 10 + cheias;
+  if (chave !== v.ultimo) {
+    v.ultimo = chave;
+    setaVento.style.transform = `rotate(${giro}deg)`;
+    for (let i = 0; i < FOLHAS_VENTO; i++) { folhasVento[i].classList.toggle('cheia', i < cheias); folhasVento[i].classList.toggle('vazia', i >= cheias); }
+  }
   hudVento.classList.toggle('troca', resta < VENTO_ARENA.aviso);
 }
 
@@ -972,7 +981,12 @@ function aplicarConfig() {
   chuva.definirVolume(config.volume);
   definirVolume(config.volume);
   CAMERA.sensibilidade = 0.0025 * config.sensibilidade;
+  // HUD (design/ux/hud.md, Acessibilidade): escala de texto, flashes, botões de toque, fps
   document.documentElement.style.setProperty('--escala-texto', config.texto);
+  document.documentElement.dataset.toqueTam = config.toqueTam;
+  document.body.classList.toggle('sem-flashes', config.reduzirFlashes);
+  document.body.classList.toggle('inverter', config.inverterLados);
+  hudFps.hidden = !config.mostrarFps;
   $('volumeValor').textContent = Math.round(config.volume * 100) + '%';
   $('sensValor').textContent = config.sensibilidade.toFixed(1) + '×';
   salvarConfig(config);
@@ -982,6 +996,13 @@ $('cfgVolume').addEventListener('input', e => { config.volume = +e.target.value;
 $('cfgSens').addEventListener('input', e => { config.sensibilidade = +e.target.value; aplicarConfig(); });
 $('cfgTexto').addEventListener('change', e => { config.texto = +e.target.value; aplicarConfig(); });
 $('cfgTremor').addEventListener('change', e => { config.tremor = e.target.checked; aplicarConfig(); });
+$('cfgFlashes').checked = config.reduzirFlashes; $('cfgLento').checked = config.cameraLenta; $('cfgToqueTam').value = config.toqueTam;
+$('cfgInverter').checked = config.inverterLados; $('cfgFps').checked = config.mostrarFps;
+$('cfgFlashes').addEventListener('change', e => { config.reduzirFlashes = e.target.checked; aplicarConfig(); });
+$('cfgLento').addEventListener('change', e => { config.cameraLenta = e.target.checked; aplicarConfig(); });
+$('cfgToqueTam').addEventListener('change', e => { config.toqueTam = e.target.value; aplicarConfig(); });
+$('cfgInverter').addEventListener('change', e => { config.inverterLados = e.target.checked; aplicarConfig(); });
+$('cfgFps').addEventListener('change', e => { config.mostrarFps = e.target.checked; aplicarConfig(); });
 aplicarConfig();
 $('continuar').addEventListener('click', () => { sumir(tela, () => { tela.style.display = 'none'; }, 150); estado = 'jogando'; $('continuar').style.display = 'none'; $('continuar').blur(); teclas.clear(); });
 
@@ -1022,7 +1043,7 @@ function alternarPausa() {
   pausado = !pausado;
   if (pausado) mostrar(telaPausa, () => { telaPausa.style.display = 'flex'; });
   else sumir(telaPausa, () => { telaPausa.style.display = 'none'; });
-  if (pausado) { atualizarBotaoNuvem(); $('pausaContinuar').focus({ preventScroll: true, focusVisible: false }); }
+  if (pausado) { atualizarBotaoNuvem(); mostrarHoraNaPausa(); $('pausaContinuar').focus({ preventScroll: true, focusVisible: false }); }
   else { fecharPaineis(); abrirMenu(false); document.activeElement?.blur(); }
   pedidoPulo = false;
   if (pausado) document.exitPointerLock?.();
@@ -1862,7 +1883,7 @@ function medirDesempenho(dt) {
   if (medidor.tempo < 1) return;
   medidor.fps = medidor.quadros / medidor.tempo;
   medidor.quadros = medidor.tempo = 0;
-  hudFps.textContent = `${Math.round(medidor.fps)} fps`;
+  if (config.mostrarFps) hudFps.textContent = `${Math.round(medidor.fps)} fps`;
   if (estado !== 'jogando' || document.hidden || pausado) { orcamento.lento = orcamento.folga = 0; return; }
   const min = pisoResolucao(), max = nivel.resolucao[1];
   // meta: 45 fps no PC; no celular, 58 (a tela atualiza a 60 Hz ou mais e menos que isso se sente
@@ -1900,7 +1921,7 @@ function aplicarOrcamento() {
 }
 
 // barra de fôlego do sprint: só aparece quando não está cheia; anda por transform (sem redesenhar)
-const barraEnergia = $('energia'), preenchEnergia = barraEnergia?.firstElementChild;
+const barraEnergia = $('energia'), preenchEnergia = barraEnergia?.querySelector('.trilho i');
 let energiaMostrada = -1;
 function mostrarEnergia() {
   if (!barraEnergia) return;
@@ -1910,6 +1931,17 @@ function mostrarEnergia() {
   preenchEnergia.style.transform = `scaleX(${e})`;
   barraEnergia.classList.toggle('cheia', e >= 1);
   barraEnergia.classList.toggle('cansada', jogador.cansada);
+  botaoSuper.classList.toggle('indisponivel', jogador.cansada);
+}
+
+// contexto do HUD (design/ux/hud.md, "HUD States"): luta (objetivo a 60%, poder visível) e chefe
+// (objetivo e fragmentos somem). As classes do body só mudam quando o contexto muda.
+let contextoLuta = false, contextoChefe = false;
+function atualizarContextoHud() {
+  const chefe = estado === 'jogando' && !!vilao?.lutando && vilao.v.modo === 'chefe';
+  const luta = estado === 'jogando' && (chefe || !!vilao?.lutando || !!combate?.emLuta);
+  if (luta !== contextoLuta) { contextoLuta = luta; document.body.classList.toggle('em-luta', luta); }
+  if (chefe !== contextoChefe) { contextoChefe = chefe; document.body.classList.toggle('no-chefe', chefe); }
 }
 
 // ---------- Loop ----------
@@ -1945,7 +1977,7 @@ renderer.setAnimationLoop(() => {
   if (estado === 'jogando' && mapa) {
     acumulado += dt;
     while (acumulado >= PASSO) { passoFisica(PASSO); acumulado -= PASSO; }
-    mostrarEnergia();
+    mostrarEnergia(); atualizarContextoHud();
       if (jogador.morta) { tempoMorte -= dt; if (tempoMorte <= 0) mostrarGameOver(); }
   }
   mundo?.atualizar(dt, t);
@@ -2087,6 +2119,7 @@ Promise.all([
       tremer: k => { impacto.tremor = Math.max(impacto.tremor, k); },
       morrer,
       chefe: () => vilao,
+      cameraLenta: () => config.cameraLenta,
     });
     aplicarEfeitos();
     configurarSombra();
