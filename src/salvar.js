@@ -35,6 +35,21 @@ export function marcarConcluido(n) { gravar(CHAVE_CONCLUIDOS, [...new Set([...le
 export function ultimoCapitulo() { const n = ler(CHAVE_ULTIMO); return Number.isInteger(n) ? n : 1; }
 
 // ---------- configurações ----------
-export const CONFIG_PADRAO = { volume: 0.8, sensibilidade: 1, tremor: true, texto: 1 };
-export function lerConfig() { return { ...CONFIG_PADRAO, ...(ler(CHAVE_CONFIG) ?? {}) }; }
+// texto: escala de todo o HUD (Normal / Grande / Maior); toqueTam: botões de toque P/M/G (48/56/64 dp);
+// reduzirFlashes: null = segue o sistema (prefers-reduced-motion) até a pessoa escolher
+export const ESCALAS_TEXTO = [1, 1.2, 1.5];
+export const TAMANHOS_TOQUE = ['P', 'M', 'G'];
+export const CONFIG_PADRAO = {
+  volume: 0.8, sensibilidade: 1, tremor: true, texto: 1,
+  reduzirFlashes: null, cameraLenta: true, toqueTam: 'M', inverterLados: false, mostrarFps: false,
+};
+// saves antigos usavam 1,15 e 1,3: vão para o tamanho mais perto (1,2 e 1,5)
+const MIGRAR_TEXTO = { 1.15: 1.2, 1.3: 1.5 };
+export function lerConfig() {
+  const c = { ...CONFIG_PADRAO, ...(ler(CHAVE_CONFIG) ?? {}) };
+  c.texto = MIGRAR_TEXTO[c.texto] ?? (ESCALAS_TEXTO.includes(+c.texto) ? +c.texto : 1);
+  if (typeof c.reduzirFlashes !== 'boolean') c.reduzirFlashes = !!globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+  if (!TAMANHOS_TOQUE.includes(c.toqueTam)) c.toqueTam = CONFIG_PADRAO.toqueTam;
+  return c;
+}
 export function salvarConfig(c) { gravar(CHAVE_CONFIG, c); }

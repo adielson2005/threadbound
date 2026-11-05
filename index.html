@@ -42,6 +42,17 @@
     --titulo: 'Fredoka', 'Nunito', system-ui, sans-serif;
     --fonte: 'Nunito', system-ui, -apple-system, 'Segoe UI', sans-serif;
     --escala-texto: 1;
+    --ez: calc(1 / var(--escala-texto));
+    /* HUD "retalho de tecido": ver production/ui/hud/visual-design.md */
+    --hud-noite: 10, 8, 14; --hud-noite-cor: #0a080e;
+    --hud-fundo: rgba(10, 8, 14, 0.64); --hud-fundo-forte: rgba(10, 8, 14, 0.72); --hud-fundo-toque: rgba(10, 8, 14, 0.55); --hud-trilho: #241a2b;
+    --ouro-fio: rgba(242, 199, 107, 0.75); --ouro-claro: #ffe3a3;
+    --papel: #f3ead6; --papel-texto: #3b2b1a; --papel-2: #5c4630;
+    --sombra-retalho: 0 2px 8px rgba(0, 0, 0, 0.35); --sombra-papel: 0 20px 50px rgba(0, 0, 0, 0.6);
+    --ease-fora: cubic-bezier(.2, .8, .2, 1); --ease-entra: cubic-bezier(.4, 0, 1, 1);
+    --m-hud: 16px;            /* margem de borda do HUD (12 no celular) */
+    --tb: 56px;               /* botão de toque: P 48 / M 56 / G 64 */
+    --gap-toque: 8px; --m-toque: 12px;
   }
   html, body { margin: 0; height: 100%; overflow: hidden; background: #0d0a12; font-family: var(--fonte); color: var(--texto); user-select: none; -webkit-tap-highlight-color: transparent; }
   canvas { display: block; touch-action: none; }
@@ -63,65 +74,172 @@
   .voltar::before { content: '‹'; display: none; font-size: 20px; margin-right: 8px; line-height: 1; }
   @media (pointer: coarse) { .voltar kbd { display: none; } .voltar::before { display: inline; } }
 
-  /* ---------- HUD ---------- */
-  #hud { position: fixed; top: var(--margem); left: var(--margem); right: var(--margem); display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; pointer-events: none; z-index: 2; }
-  #hud .esq { display: flex; flex-direction: column; gap: 6px; }
-  #hud .dir { display: flex; align-items: center; gap: 12px; }
-  #vida { display: flex; gap: 4px; filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.7)); }
-  /* Linha Viva: carretéis */
-  #vida i { width: 11px; height: 15px; border-radius: 2px;
-    background: linear-gradient(#f2d08a 0 16%, #9a6a35 16% 20%, transparent 20% 80%, #9a6a35 80% 84%, #f2d08a 84%), repeating-linear-gradient(#fff1d6 0 2px, #f4c7d8 2px 4px);
-    transition: filter .3s, opacity .3s, transform .3s; }
-  #vida i.vazio { filter: grayscale(1) brightness(0.55); opacity: .5; transform: scale(.85); }
-  #moedas { display: flex; align-items: center; gap: 5px; font: 600 13px var(--titulo); color: var(--texto-2); text-shadow: var(--sombra-texto); }
-  #moedas .icone { color: var(--ouro); }
-  #moedas b { color: #fff; font-size: 15px; font-weight: 600; }
-  .barrinha { display: block; width: 46px; height: 3px; border-radius: 2px; background: rgba(255, 255, 255, 0.22); overflow: hidden; margin-left: 4px; box-shadow: 0 1px 2px rgba(0, 0, 0, 0.5); }
-  .barrinha i { display: block; height: 100%; background: var(--ouro); transition: width .4s; }
+  /* ---------- HUD "retalho de tecido" (design/ux/hud.md + production/ui/hud/visual-design.md) ----------
+     Fundos escuros 0,64 (0,72 em fala, memória e dicas), pesponto tracejado dourado, ícones SVG do
+     sprite #sprite-icones. A escala de texto (--escala-texto) vale para todo o HUD: o "zoom" vai em
+     cada bloco e as posições dentro dele são divididas por ela (--ez) para manter as margens. ---------- */
+  #hud { position: fixed; top: calc(var(--m-hud) + env(safe-area-inset-top, 0px)); left: calc(var(--m-hud) + env(safe-area-inset-left, 0px)); right: calc(var(--m-hud) + env(safe-area-inset-right, 0px));
+    display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; pointer-events: none; z-index: 2; }
+  #hud .esq { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; max-width: 240px; }
+  #hud .dir { display: flex; align-items: center; }
+  .i { width: 18px; height: 18px; flex: none; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  /* retalho: fundo 0,64 (forte 0,72) com pesponto */
+  .retalho { background: var(--hud-fundo); box-shadow: var(--sombra-retalho); outline: 1.5px dashed var(--ouro-fio); outline-offset: -4px; color: var(--texto); text-shadow: var(--sombra-texto); }
+  .retalho-forte { background: var(--hud-fundo-forte); }
+  /* fôlego: carretéis de linha + número; o último vira vermelho com "!" (forma, não só cor) */
+  #vida { display: flex; align-items: center; gap: 4px; padding: 6px 12px; border-radius: 999px; }
+  #vida .carretel { width: 14px; height: 20px; color: var(--ouro); filter: drop-shadow(0 0 1px #0a080e); transform-origin: 50% 0; }
+  #vida .carretel.vazio { color: var(--texto); }
+  #vida.baixo .carretel:not(.vazio) { color: var(--vermelho); }
+  #vida .num { margin-left: 6px; font: 600 16px var(--titulo); font-variant-numeric: tabular-nums; }
+  #vida .alerta { display: none; width: 14px; height: 14px; color: var(--vermelho); filter: drop-shadow(0 0 1px #0a080e); }
+  #vida.baixo .alerta { display: block; }
+  #vida.baixo .carretel:not(.vazio), #vida.baixo .alerta { animation: piscaUltimo .25s steps(1) infinite alternate; }
+  #vida .carretel.desenrola { animation: desenrola .3s var(--ease-fora); }
+  @keyframes piscaUltimo { to { opacity: .35; } }
+  @keyframes desenrola { 0% { transform: scaleY(1); } 50% { transform: translateY(4px) rotate(10deg) scaleY(.8); opacity: .6; } 100% { transform: none; } }
+  /* corrida: barra 80x6; some quando cheia; cansada = listras + ícone de cansaço */
+  #energia { display: flex; align-items: center; gap: 6px; transition: opacity .35s; }
+  #energia.cheia { opacity: 0; }
+  #energia .mini { display: flex; padding: 3px; border-radius: 50%; background: var(--hud-fundo); color: var(--ouro); }
+  #energia .mini .i { width: 16px; height: 16px; }
+  #energia .i-cansaco { display: none; }
+  #energia.cansada .i-raio { display: none; } #energia.cansada .i-cansaco { display: block; }
+  #energia .trilho { width: 80px; height: 6px; border-radius: 4px; background: var(--hud-trilho); overflow: hidden; box-shadow: 0 0 0 1px rgba(0, 0, 0, .35); }
+  #energia .trilho i { display: block; height: 100%; background: var(--ouro); transform-origin: 0 50%; transform: scaleX(1); will-change: transform; }
+  #energia.cansada .trilho i { background: repeating-linear-gradient(45deg, var(--texto) 0 3px, var(--hud-trilho) 3px 6px); }
+  /* poder (Explosão de Fios): só na luta ou quando cheio; cheio = palavra "Pronto!" + pulso 1 Hz */
+  #poder { display: none; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 999px; transform-origin: 0 50%; }
+  body.em-luta #poder, #poder.cheio { display: flex; }
+  #poder.vazio { opacity: .5; }
+  #poder .i { width: 20px; height: 20px; color: var(--lilas); filter: drop-shadow(0 0 1px #0a080e); }
+  #poder .trilho { width: 80px; height: 8px; border-radius: 4px; background: var(--hud-trilho); overflow: hidden; }
+  #poder .trilho i { display: block; height: 100%; background: var(--lilas); transform-origin: 0 50%; transform: scaleX(0); transition: transform .2s; }
+  #poder kbd { margin: 0; }
+  #poder .pronto { display: none; padding: 1px 8px; border-radius: 8px; background: var(--hud-fundo-forte); color: var(--ouro); font: 800 14px var(--fonte); }
+  #poder.cheio { outline: 2px solid var(--ouro); outline-offset: -3px; animation: pulsoPoder 1s ease-in-out infinite alternate; }
+  #poder.cheio .pronto { display: block; }
+  #poder.cheio .trilho i { background: var(--ouro-claro); }
+  #poder.cheio .i { color: var(--ouro-claro); }
+  @keyframes pulsoPoder { to { transform: scale(1.06); } }
+  /* fragmentos: ícone + "3/25" (o número cresce 1,15x ao pegar) */
+  #moedas { display: flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 999px; font: 600 16px var(--titulo); font-variant-numeric: tabular-nums; }
+  #moedas .i { color: var(--ouro); fill: currentColor; stroke: none; filter: drop-shadow(0 0 1px #0a080e); }
+  #moedas b { display: inline-block; font-weight: 600; }
+  #moedas.pegou b { animation: cresceNumero .2s var(--ease-fora); }
+  @keyframes cresceNumero { 50% { transform: scale(1.15); } }
+  /* arma: nome + usos + F; usos baixos = rachadura */
   #arma:empty { display: none; }
-  #arma { display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 700; color: #fff; text-shadow: var(--sombra-texto); }
-  #arma kbd { margin-right: 0; }
-  .pilula { font: 600 14px var(--titulo); font-variant-numeric: tabular-nums; color: #fff; text-shadow: var(--sombra-texto); }
-  #fps { font-size: 10px; font-weight: 700; color: var(--texto-3); text-shadow: var(--sombra-texto); }
-  .icone-botao { pointer-events: auto; display: inline-flex; align-items: center; justify-content: center; width: 34px; height: 34px; border: 0; border-radius: 50%; background: none; cursor: pointer;
-    color: #fff; filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.8)); opacity: .85; }
-  .icone-botao:hover { opacity: 1; }
-  .icone-botao svg { width: 18px; height: 18px; }
-  /* objetivo: canto de cima à direita, texto com um fio dourado do lado */
-  #objetivo { position: fixed; top: calc(var(--margem) + 44px); right: var(--margem); width: min(250px, 40vw); text-align: right; padding-right: 10px; border-right: 2px solid var(--ouro); pointer-events: none; z-index: 2;
-    text-shadow: var(--sombra-texto); }
+  #arma { display: flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 999px; font: 700 14px/1.3 var(--fonte); }
+  #arma .usos { font-family: var(--titulo); font-weight: 600; font-variant-numeric: tabular-nums; }
+  #arma .i { width: 18px; height: 18px; }
+  #arma .racha { width: 14px; height: 14px; color: var(--vermelho); filter: drop-shadow(0 0 1px #0a080e); }
+  #arma kbd { margin: 0; }
+  #arma.baixo { outline-color: var(--vermelho); }
+  kbd { font-size: 12px; }
+  :is(#arma, #poder, #interagir, #tutorial, #dicaTutorial, #dica) kbd { min-width: 24px; height: 24px; font-size: 14px; }
+  /* canto direito: pausa 40 px (PC) / 48 dp (toque) */
+  .icone-botao { pointer-events: auto; display: inline-flex; align-items: center; justify-content: center; width: 40px; height: 40px; padding: 0; border: 0; border-radius: 50%; cursor: pointer;
+    background: var(--hud-fundo-toque); outline: 1.5px dashed var(--ouro-fio); outline-offset: -4px; color: var(--texto); filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.5)); }
+  .icone-botao:hover { background: var(--hud-fundo); }
+  .icone-botao svg { width: 20px; height: 20px; }
+  /* fps: oculto; liga em Gráficos > Mostrar desempenho */
+  #fps { position: fixed; left: calc((var(--m-hud) + env(safe-area-inset-left, 0px)) * var(--ez)); bottom: calc((var(--m-hud) + env(safe-area-inset-bottom, 0px)) * var(--ez)); padding: 2px 8px; border-radius: 8px;
+    font: 700 14px var(--fonte); font-variant-numeric: tabular-nums; pointer-events: none; z-index: 2; }
+  #fps[hidden] { display: none; }
+  /* topo central: barra do chefe e, logo abaixo, o vento da arena */
+  #topoCentro { position: fixed; top: calc(var(--m-hud) + env(safe-area-inset-top, 0px)); left: 50%; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; gap: 6px; pointer-events: none; z-index: 6; }
+  #chefe { width: calc(min(360px, 46vw) * var(--ez)); box-sizing: border-box; padding: 8px 14px 10px; border-radius: 12px; opacity: 0; transition: opacity .4s var(--ease-fora); }
+  #chefe .topo { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+  #chefe .nome { font: 600 14px var(--titulo); letter-spacing: 0; text-transform: uppercase; }
+  #chefe .num { font: 600 16px var(--titulo); font-variant-numeric: tabular-nums; }
+  #chefe .barra { position: relative; margin-top: 6px; height: 8px; border-radius: 4px; background: var(--hud-trilho); }
+  #chefe .barra > i, #chefe .barra > s { position: absolute; inset: 0; display: block; border-radius: 4px; transform-origin: 0 50%; }
+  #chefe .barra > i { background: var(--ouro); }
+  #chefe .barra > s { background: var(--ouro-claro); text-decoration: none; transition: transform .3s var(--ease-fora) .05s; }
+  /* marcas de fase: pontos de costura em 50% e 25%; acendem ao passar de fase */
+  #chefe .marca { position: absolute; top: -3px; width: 2px; height: 14px; margin-left: -1px; background: var(--texto); text-decoration: none; }
+  #chefe .marca.acesa { background: var(--ouro); transition: background .25s var(--ease-fora); }
+  #chefe .marca.acesa::before { content: ''; position: absolute; left: -1.5px; top: -7px; width: 5px; height: 5px; border-radius: 50%; background: var(--ouro); }
+  /* vento da arena: seta, folhas (cheia = resta, contorno = passou) e "muda!" */
+  #ventoArena { display: flex; align-items: center; gap: 8px; padding: 6px 14px; border-radius: 999px; font: 700 14px/1 var(--fonte); opacity: 0; transition: opacity .3s; }
+  #ventoArena.ativo { opacity: 1; }
+  #ventoArena .seta { width: 26px; height: 26px; border-radius: 6px; transition: transform .15s; }
+  #ventoArena .folhas { display: flex; gap: 3px; }
+  #ventoArena .folhas .i { width: 14px; height: 14px; }
+  #ventoArena .folha.cheia { fill: currentColor; } #ventoArena .folha.vazia { fill: none; }
+  #ventoArena .muda { display: none; color: var(--ouro); font-weight: 800; }
+  #ventoArena.troca .muda { display: inline; }
+  #ventoArena.troca .seta { animation: piscaVento .5s steps(1) infinite; outline: 2px solid var(--ouro); outline-offset: 1px; }
+  @keyframes piscaVento { 50% { opacity: .25; } }
+  /* objetivo: uma linha (até 2), à direita no PC e à esquerda no celular; mudou = fio sólido 1,5 s; ✓ 1 s */
+  #objetivo { position: fixed; top: calc((var(--m-hud) + env(safe-area-inset-top, 0px)) * var(--ez) + 56px); right: calc((var(--m-hud) + env(safe-area-inset-right, 0px)) * var(--ez)); width: min(260px, 40vw); box-sizing: border-box;
+    padding: 6px 12px; border-radius: 12px; text-align: right; pointer-events: none; z-index: 2; transition: outline-color .3s, background .3s, opacity .3s; }
   #objetivo:empty { display: none; }
-  #objetivo small { display: block; font: 700 10px var(--fonte); letter-spacing: 1.6px; text-transform: uppercase; color: var(--ouro); margin-bottom: 2px; }
-  #objetivo b { display: block; font-size: 13px; font-weight: 700; line-height: 1.3; color: #fff; }
-  #objetivo span { display: block; margin-top: 3px; font-size: 11px; font-weight: 600; color: var(--texto-2); }
-  #dica { position: fixed; bottom: 14px; left: 50%; transform: translateX(-50%); font-size: 11px; font-weight: 600; color: var(--texto-2); pointer-events: none; transition: opacity .4s; opacity: 0;
-    text-align: center; width: max-content; max-width: calc(100% - 32px); text-shadow: var(--sombra-texto); }
-  #dica b { display: inline-flex; min-width: 16px; justify-content: center; border: 1.5px solid currentColor; border-radius: 4px; padding: 0 3px; font-size: 10px; color: #fff; }
-  #dicaTutorial { position: fixed; top: calc(var(--margem) + 2px); left: 50%; transform: translateX(-50%); padding: 8px 14px; border-radius: 8px; background: rgba(10, 8, 14, 0.55);
-    font-size: 13px; font-weight: 600; line-height: 1.4; color: #fff; max-width: min(440px, calc(100% - 600px)); text-align: center; opacity: 0; transition: opacity .35s; pointer-events: none; z-index: 2; }
-  /* fala: faixa escura simples, nome do personagem em dourado */
-  #fala { position: fixed; bottom: 46px; left: 50%; transform: translateX(-50%); width: min(600px, calc(100% - 32px)); padding: 12px 18px 14px; border-radius: 10px; background: rgba(10, 8, 14, 0.72);
-    font-size: 15px; font-weight: 600; line-height: 1.5; color: #fff; opacity: 0; transition: opacity .3s; pointer-events: none; box-sizing: border-box; z-index: 2; }
-  #fala b { display: block; margin-bottom: 2px; font: 600 13px var(--titulo); letter-spacing: .5px; color: var(--ouro); }
-  #aviso { position: fixed; top: 26%; left: 50%; transform: translateX(-50%); color: #fff; font: 600 26px var(--titulo); letter-spacing: .5px;
-    text-shadow: 0 2px 14px rgba(0, 0, 0, 0.7); opacity: 0; transition: opacity .3s; pointer-events: none; text-align: center; width: max-content; max-width: calc(100% - 32px); z-index: 2; }
-  /* "(E) fazer algo": tecla em círculo e texto, sem caixa */
-  #interagir { position: fixed; bottom: 150px; left: 50%; transform: translateX(-50%); display: flex; align-items: center; font-size: 14px; font-weight: 700; color: #fff; text-shadow: var(--sombra-texto);
-    opacity: 0; transition: opacity .2s; pointer-events: none; z-index: 2; }
+  #objetivo b { font: 700 14px/1.3 var(--fonte); }
+  #objetivo span.detalhe { display: block; font: 700 14px/1.3 var(--fonte); }
+  #objetivo .ok { display: none; width: 16px; height: 16px; margin-right: 6px; vertical-align: -3px; padding: 2px; box-sizing: border-box; border-radius: 50%; background: var(--ouro); color: var(--hud-noite-cor); }
+  #objetivo.concluido .ok { display: inline-block; }
+  #objetivo.mudou { outline: 1.5px solid var(--ouro); background: var(--hud-fundo-forte); }
+  #dica { position: fixed; bottom: 14px; left: 50%; transform: translateX(-50%); font-size: 14px; font-weight: 600; color: var(--texto); pointer-events: none; transition: opacity .4s; opacity: 0;
+    text-align: center; width: max-content; max-width: calc(100% - 32px); text-shadow: var(--sombra-texto); padding: 6px 12px; border-radius: 12px; }
+  #dica b { display: inline-flex; min-width: 20px; justify-content: center; border: 1.5px solid currentColor; border-radius: 4px; padding: 0 3px; font-size: 14px; color: var(--texto); }
+  #dicaTutorial { position: fixed; top: calc((var(--m-hud) + env(safe-area-inset-top, 0px)) * var(--ez) + 2px); left: 50%; transform: translateX(-50%); padding: 8px 14px; border-radius: 12px;
+    font: 700 14px/1.4 var(--fonte); max-width: min(440px, calc(100% - 600px)); text-align: center; opacity: 0; transition: opacity .35s; pointer-events: none; z-index: 2; }
+  /* fala: nome dourado e frase (até 2 linhas); 0,72 de fundo */
+  #fala { position: fixed; bottom: 46px; left: 50%; transform: translateX(-50%); width: min(600px, calc(100% - 32px)); padding: 12px 18px 14px; border-radius: 12px;
+    font: 700 15px/1.5 var(--fonte); opacity: 0; transition: opacity .24s var(--ease-entra); pointer-events: none; box-sizing: border-box; z-index: 2; }
+  #fala.visivel { opacity: 1; transition-timing-function: var(--ease-fora); }
+  #fala b { display: inline; margin-right: 6px; font: 600 15px var(--titulo); color: var(--ouro); }
+  #fala b::after { content: ':'; }
+  body.em-luta #fala { font-size: 14px; }
+  /* aviso: ícone + texto, no centro, 26-40% da altura */
+  #aviso { position: fixed; top: 26%; left: 50%; transform: translateX(-50%); display: flex; align-items: center; gap: 10px; padding: 10px 16px; border-radius: 12px;
+    font: 800 22px/1.3 var(--fonte); text-align: left; width: max-content; max-width: calc(100% - 32px); box-sizing: border-box; opacity: 0; transition: opacity .24s var(--ease-entra); pointer-events: none; z-index: 2; }
+  #aviso.visivel { opacity: 1; transition-duration: .18s; transition-timing-function: var(--ease-fora); }
+  #aviso .i { width: 22px; height: 22px; }
+  #aviso .i.ok { color: var(--ouro); } #aviso .i.alerta { color: var(--vermelho); filter: drop-shadow(0 0 1px #0a080e); }
+  /* interagir: tecla (ou ícone "usar" no toque) em círculo + verbo */
+  #interagir { position: fixed; bottom: 150px; left: 50%; transform: translateX(-50%); display: flex; align-items: center; gap: 8px; padding: 6px 14px 6px 8px; border-radius: 999px;
+    font: 800 14px var(--fonte); opacity: 0; transition: opacity .2s; pointer-events: none; z-index: 2; }
   #interagir:empty { display: none; }
-  #interagir kbd { width: 24px; height: 24px; min-width: 0; padding: 0; border-radius: 50%; border-color: var(--ouro); color: var(--ouro); background: rgba(10, 8, 14, 0.45); box-shadow: 0 0 10px rgba(242, 199, 107, 0.35); }
-  #memoria { position: fixed; top: 34%; left: 50%; transform: translate(-50%, -50%); width: min(460px, calc(100% - 32px)); text-align: center; opacity: 0; transition: opacity .5s; pointer-events: none; z-index: 3;
-    text-shadow: 0 2px 12px rgba(0, 0, 0, 0.8); }
-  #memoria h3 { display: flex; align-items: center; gap: 12px; margin: 0 0 8px; font: 700 11px var(--fonte); letter-spacing: 2px; text-transform: uppercase; color: var(--ouro); }
-  #memoria h3::before, #memoria h3::after { content: ''; flex: 1; height: 1px; background: linear-gradient(90deg, transparent, var(--ouro)); }
-  #memoria h3::after { background: linear-gradient(90deg, var(--ouro), transparent); }
-  #memoria p { margin: 0; font-style: italic; font-size: 17px; font-weight: 600; line-height: 1.5; color: #fff; }
-  #bilhete { position: fixed; inset: 0; display: none; align-items: center; justify-content: center; background: rgba(8, 6, 12, 0.7); z-index: 8; padding: 16px; }
-  #bilhete .papel { width: min(480px, 100%); background: #f3ead6; color: #3b2b1a; border-radius: 4px; padding: 24px 26px; font-family: Georgia, serif; font-size: 17px; line-height: 1.55; box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6); }
-  #bilhete small { display: block; margin-top: 14px; font-family: var(--fonte); color: #7a6248; font-size: 12px; text-align: right; }
-  #golpe { position: fixed; top: 58%; left: 50%; transform: translateX(-50%); color: #fff; font: 600 18px var(--titulo); text-shadow: var(--sombra-texto); opacity: 0; transition: opacity .2s; pointer-events: none; z-index: 2; }
-  #golpe.pequeno { top: auto; bottom: 112px; font: 700 12px var(--fonte); }
-  #fala, #objetivo, #dicaTutorial, #memoria, #bilhete .papel, #interagir { zoom: var(--escala-texto); }
+  #interagir kbd { width: 24px; height: 24px; min-width: 0; padding: 0; margin: 0; border-radius: 50%; border-color: var(--ouro); color: var(--ouro); background: var(--hud-fundo-forte); transition: transform .1s var(--ease-fora); }
+  #interagir kbd .i { width: 16px; height: 16px; }
+  #interagir.apertado kbd { transform: scale(1.1); background: var(--ouro-claro); color: var(--hud-noite-cor); }
+  /* memória: cartão com pesponto duplo (aviso tem um só) */
+  #memoria { position: fixed; top: 34%; left: 50%; transform: translate(-50%, -50%); width: min(460px, calc(100% - 32px)); box-sizing: border-box; padding: 12px 18px 14px; border-radius: 12px; text-align: center;
+    opacity: 0; transition: opacity .3s var(--ease-entra); pointer-events: none; z-index: 3; }
+  #memoria.visivel { opacity: 1; transition-timing-function: var(--ease-fora); }
+  #memoria::before { content: ''; position: absolute; inset: 7px; border: 1.5px dashed var(--ouro-fio); border-radius: 8px; pointer-events: none; }
+  #memoria h3 { display: flex; align-items: center; justify-content: center; gap: 8px; margin: 0 0 6px; font: 600 17px var(--titulo); color: var(--ouro); }
+  #memoria h3 .i { fill: currentColor; stroke: none; }
+  #memoria p { margin: 0; font-style: italic; font: italic 700 17px/1.5 var(--fonte); color: var(--texto); }
+  /* carta: papel com botão Fechar de 48 dp (toque) ou Enter / E */
+  #bilhete { position: fixed; inset: 0; display: none; align-items: center; justify-content: center; background: rgba(var(--hud-noite), .72); z-index: 8; padding: 16px; }
+  #bilhete .papel { width: min(480px, 100%); max-height: 100%; overflow: auto; box-sizing: border-box; background: var(--papel); color: var(--papel-texto); border-radius: 4px; padding: 24px 26px; font-family: Georgia, serif; font-size: 17px; line-height: 1.55;
+    box-shadow: var(--sombra-papel); animation: abrirCarta .2s var(--ease-fora); }
+  @keyframes abrirCarta { from { opacity: 0; transform: translateY(8px); } }
+  #bilhete small { display: block; margin-top: 14px; font: 600 14px var(--fonte); color: var(--papel-2); text-align: right; }
+  .fechar-carta { display: flex; align-items: center; justify-content: center; gap: 8px; min-width: 48px; min-height: 48px; margin: 14px 0 0 auto; padding: 0 20px; border: 0; border-radius: 10px; cursor: pointer;
+    background: var(--papel-texto); color: var(--papel); font: 800 16px var(--fonte); outline: 1.5px dashed var(--ouro); outline-offset: -4px; }
+  .fechar-carta .i { width: 20px; height: 20px; }
+  @media (pointer: coarse) { #bilhete small { display: none; } }
+  #golpe { position: fixed; top: 58%; left: 50%; transform: translateX(-50%); color: var(--texto); font: 600 18px var(--titulo); text-shadow: var(--sombra-texto); opacity: 0; transition: opacity .2s; pointer-events: none; z-index: 2; }
+  #golpe.pequeno { top: auto; bottom: 112px; font: 700 14px var(--fonte); }
+  /* a escala de texto vale para todo o HUD */
+  #hud .esq, #hud .dir, #topoCentro, #objetivo, #dica, #dicaTutorial, #fala, #aviso, #interagir, #memoria, #bilhete .papel, #golpe, #fps { zoom: var(--escala-texto); }
+  /* contexto: luta (objetivo a 60%) e chefe (objetivo e fragmentos somem); fôlego baixo tem a vez de pulsar */
+  body.em-luta #objetivo { opacity: .6; }
+  body.no-chefe :is(#objetivo, #moedas) { display: none; }
+  body.folego-baixo #poder.cheio, body.folego-baixo #tPoder.pronto, body.folego-baixo #ventoArena.troca .seta { animation: none; }
+  /* Reduzir flashes: nada pulsa nem pisca; só fades */
+  body.sem-flashes :is(#vida.baixo .carretel, #vida.baixo .alerta, #poder.cheio, #tPoder.pronto, #ventoArena.troca .seta, #moedas.pegou b, #vida .carretel.desenrola, #bilhete .papel) { animation: none; }
+  body.sem-flashes #bilhete .papel { animation: abrirCartaFade .2s var(--ease-fora); }
+  body.sem-flashes #chefe .barra > s { transition: none; }
+  body.sem-flashes #chefe .marca.acesa, body.sem-flashes .toque, body.sem-flashes #interagir kbd { transition: none; }
+  body.sem-flashes .toque:active { transform: none; }
+  body.sem-flashes #interagir.apertado kbd { transform: none; }
+  @keyframes abrirCartaFade { from { opacity: 0; } }
   #escuro { position: fixed; inset: 0; background: #000; opacity: 0; pointer-events: none; transition: opacity .25s; z-index: 5; }
   #dano { position: fixed; inset: 0; pointer-events: none; opacity: 0; transition: opacity .35s; z-index: 4; box-shadow: inset 0 0 120px 30px #c8102ecc; }
 
@@ -279,50 +397,60 @@
   #gameover .botoes { display: flex; flex-direction: column; align-items: center; margin-top: 10px; }
   #gameover small { opacity: .55; font-size: 12px; font-weight: 600; }
 
-  /* ---------- toque (celular): círculos finos, quase transparentes ---------- */
-  .toque { position: fixed; border-radius: 50%; background: rgba(0, 0, 0, 0.18); border: 1.5px solid rgba(255, 255, 255, 0.55); color: #fff; display: none; align-items: center; justify-content: center;
-    touch-action: none; font: 700 16px var(--fonte); z-index: 3; filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.4)); }
-  .toque:active { background: rgba(255, 255, 255, 0.2); }
-  .toque svg { width: 46%; height: 46%; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
-  #tPulo { bottom: 22px; right: 22px; width: 70px; height: 70px; border-width: 2px; }
-  #tSoco { bottom: 104px; right: 98px; width: 52px; height: 52px; }
-  #tChute { bottom: 28px; right: 106px; width: 48px; height: 48px; }
-  #tPegar { bottom: 106px; right: 30px; width: 44px; height: 44px; }
-  #tUsar { bottom: 164px; right: 34px; width: 42px; height: 42px; font-size: 15px; }
-  #tDefesa { bottom: 172px; right: 96px; width: 42px; height: 42px; }
-  #tEsquiva { bottom: 172px; right: 30px; width: 42px; height: 42px; }
+  /* botões de toque: grade 3 colunas x 4 linhas no canto de baixo (direita; "inverter lados" espelha),
+     tamanho P/M/G por --tb (48/56/64 dp), 8 dp de espaço, 12 dp de borda mais a área segura.
+     Só o FUNDO é translúcido: o ícone fica sempre opaco. ---------- */
+  .toque { position: fixed; box-sizing: border-box; width: var(--tb); height: var(--tb); border-radius: 50%; display: none; align-items: center; justify-content: center;
+    --passo: calc(var(--tb) + var(--gap-toque));
+    right: calc(var(--m-toque) + env(safe-area-inset-right, 0px) + var(--col) * var(--passo));
+    bottom: calc(var(--m-toque) + env(safe-area-inset-bottom, 0px) + var(--lin) * var(--passo));
+    background: var(--hud-fundo-toque); border: 1.5px solid var(--ouro-fio); outline: 1.5px dashed var(--ouro-fio); outline-offset: -5px; color: var(--texto);
+    touch-action: none; z-index: 3; filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.45)); transition: transform .08s var(--ease-fora), background .12s; }
+  body.inverter .toque { right: auto; left: calc(var(--m-toque) + env(safe-area-inset-left, 0px) + var(--col) * var(--passo)); }
+  .toque svg { width: 46%; height: 46%; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; filter: drop-shadow(0 1px 1px rgba(0, 0, 0, .6)); }
+  .toque:active { transform: scale(.92); background: rgba(251, 247, 239, .85); color: var(--hud-noite-cor); }
+  .toque:active svg { filter: none; }
+  /* indisponível: ícone a 0,3 e borda tracejada, sem o pesponto (forma diferente) */
+  .toque.indisponivel { outline: none; border: 2px dashed var(--texto-2); }
+  .toque.indisponivel svg { opacity: .3; }
+  #tPulo { --col: 0; --lin: 0; } #tChute { --col: 1; --lin: 0; } #tSuper { --col: 2; --lin: 0; }
+  #tPegar { --col: 0; --lin: 1; } #tSoco { --col: 1; --lin: 1; }
+  #tUsar { --col: 0; --lin: 2; } #tDefesa { --col: 1; --lin: 2; }
+  #tEsquiva { --col: 0; --lin: 3; } #tPoder { --col: 1; --lin: 3; }
+  /* poder pronto: borda sólida de 3 px + "Pronto!" acima do botão; pulso de brilho a 1 Hz */
+  #tPoder.pronto { outline: none; border: 3px solid var(--ouro-claro); animation: brilhoPoder 1s ease-in-out infinite alternate; }
+  #tPoder.pronto::after { content: 'Pronto!'; position: absolute; bottom: calc(100% + 4px); left: 50%; transform: translateX(-50%); padding: 1px 8px; border-radius: 8px; background: var(--hud-fundo-forte); color: var(--ouro);
+    font: 800 14px var(--fonte); text-shadow: var(--sombra-texto); white-space: nowrap; pointer-events: none; }
+  @keyframes brilhoPoder { from { box-shadow: 0 0 4px rgba(255, 227, 163, .5); } to { box-shadow: 0 0 14px rgba(255, 227, 163, 1); } }
   #bastao { position: fixed; width: 96px; height: 96px; border-radius: 50%; border: 1.5px solid rgba(255, 255, 255, 0.45); background: rgba(0, 0, 0, 0.12); display: none; pointer-events: none; }
   @media (pointer: coarse) { .toque { display: flex; } #dica { display: none; } }
+  :root[data-toque-tam="P"] { --tb: 48px; } :root[data-toque-tam="M"] { --tb: 56px; } :root[data-toque-tam="G"] { --tb: 64px; }
+  @media (pointer: coarse) { .icone-botao { width: 48px; height: 48px; } }
+  @media (pointer: fine) { .so-toque { display: none !important; } }
+  .pausa-hora { display: flex; align-items: center; gap: 8px; margin: 0 0 8px; font: 600 16px var(--titulo); color: var(--texto-2); font-variant-numeric: tabular-nums; }
 
   /* ---------- telas menores ---------- */
+  :root { --largura-toque: calc(3 * var(--tb) + 2 * var(--gap-toque) + 2 * var(--m-toque)); --altura-toque: calc(4 * var(--tb) + 3 * var(--gap-toque) + var(--m-toque) + 8px); }
   @media (max-width: 1060px) { #dicaTutorial { top: auto; bottom: 150px; max-width: min(440px, calc(100% - 32px)); } #interagir { bottom: 222px; } }
   @media (max-width: 760px), (pointer: coarse) {
-    :root { --margem: 12px; }
-    #vida { gap: 3px; } #vida i { width: 9px; height: 12px; }
-    #moedas { font-size: 11px; } #moedas b { font-size: 12px; }
-    .barrinha { width: 34px; }
-    .pilula { font-size: 12px; }
-    .icone-botao { width: 30px; height: 30px; } .icone-botao svg { width: 16px; height: 16px; }
-    #objetivo { top: calc(var(--margem) + 34px); width: min(190px, 48vw); padding-right: 8px; }
-    #objetivo small { font-size: 9px; } #objetivo b { font-size: 11px; } #objetivo span { font-size: 10px; }
-    #dicaTutorial { font-size: 11px; padding: 6px 10px; }
-    #fala { font-size: 12px; padding: 9px 13px 10px; line-height: 1.45; }
-    #fala b { font-size: 11px; }
-    #interagir { font-size: 12px; }
-    #aviso { font-size: 19px; }
-    #memoria p { font-size: 14px; }
+    :root { --m-hud: 12px; --margem: 12px; }
+    #aviso { font-size: 20px; }
+    #fala { font-size: 14px; padding: 9px 13px 10px; line-height: 1.45; }
+    #fala b { font-size: 14px; }
+    #objetivo { width: min(220px, 48vw); }
     .janela { padding: 22px 22px 14px; }
   }
   @media (pointer: coarse) and (orientation: landscape) {
-    #objetivo { right: auto; left: var(--margem); top: calc(var(--margem) + 46px); text-align: left; border-right: 0; border-left: 2px solid var(--ouro); padding: 0 0 0 8px; }
-    #fala { left: 12px; right: 226px; width: auto; transform: none; bottom: 10px; }
-    #dicaTutorial { left: 12px; right: 226px; transform: none; max-width: none; top: auto; bottom: 86px; text-align: left; }
+    #objetivo { right: auto; left: calc((var(--m-hud) + env(safe-area-inset-left, 0px)) * var(--ez)); text-align: left; }
+    #fala { left: 12px; right: var(--largura-toque); width: auto; transform: none; bottom: 10px; }
+    #dicaTutorial { left: 12px; right: var(--largura-toque); transform: none; max-width: none; top: auto; bottom: 86px; text-align: left; }
     #interagir { bottom: 150px; left: calc(50% - 80px); }
+    body.inverter #fala, body.inverter #dicaTutorial { left: var(--largura-toque); right: 12px; }
   }
   @media (pointer: coarse) and (orientation: portrait) {
-    #fala { bottom: 232px; }
-    #dicaTutorial { top: auto; bottom: 310px; }
-    #interagir { bottom: 392px; }
+    #fala { bottom: var(--altura-toque); }
+    #dicaTutorial { top: auto; bottom: calc(var(--altura-toque) + 90px); }
+    #interagir { bottom: calc(var(--altura-toque) + 180px); }
   }
   /* celular deitado (tela baixa): texto à esquerda, opções à direita, sem rolar */
   @media (max-height: 520px) and (min-width: 600px) {
@@ -375,9 +503,6 @@
   #fala span { display: block; animation: aparecer .113s ease-out; }
   #gameover .botoes > * { animation: subir .18s .45s ease-out backwards; }
   #gameover .botoes > :nth-child(2) { animation-delay: .486s; }
-  /* toque: o botão afunda ao apertar */
-  .toque { transition: transform .08s, background .12s; }
-  .toque:active { transform: scale(.92); }
   @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; animation-delay: 0s !important; transition-duration: .01ms !important; } }
   /* ---------- menu inicial em dois passos: "menu" (título + opções), "jogar" (Continuar / Novo jogo,
      ou a barra de carregamento se a ilha ainda estiver sendo montada) e "fim" (resumo do capítulo) ---------- */
@@ -445,40 +570,9 @@
     transition: transform .6s cubic-bezier(.4, 0, .2, 1); will-change: transform; }
   .conteudo-carga p { display: flex; justify-content: space-between; margin: -8px 0 0; font: 600 10px var(--fonte); letter-spacing: 2px; text-transform: uppercase; color: rgba(246, 242, 234, 0.45); }
   #porcentoCarga { font-variant-numeric: tabular-nums; color: rgba(246, 242, 234, 0.7); }
-  /* fôlego do sprint: barra fina embaixo dos carretéis; some quando cheia, fica vermelha cansada */
-  #energia { width: 74px; height: 4px; border-radius: 2px; background: rgba(255, 255, 255, 0.2); overflow: hidden; box-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
-    transition: opacity .35s; }
-  #energia.cheia { opacity: 0; }
-  /* Explosão de Fios: barra dourada embaixo do fôlego; cheia, brilha */
-  #poder { width: 74px; height: 3px; border-radius: 2px; background: rgba(255, 255, 255, 0.16); overflow: hidden; margin-top: 4px; box-shadow: 0 1px 2px rgba(0, 0, 0, 0.5); }
-  #poder i { display: block; height: 100%; background: linear-gradient(90deg, #ffd27a, #fff3c4); transform-origin: 0 50%; transform: scaleX(0); transition: transform .2s; }
-  #poder.cheio { box-shadow: 0 0 8px rgba(255, 220, 140, 0.9); animation: pulsoPoder 1s ease-in-out infinite alternate; }
-  @keyframes pulsoPoder { to { box-shadow: 0 0 14px rgba(255, 230, 160, 1); } }
-  #tPoder { bottom: 238px; right: 63px; width: 46px; height: 46px; opacity: .35; border-color: rgba(255, 220, 140, 0.6); }
-  #tPoder.pronto { opacity: 1; box-shadow: 0 0 12px rgba(255, 220, 140, 0.9); }
-
-  #energia i { display: block; height: 100%; background: linear-gradient(90deg, #8fe3ff, #e6f7ff); transform-origin: 0 50%; transform: scaleX(1); will-change: transform; }
-  #energia.cansada i { background: var(--vermelho); }
-  @media (max-width: 760px), (pointer: coarse) { #energia { width: 56px; height: 3px; } }
-  /* ⚡ corrida super rápida (celular): à esquerda do chute */
-  /* vida do vilão (luta do Cap. 1): no alto, no meio */
-  #chefe { position: fixed; top: 18px; left: 50%; transform: translateX(-50%); width: min(360px, 70vw); text-align: center; pointer-events: none;
-    opacity: 0; transition: opacity .4s; z-index: 6; color: #fff; font: 600 13px/1.2 inherit; letter-spacing: .14em; text-transform: uppercase; text-shadow: 0 1px 3px rgba(0,0,0,.7); }
-  #chefe div { margin-top: 6px; height: 5px; border-radius: 3px; background: rgba(255, 255, 255, 0.18); overflow: hidden; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.5); }
-  #chefe i { display: block; height: 100%; background: linear-gradient(90deg, #c4453a, #ff8a6a); transform-origin: 0 50%; transition: transform .25s; }
-  /* vento na arena (3ª fase do Ravi): seta do sentido e três pontos que se apagam até a troca;
-     é o aviso visual (o som não basta: no celular muita gente joga sem som) */
   /* Chamar o Nuvem (pausa): apagado quando não dá, com o motivo ao lado */
   #pausaNuvem:disabled { opacity: .45; cursor: default; }
   #pausaNuvem small { font-size: .7em; opacity: .8; font-weight: 500; }
-  #ventoArena { position: fixed; top: 64px; left: 50%; transform: translateX(-50%); pointer-events: none; z-index: 6;
-    display: flex; align-items: center; gap: 10px; padding: 6px 14px; border-radius: 999px; background: rgba(10, 20, 30, .55);
-    color: #fff; font: 700 15px/1 inherit; text-shadow: 0 1px 2px rgba(0,0,0,.8); opacity: 0; transition: opacity .3s; }
-  #ventoArena.ativo { opacity: 1; }
-  #ventoArena b { font-size: 26px; line-height: 1; }
-  #ventoArena span { letter-spacing: 4px; }
-  #ventoArena.troca b { animation: piscaVento .25s steps(2) infinite; }
-  @keyframes piscaVento { 50% { opacity: .25; } }
   /* escolha da dificuldade (depois de Novo jogo): uma opção por nível, nome grande e a descrição embaixo */
   #tituloDificuldade, #escolhaDificuldade { display: none; }
   #tela[data-modo="dificuldade"] :is(#msg, #barra, #continuarJogo, #botao, #continuar, #confirmarNovo) { display: none !important; }
@@ -515,12 +609,31 @@
   #tutorial.certo { box-shadow: 0 0 0 2px rgba(255, 214, 140, 0.8); }
   #tutorial button { pointer-events: auto; margin: 8px auto 0; font-size: 12px; min-height: 26px; width: auto; justify-content: center; color: var(--texto-2); }
   @media (pointer: coarse) { #tutorial { bottom: auto; top: 64px; } }
-  #tSuper { bottom: 30px; right: 172px; width: 44px; height: 44px; border-color: rgba(143, 227, 255, 0.7); }
 </style>
 <!-- bibliotecas na própria pasta (vendor/): three 0.165.0, three-mesh-bvh 0.7.6, meshoptimizer 0.21.0. O jogo roda sem internet (e dentro do APK) -->
 <script type="importmap">{"imports":{"three":"./vendor/three/build/three.module.js","three/addons/":"./vendor/three/examples/jsm/","three-mesh-bvh":"./vendor/three-mesh-bvh/build/index.module.js","meshoptimizer/simplifier":"./vendor/meshoptimizer/meshopt_simplifier.module.js","./src/agua.js":"./src/agua.js?v=e2a2da6b9b","./src/altos.js":"./src/altos.js?v=ac761e4342","./src/animLuta.js":"./src/animLuta.js?v=ba5d6f9de7","./src/animais.js":"./src/animais.js?v=5a63b0bc33","./src/boneca.js":"./src/boneca.js?v=0eef2507c2","./src/bonecaNova.js":"./src/bonecaNova.js?v=7ea290af16","./src/cachoeira.js":"./src/cachoeira.js?v=f700bc46b9","./src/cambalhota.js":"./src/cambalhota.js?v=aff8debf26","./src/campanha.js":"./src/campanha.js?v=983babcac9","./src/canvasTextura.js":"./src/canvasTextura.js?v=8ddd89e18a","./src/capitulo.js":"./src/capitulo.js?v=5631f04f86","./src/casas.js":"./src/casas.js?v=f3dfa565ca","./src/ceu.js":"./src/ceu.js?v=8ffb931fd1","./src/chuva.js":"./src/chuva.js?v=6cf0295986","./src/colisao.js":"./src/colisao.js?v=ac6260ec0b","./src/combate.js":"./src/combate.js?v=6ad26f3497","./src/dia.js":"./src/dia.js?v=e05b6cc395","./src/dificuldade.js":"./src/dificuldade.js?v=cfdf2ff62e","./src/distancia.js":"./src/distancia.js?v=9a5844420e","./src/estilo.js":"./src/estilo.js?v=0c453af42f","./src/fisica.js":"./src/fisica.js?v=7949a2cbcf","./src/folhas.js":"./src/folhas.js?v=0703e7d0dd","./src/graficos.js":"./src/graficos.js?v=66a6779bf1","./src/historia.js":"./src/historia.js?v=7aff3796aa","./src/ilha.js":"./src/ilha.js?v=670fb485d3","./src/inimigos.js":"./src/inimigos.js?v=39857a4c33","./src/jogo.js":"./src/jogo.js?v=d77fae37b3","./src/lotes.js":"./src/lotes.js?v=f3831174bf","./src/mapa.js":"./src/mapa.js?v=eb1d8bbcc0","./src/mapaMundi.js":"./src/mapaMundi.js?v=3eb13da7fc","./src/mundo.js":"./src/mundo.js?v=262a267749","./src/nevoa.js":"./src/nevoa.js?v=9bccad8ac5","./src/objetos.js":"./src/objetos.js?v=a78546e0b2","./src/oclusao.js":"./src/oclusao.js?v=a1ec74f05f","./src/particulas.js":"./src/particulas.js?v=efad11a94e","./src/pegaso.js":"./src/pegaso.js?v=08c8aa3a88","./src/pes.js":"./src/pes.js?v=9f8ed5d180","./src/praia.js":"./src/praia.js?v=700cd3c717","./src/praiaForma.js":"./src/praiaForma.js?v=79c406a618","./src/reparos.js":"./src/reparos.js?v=e805cead1a","./src/resolucao.js":"./src/resolucao.js?v=0d1e50cb15","./src/salvar.js":"./src/salvar.js?v=0d75e7e284","./src/simplificar.js":"./src/simplificar.js?v=a439e6c6ca","./src/som.js":"./src/som.js?v=b03701df1b","./src/sombraBoneca.js":"./src/sombraBoneca.js?v=02b8ff3403","./src/suavizar.js":"./src/suavizar.js?v=042d8dcf4b","./src/terreno.js":"./src/terreno.js?v=30a71b0a42","./src/texturas.js":"./src/texturas.js?v=5b74c7049c","./src/tutorial.js":"./src/tutorial.js?v=1f1fb0bc8d","./src/vilao.js":"./src/vilao.js?v=371b1a1e1f"}}</script>
 </head>
 <body>
+<!-- ícones do HUD (sprite único: <use href="#i-...">): traço 2, pontas redondas, 24x24 (carretéis 14x20) -->
+<svg id="sprite-icones" width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <symbol id="i-carretel-cheio" viewBox="0 0 14 20"><rect x="0.75" y="0.75" width="12.5" height="3.5" rx="1" fill="currentColor"/><rect x="0.75" y="15.75" width="12.5" height="3.5" rx="1" fill="currentColor"/><rect x="2.5" y="4.25" width="9" height="11.5" fill="currentColor"/><path d="M2.5 8.5 11.5 5M2.5 12.5l9-3.5M2.5 16l9-3.5" stroke="#0a080e" stroke-width="1.2" opacity=".5" fill="none"/></symbol>
+  <symbol id="i-carretel-vazio" viewBox="0 0 14 20"><rect x="0.75" y="0.75" width="12.5" height="3.5" rx="1" fill="none" stroke="currentColor" stroke-width="1.5"/><rect x="0.75" y="15.75" width="12.5" height="3.5" rx="1" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M2.5 4.25v11.5M11.5 4.25v11.5" fill="none" stroke="currentColor" stroke-width="1.5"/></symbol>
+  <symbol id="i-alerta" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v6M12 16.5v.5"/></symbol>
+  <symbol id="i-raio" viewBox="0 0 24 24"><path d="M13 3 5 13h6l-1 8 8-10h-6z"/></symbol>
+  <symbol id="i-cansaco" viewBox="0 0 24 24"><path d="M12 3c3 4 6 7 6 10a6 6 0 0 1-12 0c0-3 3-6 6-10z"/><path d="M9.5 14a2.5 2.5 0 0 0 2.5 2.5"/></symbol>
+  <symbol id="i-poder" viewBox="0 0 24 24"><path d="M12 2v6M12 16v6M2 12h6M16 12h6M5 5l4 4M15 15l4 4M19 5l-4 4M9 15l-4 4"/></symbol>
+  <symbol id="i-fragmento" viewBox="0 0 24 24"><path d="M12 2c.6 5.4 4.6 9.4 10 10-5.4.6-9.4 4.6-10 10-.6-5.4-4.6-9.4-10-10 5.4-.6 9.4-4.6 10-10z" fill="currentColor" stroke="none"/></symbol>
+  <symbol id="i-arma" viewBox="0 0 24 24"><path d="M5 20 18 7M13 8l4-4M16 11l4-1"/></symbol>
+  <symbol id="i-rachadura" viewBox="0 0 24 24"><path d="M13 2 8 11l6 2-4 9"/></symbol>
+  <symbol id="i-ok" viewBox="0 0 24 24"><path d="m5 12.5 4.5 4.5L19 7"/></symbol>
+  <symbol id="i-seta" viewBox="0 0 24 24"><path d="M4 12h15M13 6l6 6-6 6"/></symbol>
+  <symbol id="i-folha" viewBox="0 0 24 24"><path d="M5 19C5 10 10 5 20 4c0 10-5 15-15 15zM5 19l8-8" stroke-width="2"/></symbol>
+  <symbol id="i-sol" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M19 5l-2 2M7 17l-2 2"/></symbol>
+  <symbol id="i-lua" viewBox="0 0 24 24"><path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a6.8 6.8 0 0 0 10.5 10.5z"/></symbol>
+  <symbol id="i-fechar" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></symbol>
+  <symbol id="i-carta" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3.5 6.5 8.5 7 8.5-7"/></symbol>
+  <symbol id="i-usar" viewBox="0 0 24 24"><path d="M9 11V5.5a1.5 1.5 0 0 1 3 0V11"/><path d="M12 10.5a1.5 1.5 0 0 1 3 0v1a1.5 1.5 0 0 1 3 0V15a6 6 0 0 1-6 6h-1a6 6 0 0 1-5-3l-2-3.5a1.5 1.5 0 0 1 2.5-1.5L9 14"/><path d="M5.5 4 4 2.5M4 8H2M14 3l1-2"/></symbol>
+</svg>
 <!-- abertura: logo AA animada; depois, a tela de carregamento até o jogo ficar pronto (ver o script
      logo abaixo). Tudo animado só com transform e opacidade: o navegador anima isso fora da linha
      principal, então não trava enquanto o jogo carrega no fundo. -->
@@ -582,25 +695,28 @@
   })();
 </script>
 <div id="hud">
-  <div id="chefe" aria-live="polite">Ravi<div><i></i></div></div>
-  <div id="ventoArena" aria-live="polite"><b>⟶</b><small>vento</small><span>●●●</span></div>
-  <div class="esq vidro">
-    <div id="vida" title="Fôlego"></div>
-    <div id="energia" class="cheia" title="Fôlego do sprint"><i></i></div>
-    <div id="poder" title="Explosão de Fios (V)"><i></i></div>
-    <span id="moedas"><span class="icone">✦</span><b>0</b>/ 0</span>
-    <div id="arma"></div>
+  <div id="topoCentro">
+    <div id="chefe" class="retalho"><div class="topo"><span class="nome">Ravi</span><span class="num"></span></div><div class="barra"><s></s><i></i><u class="marca" style="left:50%"></u><u class="marca" style="left:25%"></u></div></div>
+    <div id="ventoArena" class="retalho"><svg class="i seta" aria-hidden="true"><use href="#i-seta"/></svg><span>vento</span><span class="folhas" aria-hidden="true"><svg class="i folha"><use href="#i-folha"/></svg><svg class="i folha"><use href="#i-folha"/></svg><svg class="i folha"><use href="#i-folha"/></svg></span><span class="muda">muda!</span></div>
   </div>
-  <span class="dir"><span id="fps"></span><span id="hora" class="pilula vidro" title="Hora do dia (T avança)">☀ 10:00</span><button class="icone-botao" id="abrir-pausa" title="Pausa (P / Esc)" aria-label="Pausa"><svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg></button></span>
+  <div class="esq">
+    <div id="vida" class="retalho" role="img" aria-label="Fôlego" title="Fôlego"></div>
+    <div id="energia" class="cheia" title="Fôlego da corrida"><span class="mini"><svg class="i i-raio" aria-hidden="true"><use href="#i-raio"/></svg><svg class="i i-cansaco" aria-hidden="true"><use href="#i-cansaco"/></svg></span><div class="trilho"><i></i></div></div>
+    <div id="poder" class="retalho vazio" title="Explosão de Fios"><svg class="i" aria-hidden="true"><use href="#i-poder"/></svg><div class="trilho"><i></i></div><kbd>V</kbd><span class="pronto">Pronto!</span></div>
+    <span id="moedas" class="retalho" title="Fragmentos"><svg class="i" aria-hidden="true"><use href="#i-fragmento"/></svg><b>0</b><span class="total">/ 0</span></span>
+    <div id="arma" class="retalho"></div>
+  </div>
+  <span class="dir"><button class="icone-botao" id="abrir-pausa" title="Pausa (P / Esc)" aria-label="Pausa"><svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg></button></span>
 </div>
-<div id="objetivo" class="vidro"></div>
-<div id="dica" class="vidro">Clique na tela para girar a câmera · <b>E</b> interage · <b>J</b> soca · <b>K</b> chuta · <b>Q</b> defende · <b>P</b> pausa</div>
-<div id="dicaTutorial" class="vidro"></div>
-<div id="aviso"></div>
-<div id="interagir" class="vidro"></div>
-<div id="fala" class="vidro"><b></b><span></span></div>
-<div id="memoria" class="vidro"><h3>✦ Fragmento de memória</h3><p></p></div>
-<div id="bilhete"><div class="papel"><p></p><small>Enter ou E para fechar</small></div></div>
+<div id="fps" class="retalho" hidden aria-hidden="true"></div>
+<div id="objetivo" class="retalho" aria-live="polite"></div>
+<div id="dica" class="retalho">Clique na tela para girar a câmera · <b>E</b> interage · <b>J</b> soca · <b>K</b> chuta · <b>Q</b> defende · <b>P</b> pausa</div>
+<div id="dicaTutorial" class="retalho retalho-forte"></div>
+<div id="aviso" class="retalho" aria-live="polite"><svg class="i ok" aria-hidden="true"><use href="#i-ok"/></svg><span></span></div>
+<div id="interagir" class="retalho"></div>
+<div id="fala" class="retalho retalho-forte" aria-live="polite"><b></b><span></span></div>
+<div id="memoria" class="retalho retalho-forte" aria-live="polite"><h3><svg class="i" aria-hidden="true"><use href="#i-fragmento"/></svg><span>Fragmento de Lembrança</span></h3><p></p></div>
+<div id="bilhete" role="dialog" aria-modal="true" aria-label="Carta"><div class="papel"><p></p><small>Enter ou E para fechar</small><button type="button" class="fechar-carta"><svg class="i" aria-hidden="true"><use href="#i-fechar"/></svg>Fechar</button></div></div>
 <div id="tela" data-modo="menu">
   <div class="cartao">
    <div class="lado-texto">
@@ -655,8 +771,13 @@
         <label class="opcao">Volume <span id="volumeValor"></span><input type="range" id="cfgVolume" min="0" max="1" step="0.05"></label>
         <label class="opcao">Sensibilidade da câmera <span id="sensValor"></span><input type="range" id="cfgSens" min="0.4" max="2" step="0.1"></label>
         <label class="opcao">Tamanho dos textos
-          <select id="cfgTexto"><option value="1">Normal</option><option value="1.15">Grande</option><option value="1.3">Maior</option></select></label>
+          <select id="cfgTexto"><option value="1">Normal</option><option value="1.2">Grande</option><option value="1.5">Maior</option></select></label>
         <label class="opcao marcar"><input type="checkbox" id="cfgTremor"> Tremor da tela (quedas e golpes)</label>
+        <label class="opcao marcar"><input type="checkbox" id="cfgFlashes"> Reduzir flashes (sem piscadas nem pulsos)</label>
+        <label class="opcao marcar"><input type="checkbox" id="cfgLento"> Câmera lenta nos golpes fortes</label>
+        <label class="opcao so-toque">Tamanho dos botões de toque
+          <select id="cfgToqueTam"><option value="P">Pequeno (48)</option><option value="M">Médio (56)</option><option value="G">Grande (64)</option></select></label>
+        <label class="opcao marcar so-toque"><input type="checkbox" id="cfgInverter"> Inverter lados (bastão à direita, botões à esquerda)</label>
       </div>
       <div class="pagina" data-pagina="controles">
         <div class="grade">
@@ -718,6 +839,7 @@
         <button data-nivel="high">High<small>gráfico máximo: céu real, grama com vento, nuvens, sombras de contato</small></button>
       </div>
       <p id="perfil-pc"></p>
+      <label class="opcao marcar"><input type="checkbox" id="cfgFps"> Mostrar desempenho (fps)</label>
       <div id="aviso-aa">O antisserrilhado deste nível só muda ao abrir o jogo de novo.</div>
       <p id="versao">versão 04/11/2026 02:45 · d77fae</p>
     </div>
@@ -728,6 +850,7 @@
   <div class="janela">
     <header><h2>Pausado</h2></header>
     <div class="corpo">
+      <p class="pausa-hora" id="pausaHora"><svg class="i" aria-hidden="true"><use id="pausaHoraIcone" href="#i-sol"/></svg><span id="pausaHoraTexto">10:00</span></p>
       <button id="pausaContinuar" class="item-menu">Continuar</button>
       <button class="item-menu" id="pausaNuvem"><span>Chamar o Nuvem</span><small id="pausaNuvemMotivo"></small></button>
       <button class="item-menu" data-painel="config"><span>Configurações</span></button>
@@ -759,15 +882,15 @@
   <small>Enter tenta de novo a partir do último ponto salvo</small>
 </div>
 <div id="bastao"></div>
-<div class="toque" id="tPulo"><svg viewBox="0 0 24 24"><path d="m6 14 6-6 6 6"/></svg></div>
-<div class="toque" id="tUsar">E</div>
-<div class="toque" id="tSoco"><svg viewBox="0 0 24 24"><path d="M7 11V8a1.5 1.5 0 0 1 3 0v2M10 10V7a1.5 1.5 0 0 1 3 0v3M13 10V8a1.5 1.5 0 0 1 3 0v3M16 11v-1a1.5 1.5 0 0 1 3 0v4a6 6 0 0 1-6 6h-1a6 6 0 0 1-5-3l-1.5-3a1.5 1.5 0 0 1 2.5-1.5L8 14"/></svg></div>
-<div class="toque" id="tChute"><svg viewBox="0 0 24 24"><path d="M9 3v8l-5 5a2.5 2.5 0 0 0 2 4h9l4-3h2"/><path d="M9 11h4"/></svg></div>
-<div class="toque" id="tDefesa"><svg viewBox="0 0 24 24"><path d="M12 3 5 6v5c0 4.5 3 8 7 10 4-2 7-5.5 7-10V6z"/></svg></div>
-<div class="toque" id="tPoder" title="Explosão de Fios"><svg viewBox="0 0 24 24"><path d="M12 2v6M12 16v6M2 12h6M16 12h6M5 5l4 4M15 15l4 4M19 5l-4 4M9 15l-4 4"/></svg></div>
-<div class="toque" id="tEsquiva" title="Esquivar"><svg viewBox="0 0 24 24"><path d="M4 16a8 8 0 1 0 3-9.5"/><path d="M4 4v5h5"/></svg></div>
-<div class="toque" id="tPegar"><svg viewBox="0 0 24 24"><path d="M8 13V6a1.5 1.5 0 0 1 3 0v5M11 11V4.5a1.5 1.5 0 0 1 3 0V11M14 11V6a1.5 1.5 0 0 1 3 0v6M17 12V9a1.5 1.5 0 0 1 3 0v4a8 8 0 0 1-8 8h-.5a7 7 0 0 1-5.6-2.8L3.5 15a1.5 1.5 0 0 1 2.4-1.8L8 15"/></svg></div>
-<div class="toque" id="tSuper" title="Corrida super rápida"><svg viewBox="0 0 24 24"><path d="M13 3 5 13h6l-1 8 8-10h-6z"/></svg></div>
+<div class="toque" id="tPulo" role="button" aria-label="Pular"><svg viewBox="0 0 24 24"><path d="m6 14 6-6 6 6"/></svg></div>
+<div class="toque" id="tUsar" role="button" aria-label="Usar"><svg viewBox="0 0 24 24"><use href="#i-usar"/></svg></div>
+<div class="toque" id="tSoco" role="button" aria-label="Socar"><svg viewBox="0 0 24 24"><path d="M7 11V8a1.5 1.5 0 0 1 3 0v2M10 10V7a1.5 1.5 0 0 1 3 0v3M13 10V8a1.5 1.5 0 0 1 3 0v3M16 11v-1a1.5 1.5 0 0 1 3 0v4a6 6 0 0 1-6 6h-1a6 6 0 0 1-5-3l-1.5-3a1.5 1.5 0 0 1 2.5-1.5L8 14"/></svg></div>
+<div class="toque" id="tChute" role="button" aria-label="Chutar"><svg viewBox="0 0 24 24"><path d="M9 3v8l-5 5a2.5 2.5 0 0 0 2 4h9l4-3h2"/><path d="M9 11h4"/></svg></div>
+<div class="toque" id="tDefesa" role="button" aria-label="Defender"><svg viewBox="0 0 24 24"><path d="M12 3 5 6v5c0 4.5 3 8 7 10 4-2 7-5.5 7-10V6z"/></svg></div>
+<div class="toque indisponivel" id="tPoder" role="button" aria-label="Explosão de Fios" title="Explosão de Fios"><svg viewBox="0 0 24 24"><use href="#i-poder"/></svg></div>
+<div class="toque" id="tEsquiva" role="button" aria-label="Esquivar" title="Esquivar"><svg viewBox="0 0 24 24"><path d="M4 16a8 8 0 1 0 3-9.5"/><path d="M4 4v5h5"/></svg></div>
+<div class="toque" id="tPegar" role="button" aria-label="Pegar"><svg viewBox="0 0 24 24"><path d="M8 13V6a1.5 1.5 0 0 1 3 0v5M11 11V4.5a1.5 1.5 0 0 1 3 0V11M14 11V6a1.5 1.5 0 0 1 3 0v6M17 12V9a1.5 1.5 0 0 1 3 0v4a8 8 0 0 1-8 8h-.5a7 7 0 0 1-5.6-2.8L3.5 15a1.5 1.5 0 0 1 2.4-1.8L8 15"/></svg></div>
+<div class="toque" id="tSuper" role="button" aria-label="Corrida super rápida" title="Corrida super rápida"><svg viewBox="0 0 24 24"><use href="#i-raio"/></svg></div>
 <div id="golpe"></div>
 <script>
   // se o jogo não conseguir carregar (um arquivo que não veio, versões misturadas no cache), a tela
