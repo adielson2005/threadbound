@@ -7,7 +7,7 @@
 <!-- fontes da interface (sem internet, caem para a fonte do sistema) -->
 <link rel="icon" href="data:,">
 <link rel="stylesheet" href="vendor/fontes/fontes.css">
-<meta name="versao-site" content="d5b0fd28dd">
+<meta name="versao-site" content="bc223c6d38">
 <script>
   // O GitHub Pages deixa o navegador reaproveitar esta página por até 10 minutos (e um endereço
   // que já foi aberto, como "?v=22", pode continuar vindo da memória). Aqui a página pergunta ao site,
@@ -123,6 +123,8 @@
   #poder.cheio .i { color: var(--ouro-claro); }
   @keyframes pulsoPoder { to { transform: scale(1.06); } }
   /* fragmentos: ícone + "3/25" (o número cresce 1,15x ao pegar) */
+  /* antes de a campanha começar (tutorial) não há fôlego nem fragmentos: nada de retalho vazio */
+  #vida:empty, #moedas[hidden] { display: none !important; }
   #moedas { display: flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 999px; font: 600 16px var(--titulo); font-variant-numeric: tabular-nums; }
   #moedas .i { color: var(--ouro); fill: currentColor; stroke: none; filter: drop-shadow(0 0 1px #0a080e); }
   #moedas b { display: inline-block; font-weight: 600; }
@@ -562,6 +564,11 @@
   #tela[data-modo="dificuldade"] :is(.selo, .sub, #historia, .menu-links),
   #tela[data-modo="fim"] :is(#historia, .menu-links, #voltarMenu) { display: none !important; }
   #tela[data-modo="menu"] .cartao, #tela[data-modo="jogar"] .cartao, #tela[data-modo="dificuldade"] .cartao { justify-content: center; min-height: 100%; }
+  /* texto Grande/Maior: o zoom do cartão também aumentava a altura máxima dele (passava da tela) e o
+     conteúdo centralizado cortava o título em cima quando não cabia. A altura máxima desconta o
+     zoom, e "safe" deixa rolar até o topo em vez de cortar */
+  #tela .cartao { max-height: calc(100% / var(--escala-texto)); }
+  #tela[data-modo="menu"] .cartao, #tela[data-modo="jogar"] .cartao, #tela[data-modo="dificuldade"] .cartao { justify-content: safe center; }
   #tela .acoes { gap: 2px; }
   #tela .acoes > * { animation: deslizar .144s cubic-bezier(.2, .8, .2, 1) backwards; }
   #tela .acoes > :nth-child(4) { animation-delay: .023s; } #tela .acoes > :nth-child(5) { animation-delay: .045s; }
@@ -574,10 +581,10 @@
   /* sem o texto da história o menu cabe numa coluna só: fica embaixo no celular em pé e à esquerda
      no celular deitado, sem cobrir a Brisa da capa */
   @media (max-width: 760px) and (orientation: portrait) {
-    #tela[data-modo="menu"] .cartao, #tela[data-modo="jogar"] .cartao, #tela[data-modo="dificuldade"] .cartao { justify-content: flex-end; }
+    #tela[data-modo="menu"] .cartao, #tela[data-modo="jogar"] .cartao, #tela[data-modo="dificuldade"] .cartao { justify-content: safe flex-end; }
   }
   @media (max-height: 520px) and (min-width: 600px) {
-    #tela[data-modo="menu"] .cartao, #tela[data-modo="jogar"] .cartao, #tela[data-modo="dificuldade"] .cartao { flex-direction: column; align-items: flex-start; justify-content: center; gap: 12px; width: min(440px, 100%); }
+    #tela[data-modo="menu"] .cartao, #tela[data-modo="jogar"] .cartao, #tela[data-modo="dificuldade"] .cartao { flex-direction: column; align-items: flex-start; justify-content: safe center; gap: 12px; width: min(440px, 100%); }
     #tela[data-modo="menu"] .lado-acoes, #tela[data-modo="jogar"] .lado-acoes, #tela[data-modo="dificuldade"] .lado-acoes { flex: none; padding-top: 0; }
     #tela[data-modo="menu"] .lado-texto, #tela[data-modo="jogar"] .lado-texto, #tela[data-modo="dificuldade"] .lado-texto { flex: none; }
   }
@@ -665,7 +672,7 @@
   @media (pointer: coarse) { #tutorial { bottom: auto; top: 64px; } }
 </style>
 <!-- bibliotecas na própria pasta (vendor/): three 0.165.0, three-mesh-bvh 0.7.6, meshoptimizer 0.21.0. O jogo roda sem internet (e dentro do APK) -->
-<script type="importmap">{"imports":{"three":"./vendor/three/build/three.module.js","three/addons/":"./vendor/three/examples/jsm/","three-mesh-bvh":"./vendor/three-mesh-bvh/build/index.module.js","meshoptimizer/simplifier":"./vendor/meshoptimizer/meshopt_simplifier.module.js","./src/agua.js":"./src/agua.js?v=e2a2da6b9b","./src/altos.js":"./src/altos.js?v=ac761e4342","./src/animLuta.js":"./src/animLuta.js?v=ba5d6f9de7","./src/animais.js":"./src/animais.js?v=5a63b0bc33","./src/boneca.js":"./src/boneca.js?v=0eef2507c2","./src/bonecaNova.js":"./src/bonecaNova.js?v=7ea290af16","./src/cachoeira.js":"./src/cachoeira.js?v=f700bc46b9","./src/cambalhota.js":"./src/cambalhota.js?v=aff8debf26","./src/campanha.js":"./src/campanha.js?v=79c5bb4be1","./src/canvasTextura.js":"./src/canvasTextura.js?v=8ddd89e18a","./src/capitulo.js":"./src/capitulo.js?v=5631f04f86","./src/casas.js":"./src/casas.js?v=f3dfa565ca","./src/ceu.js":"./src/ceu.js?v=8ffb931fd1","./src/chuva.js":"./src/chuva.js?v=6cf0295986","./src/colisao.js":"./src/colisao.js?v=ac6260ec0b","./src/combate.js":"./src/combate.js?v=c6a26d1ad3","./src/dia.js":"./src/dia.js?v=e05b6cc395","./src/dificuldade.js":"./src/dificuldade.js?v=cfdf2ff62e","./src/distancia.js":"./src/distancia.js?v=9a5844420e","./src/estilo.js":"./src/estilo.js?v=0c453af42f","./src/fisica.js":"./src/fisica.js?v=7949a2cbcf","./src/folhas.js":"./src/folhas.js?v=0703e7d0dd","./src/graficos.js":"./src/graficos.js?v=66a6779bf1","./src/historia.js":"./src/historia.js?v=7aff3796aa","./src/ilha.js":"./src/ilha.js?v=670fb485d3","./src/inimigos.js":"./src/inimigos.js?v=39857a4c33","./src/jogo.js":"./src/jogo.js?v=3fa6f349f8","./src/lotes.js":"./src/lotes.js?v=f3831174bf","./src/mapa.js":"./src/mapa.js?v=eb1d8bbcc0","./src/mapaMundi.js":"./src/mapaMundi.js?v=3eb13da7fc","./src/mundo.js":"./src/mundo.js?v=262a267749","./src/nevoa.js":"./src/nevoa.js?v=9bccad8ac5","./src/objetos.js":"./src/objetos.js?v=a78546e0b2","./src/oclusao.js":"./src/oclusao.js?v=a1ec74f05f","./src/particulas.js":"./src/particulas.js?v=efad11a94e","./src/pegaso.js":"./src/pegaso.js?v=08c8aa3a88","./src/pes.js":"./src/pes.js?v=9f8ed5d180","./src/praia.js":"./src/praia.js?v=700cd3c717","./src/praiaForma.js":"./src/praiaForma.js?v=79c406a618","./src/reparos.js":"./src/reparos.js?v=e805cead1a","./src/resolucao.js":"./src/resolucao.js?v=0d1e50cb15","./src/salvar.js":"./src/salvar.js?v=6a8167f025","./src/simplificar.js":"./src/simplificar.js?v=a439e6c6ca","./src/som.js":"./src/som.js?v=d812dac563","./src/sombraBoneca.js":"./src/sombraBoneca.js?v=02b8ff3403","./src/suavizar.js":"./src/suavizar.js?v=042d8dcf4b","./src/terreno.js":"./src/terreno.js?v=30a71b0a42","./src/texturas.js":"./src/texturas.js?v=5b74c7049c","./src/tutorial.js":"./src/tutorial.js?v=1f1fb0bc8d","./src/vilao.js":"./src/vilao.js?v=5742a89aa1"}}</script>
+<script type="importmap">{"imports":{"three":"./vendor/three/build/three.module.js","three/addons/":"./vendor/three/examples/jsm/","three-mesh-bvh":"./vendor/three-mesh-bvh/build/index.module.js","meshoptimizer/simplifier":"./vendor/meshoptimizer/meshopt_simplifier.module.js","./src/agua.js":"./src/agua.js?v=e2a2da6b9b","./src/altos.js":"./src/altos.js?v=ac761e4342","./src/animLuta.js":"./src/animLuta.js?v=ba5d6f9de7","./src/animais.js":"./src/animais.js?v=5a63b0bc33","./src/boneca.js":"./src/boneca.js?v=0eef2507c2","./src/bonecaNova.js":"./src/bonecaNova.js?v=7ea290af16","./src/cachoeira.js":"./src/cachoeira.js?v=f700bc46b9","./src/cambalhota.js":"./src/cambalhota.js?v=aff8debf26","./src/campanha.js":"./src/campanha.js?v=47fb9ee53d","./src/canvasTextura.js":"./src/canvasTextura.js?v=8ddd89e18a","./src/capitulo.js":"./src/capitulo.js?v=5631f04f86","./src/casas.js":"./src/casas.js?v=f3dfa565ca","./src/ceu.js":"./src/ceu.js?v=8ffb931fd1","./src/chuva.js":"./src/chuva.js?v=6cf0295986","./src/colisao.js":"./src/colisao.js?v=ac6260ec0b","./src/combate.js":"./src/combate.js?v=c6a26d1ad3","./src/dia.js":"./src/dia.js?v=e05b6cc395","./src/dificuldade.js":"./src/dificuldade.js?v=cfdf2ff62e","./src/distancia.js":"./src/distancia.js?v=9a5844420e","./src/estilo.js":"./src/estilo.js?v=0c453af42f","./src/fisica.js":"./src/fisica.js?v=7949a2cbcf","./src/folhas.js":"./src/folhas.js?v=0703e7d0dd","./src/graficos.js":"./src/graficos.js?v=66a6779bf1","./src/historia.js":"./src/historia.js?v=7aff3796aa","./src/ilha.js":"./src/ilha.js?v=670fb485d3","./src/inimigos.js":"./src/inimigos.js?v=39857a4c33","./src/jogo.js":"./src/jogo.js?v=3fa6f349f8","./src/lotes.js":"./src/lotes.js?v=f3831174bf","./src/mapa.js":"./src/mapa.js?v=eb1d8bbcc0","./src/mapaMundi.js":"./src/mapaMundi.js?v=3eb13da7fc","./src/mundo.js":"./src/mundo.js?v=262a267749","./src/nevoa.js":"./src/nevoa.js?v=9bccad8ac5","./src/objetos.js":"./src/objetos.js?v=a78546e0b2","./src/oclusao.js":"./src/oclusao.js?v=a1ec74f05f","./src/particulas.js":"./src/particulas.js?v=efad11a94e","./src/pegaso.js":"./src/pegaso.js?v=08c8aa3a88","./src/pes.js":"./src/pes.js?v=9f8ed5d180","./src/praia.js":"./src/praia.js?v=700cd3c717","./src/praiaForma.js":"./src/praiaForma.js?v=79c406a618","./src/reparos.js":"./src/reparos.js?v=e805cead1a","./src/resolucao.js":"./src/resolucao.js?v=0d1e50cb15","./src/salvar.js":"./src/salvar.js?v=6a8167f025","./src/simplificar.js":"./src/simplificar.js?v=a439e6c6ca","./src/som.js":"./src/som.js?v=d812dac563","./src/sombraBoneca.js":"./src/sombraBoneca.js?v=02b8ff3403","./src/suavizar.js":"./src/suavizar.js?v=042d8dcf4b","./src/terreno.js":"./src/terreno.js?v=30a71b0a42","./src/texturas.js":"./src/texturas.js?v=5b74c7049c","./src/tutorial.js":"./src/tutorial.js?v=1f1fb0bc8d","./src/vilao.js":"./src/vilao.js?v=5742a89aa1"}}</script>
 </head>
 <body>
 <!-- ícones do HUD (sprite único: <use href="#i-...">): traço 2, pontas redondas, 24x24 (carretéis 14x20) -->
@@ -758,7 +765,7 @@
     <div id="vida" class="retalho" role="img" aria-label="Fôlego" title="Fôlego"></div>
     <div id="energia" class="cheia" title="Fôlego da corrida"><span class="mini"><svg class="i i-raio" aria-hidden="true"><use href="#i-raio"/></svg><svg class="i i-cansaco" aria-hidden="true"><use href="#i-cansaco"/></svg></span><div class="trilho"><i></i></div></div>
     <div id="poder" class="retalho vazio" title="Explosão de Fios"><svg class="i" aria-hidden="true"><use href="#i-poder"/></svg><div class="trilho"><i></i></div><kbd>V</kbd><span class="pronto">Pronto!</span></div>
-    <span id="moedas" class="retalho" title="Fragmentos"><svg class="i" aria-hidden="true"><use href="#i-fragmento"/></svg><b>0</b><span class="total">/ 0</span></span>
+    <span id="moedas" class="retalho" title="Fragmentos" hidden><svg class="i" aria-hidden="true"><use href="#i-fragmento"/></svg><b>0</b><span class="total">/ 0</span></span>
     <div id="arma" class="retalho"></div>
   </div>
   <span class="dir"><button class="icone-botao" id="abrir-pausa" title="Pausa (P / Esc)" aria-label="Pausa"><svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg></button></span>
@@ -897,7 +904,7 @@
       <p id="perfil-pc"></p>
       <label class="opcao marcar"><input type="checkbox" id="cfgFps"> Mostrar desempenho (fps)</label>
       <div id="aviso-aa">O antisserrilhado deste nível só muda ao abrir o jogo de novo.</div>
-      <p id="versao">versão 05/11/2026 00:48 · 3fa6f3</p>
+      <p id="versao">versão 05/11/2026 00:54 · 3fa6f3</p>
     </div>
     <footer><button id="fechar-graficos" class="voltar"><kbd>Esc</kbd>Voltar</button></footer>
   </div>

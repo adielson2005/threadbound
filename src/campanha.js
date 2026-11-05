@@ -139,6 +139,7 @@ export function criarCampanha({ cena, mapa, mundo, inimigos, jogador, respawn, c
     const cresceu = fragUi.pegos >= 0 && est.pegos > fragUi.pegos;
     fragUi.pegos = est.pegos;
     fragUi.num.textContent = est.pegos; fragUi.total.textContent = `/ ${fragmentos.length}`;
+    ui.fragmentos.hidden = fragmentos.length === 0;
     ui.fragmentos.setAttribute('aria-label', `Fragmentos: ${est.pegos} de ${fragmentos.length}`);
     if (cresceu) { ui.fragmentos.classList.remove('pegou'); void ui.fragmentos.offsetWidth; ui.fragmentos.classList.add('pegou'); }
   }
