@@ -25,8 +25,6 @@ export function criarCampanha({ cena, mapa, mundo, inimigos, jogador, respawn, c
     dica: $('dicaTutorial'), aviso: $('aviso'), interagir: $('interagir'), memoria: $('memoria'), bilhete: $('bilhete'),
     fragmentos: $('moedas'),
   };
-  // no toque o objetivo fica na coluna da esquerda, no fluxo, embaixo do fôlego (design/ux/hud.md, celular)
-  if (TOQUE) $('hud').querySelector('.esq').appendChild(ui.objetivo);
 
   // ---------- fragments ----------
   const geoFrag = new THREE.OctahedronGeometry(0.22, 0); geoFrag.scale(1, 1.7, 1);
@@ -123,6 +121,7 @@ export function criarCampanha({ cena, mapa, mundo, inimigos, jogador, respawn, c
     const perdeu = vidaUi.max === max && vidaUi.vida > est.vida;
     vidaUi.carreteis.forEach((c, i) => {
       const cheio = i < est.vida;
+      c.classList.toggle('atual', i === Math.max(0, est.vida - 1)); // (o que fica na zona A compacta: Maior em tela baixa)
       c.classList.toggle('vazio', !cheio);
       c.firstChild.setAttribute('href', cheio ? CARRETEL_CHEIO : CARRETEL_VAZIO);
       if (perdeu && i >= est.vida && i < vidaUi.vida) { c.classList.add('desenrola'); setTimeout(() => c.classList.remove('desenrola'), MS_DESENROLA); }
@@ -189,6 +188,7 @@ export function criarCampanha({ cena, mapa, mundo, inimigos, jogador, respawn, c
     if (item) exibir(item);
   }
   function enfileirar(item) {
+    if (document.body.classList.contains('no-chefe') && item.tipo === 'aviso' && item.icone !== 'alerta' && !item.critico) return; // no chefe, só avisos críticos
     if (!fila.atual) { if (item.tipo === 'memoria' && emLuta()) fila.memoria = item; else exibir(item); return; }
     if (item.tipo === 'memoria') { fila.memoria = item; return; }
     if (fila.atual.tipo === 'memoria') {
@@ -200,7 +200,7 @@ export function criarCampanha({ cena, mapa, mundo, inimigos, jogador, respawn, c
     } else fila.aviso = item;
   }
   // icone: 'ok' (conquista), 'alerta' (perigo) ou 'fragmento'
-  function aviso(texto, ms = 2600, icone = 'ok') { enfileirar({ tipo: 'aviso', texto, ms, icone }); }
+  function aviso(texto, ms = 2600, icone = 'ok', critico = false) { enfileirar({ tipo: 'aviso', texto, ms, icone, critico }); }
   let tempoDica = null;
   // depois do mini tutorial (tutorial.js) as dicas de controle não aparecem mais: só as que
   // respondem a algo que ela tentou fazer (forcar), como a âncora ainda presa por cristais
@@ -213,8 +213,21 @@ export function criarCampanha({ cena, mapa, mundo, inimigos, jogador, respawn, c
     ui.dica.textContent = TOQUE ? (DICAS_TOQUE[chave] ?? paraToque(DICAS[chave])) : DICAS[chave]; ui.dica.style.opacity = 1;
     clearTimeout(tempoDica); tempoDica = setTimeout(() => { ui.dica.style.opacity = 0; }, 7000);
   }
-  function falar(linhas) { est.falas.push(...linhas); if (!est.falaAtual) proximaFala(); }
+  // virada: falas de virada da luta (chegada do chefe, fases, recuo); as outras esperam a luta acabar
+  // (design/ux/hud.md, "HUD States": no chefe só as viradas; em luta as falas esperam). No toque com
+  // texto Grande/Maior, a fala também espera o aviso sair (uma caixa grande de texto por vez).
+  function falar(linhas, virada = false) {
+    est.falas.push(...(virada ? linhas.map(l => Object.assign([...l], { virada: true })) : linhas));
+    if (!est.falaAtual) proximaFala();
+  }
+  function falaPodeEntrar(f) {
+    const corpo = document.body.classList;
+    if (!f.virada && (corpo.contains('em-luta') || corpo.contains('no-chefe'))) return false;
+    if (TOQUE && document.documentElement.dataset.textoGrande === 'sim' && fila.atual?.tipo === 'aviso') return false;
+    return true;
+  }
   function proximaFala() {
+    if (est.falas.length && !falaPodeEntrar(est.falas[0])) { est.falaAtual = null; ui.fala.classList.remove('visivel'); return; }
     const f = est.falas.shift();
     est.falaAtual = f || null;
     if (!f) { ui.fala.classList.remove('visivel'); return; }
@@ -365,6 +378,7 @@ export function criarCampanha({ cena, mapa, mundo, inimigos, jogador, respawn, c
   function atualizar(dt, t) {
     // dialogue timing
     if (est.falaAtual) { est.falaTempo -= dt; if (est.falaTempo <= 0) proximaFala(); }
+    else if (est.falas.length && falaPodeEntrar(est.falas[0])) proximaFala(); // a que esperou a luta ou o aviso
     vigiarChefe();
     atualizarFarol(dt, t);
 
@@ -404,7 +418,7 @@ export function criarCampanha({ cena, mapa, mundo, inimigos, jogador, respawn, c
     }
     // first Retalho in sight: Brisa notices it moves out of fear, then the purify hint
     if (!est.viuInimigo && inimigos.lista.some(e => e.ativo && e.pos.distanceTo(jogador.pos) < 9)) {
-      est.viuInimigo = true; falar(FALAS.primeiroInimigo); dica('combate', true);
+      est.viuInimigo = true; falar(FALAS.primeiroInimigo, true); dica('combate', true);
     }
 
     // the island is sinking: periodic tremors until the anchors and the Heart are restored
@@ -501,16 +515,16 @@ export function criarCampanha({ cena, mapa, mundo, inimigos, jogador, respawn, c
     chefe = c;
     // jogo salvo antes do vilão existir, já na etapa do Coração: a luta vem antes
     if (est.etapa === 'coracao' && !est.chefeVencido && !mundo.coracao.restaurado) est.etapa = 'chefe';
-    c.v.aoMudarFase = () => falar(FALAS.chefeFase2);
-    c.v.aoTerceiraFase = () => { falar(FALAS.chefeFase3); aviso(AVISOS.ventoArena, 2600, 'alerta'); };
-    c.v.aoRecuar = modo => { if (modo === 'emboscada') falar(FALAS.raviRecua); };
+    c.v.aoMudarFase = () => falar(FALAS.chefeFase2, true);
+    c.v.aoTerceiraFase = () => { falar(FALAS.chefeFase3, true); aviso(AVISOS.ventoArena, 2600, 'alerta'); };
+    c.v.aoRecuar = modo => { if (modo === 'emboscada') falar(FALAS.raviRecua, true); };
     c.v.aoAviso = motivo => {
-      if (motivo === 'quebra') aviso(AVISOS.guardaQuebrada, 1300);
-      else if (motivo === 'parede') aviso(AVISOS.raviNaParede, 1500);
+      if (motivo === 'quebra') aviso(AVISOS.guardaQuebrada, 1300, 'ok', true); // (dizem a hora de atacar: críticos)
+      else if (motivo === 'parede') aviso(AVISOS.raviNaParede, 1500, 'ok', true);
     };
     c.v.aoDerrotar = () => {
       est.etapa = 'coracao'; est.chefeVencido = true;
-      falar(FALAS.chefeDerrota); som.vitoria();
+      falar(FALAS.chefeDerrota, true); som.vitoria();
       est.checkpoint.copy(jogador.noChao ? jogador.pos : (jogador.seguro ?? jogador.pos)).add(new THREE.Vector3(0, 0.2, 0));
       est.vida = vidaMax(); atualizarVida();
       salvar();
@@ -525,8 +539,8 @@ export function criarCampanha({ cena, mapa, mundo, inimigos, jogador, respawn, c
   }
   function aparecerRavi(modo) {
     if (!chefe || chefe.visivel || jogador.morta || est.terminou || est.etapa === 'chefe') return;
-    if (modo === 'observar') { chefe.iniciar(pontoRavi(18, 0.5), 'observar'); falar(FALAS.raviObserva); }
-    else { chefe.iniciar(pontoRavi(6, 0.9), 'emboscada'); falar(FALAS.raviEmboscada); dica('luta'); }
+    if (modo === 'observar') { chefe.iniciar(pontoRavi(18, 0.5), 'observar'); falar(FALAS.raviObserva, true); }
+    else { chefe.iniciar(pontoRavi(6, 0.9), 'emboscada'); falar(FALAS.raviEmboscada, true); dica('luta'); }
   }
   function vigiarChefe() {
     if (est.etapa !== 'chefe' || !chefe || jogador.morta) return;
@@ -538,7 +552,7 @@ export function criarCampanha({ cena, mapa, mundo, inimigos, jogador, respawn, c
       chefe.iniciar(mundo.coracao.pos.clone().addScaledVector(d.normalize(), 2.5), 'chefe');
       // os Retalhos que guardavam o Coração se desfazem: a luta é só entre os dois
       for (const e of inimigos.lista) if (e.ativo && e.coracao) inimigos.purificar(e);
-      est.falas.length = 0; proximaFala(); falar(FALAS.chefeChegada); dica('luta');
+      est.falas.length = 0; proximaFala(); falar(FALAS.chefeChegada, true); dica('luta');
     }
   }
 

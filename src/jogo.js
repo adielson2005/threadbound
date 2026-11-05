@@ -32,7 +32,7 @@ import { criarFolhas } from './folhas.js';
 import { camadaGolpe, camadaReacao, LADO_GOLPE } from './animLuta.js';
 import { criarMapaMundi } from './mapaMundi.js';
 import { criarPegaso } from './pegaso.js';
-import { som, definirVolume, musicaLuta } from './som.js';
+import { som, definirVolumes, lerVolumes, musicaLuta } from './som.js';
 import { DIFICULDADES, dificuldade, definirDificuldade } from './dificuldade.js';
 import { criarCampanha } from './campanha.js';
 import { criarCombate, GOLPES } from './combate.js';
@@ -533,7 +533,7 @@ for (const ev of ['pointerup', 'pointercancel', 'pointerleave']) botaoSuper.addE
 // controle (gamepad): analógico esquerdo anda, direito gira a câmera, A pula, B soca, Y chuta,
 // RB pega/solta, LT defende, X/RT correm, L3 (clicar o analógico) liga a corrida super rápida (até
 // parar), LB interage, Start pausa e Select abre os gráficos.
-let gpAntes = {}, gpEixoAntes = false, gpSuper = false;
+let gpAntes = {}, gpEixoAntes = false, gpEixoXAntes = false, gpSuper = false;
 function lerGamepad() {
   const gp = [...(navigator.getGamepads?.() || [])].find(Boolean);
   if (!gp) return;
@@ -546,9 +546,15 @@ function lerGamepad() {
     const cima = borda(12) || (inclinado && eixo < 0 && !gpEixoAntes), baixo = borda(13) || (inclinado && eixo > 0 && !gpEixoAntes);
     gpEixoAntes = inclinado;
     if (cima || baixo) moverSelecao(camada, baixo ? 1 : -1);
+    const eixoX = gp.axes[0] || 0, inclinadoX = Math.abs(eixoX) > 0.6;
+    const esq = borda(14) || (inclinadoX && eixoX < 0 && !gpEixoXAntes), dir = borda(15) || (inclinadoX && eixoX > 0 && !gpEixoXAntes);
+    gpEixoXAntes = inclinadoX;
+    const focado = document.activeElement;
+    if ((esq || dir) && focado && camada.contains(focado) && focado.matches('select, input')) ajustarOpcao(focado, dir ? 1 : -1);
     if (borda(0)) {
       const foco = document.activeElement;
-      if (foco && foco !== document.body && camada.contains(foco)) foco.click();
+      if (foco instanceof HTMLSelectElement && camada.contains(foco)) { if (!ajustarOpcao(foco, 1)) { foco.selectedIndex = 0; foco.dispatchEvent(new Event('change', { bubbles: true })); } }
+      else if (foco && foco !== document.body && camada.contains(foco)) foco.click();
       else if (camada === tela && tela.dataset.modo === 'menu') abrirJogar();
     }
     if (borda(1)) dispatchEvent(new KeyboardEvent('keydown', { code: 'Escape', key: 'Escape' }));
@@ -978,8 +984,8 @@ for (const a of paineis.querySelectorAll('.aba')) a.addEventListener('click', ()
 // configurações: aplicadas na hora e guardadas
 const config = lerConfig();
 function aplicarConfig() {
-  chuva.definirVolume(config.volume);
-  definirVolume(config.volume);
+  chuva.definirVolume(config.efeitos); // a chuva é efeito
+  definirVolumes(config.musica, config.efeitos);
   CAMERA.sensibilidade = 0.0025 * config.sensibilidade;
   // HUD (design/ux/hud.md, Acessibilidade): escala de texto, flashes, botões de toque, fps
   document.documentElement.style.setProperty('--escala-texto', config.texto);
@@ -987,12 +993,16 @@ function aplicarConfig() {
   document.body.classList.toggle('sem-flashes', config.reduzirFlashes);
   document.body.classList.toggle('inverter', config.inverterLados);
   hudFps.hidden = !config.mostrarFps;
-  $('volumeValor').textContent = Math.round(config.volume * 100) + '%';
+  $('musicaValor').textContent = Math.round(config.musica * 100) + '%';
+  $('efeitosValor').textContent = Math.round(config.efeitos * 100) + '%';
+  document.documentElement.dataset.textoGrande = config.texto > 1 ? 'sim' : 'nao';
   $('sensValor').textContent = config.sensibilidade.toFixed(1) + '×';
   salvarConfig(config);
 }
-$('cfgVolume').value = config.volume; $('cfgSens').value = config.sensibilidade; $('cfgTexto').value = String(config.texto); $('cfgTremor').checked = config.tremor;
-$('cfgVolume').addEventListener('input', e => { config.volume = +e.target.value; aplicarConfig(); });
+$('cfgSens').value = config.sensibilidade; $('cfgTexto').value = String(config.texto); $('cfgTremor').checked = config.tremor;
+$('cfgMusica').value = config.musica; $('cfgEfeitos').value = config.efeitos;
+$('cfgMusica').addEventListener('input', e => { config.musica = +e.target.value; aplicarConfig(); });
+$('cfgEfeitos').addEventListener('input', e => { config.efeitos = +e.target.value; aplicarConfig(); });
 $('cfgSens').addEventListener('input', e => { config.sensibilidade = +e.target.value; aplicarConfig(); });
 $('cfgTexto').addEventListener('change', e => { config.texto = +e.target.value; aplicarConfig(); });
 $('cfgTremor').addEventListener('change', e => { config.tremor = e.target.checked; aplicarConfig(); });
@@ -1067,7 +1077,28 @@ function moverSelecao(camada, passo) {
   itens[prox].focus({ preventScroll: false, focusVisible: false });
   return true;
 }
+// muda o valor da opção focada (select: próxima opção; range: um passo; checkbox: liga/desliga) e
+// avisa o jogo pelo mesmo evento que o mouse geraria (change / input)
+function ajustarOpcao(el, passo) {
+  if (el instanceof HTMLSelectElement) {
+    const i = Math.min(el.options.length - 1, Math.max(0, el.selectedIndex + passo));
+    if (i === el.selectedIndex) return false;
+    el.selectedIndex = i; el.dispatchEvent(new Event('change', { bubbles: true })); som.foco(); return true;
+  }
+  if (el instanceof HTMLInputElement && el.type === 'range') {
+    if (passo > 0) el.stepUp(); else el.stepDown();
+    el.dispatchEvent(new Event('input', { bubbles: true })); return true;
+  }
+  if (el instanceof HTMLInputElement && el.type === 'checkbox') { el.click(); return true; }
+  return false;
+}
 addEventListener('keydown', e => {
+  const foco = document.activeElement;
+  if ((e.code === 'ArrowLeft' || e.code === 'ArrowRight') && foco instanceof HTMLSelectElement && telaDeCima()?.contains(foco)) {
+    if (ajustarOpcao(foco, e.code === 'ArrowRight' ? 1 : -1)) e.preventDefault();
+    return;
+  }
+  if (e.code === 'Enter' && foco instanceof HTMLInputElement && foco.type === 'checkbox') { e.preventDefault(); foco.click(); return; }
   if (e.code !== 'ArrowUp' && e.code !== 'ArrowDown') return;
   const camada = telaDeCima();
   if (camada && moverSelecao(camada, e.code === 'ArrowDown' ? 1 : -1)) e.preventDefault();
@@ -2190,7 +2221,7 @@ Promise.all([
     progressoCarga(1); textoCarga('Pronto');
     dispatchEvent(new Event('jogo-pronto'));
     window.__jogo = {
-      jogador, personagem, get vilao() { return vilao; }, camera, camera3p, mapa, terreno, correntes, renderer, cena, sol, medidor, altos, mundo, inimigos, campanha, agua, nevoa, cachoeiras, praia, ceu: ceuJogo, get combate() { return combate; }, get animais() { return animais; },
+      lerVolumes, jogador, personagem, get vilao() { return vilao; }, camera, camera3p, mapa, terreno, correntes, renderer, cena, sol, medidor, altos, mundo, inimigos, campanha, agua, nevoa, cachoeiras, praia, ceu: ceuJogo, get combate() { return combate; }, get animais() { return animais; },
       terminarCapitulo, get mapaMundi() { return mapaMundi; }, get fuga() { return fuga; },
       animacao: () => animAtual, estado: () => estado, nivel: () => nomeNivel, aplicarNivel, ocioso, get oclusao() { return oclusao; },
     };

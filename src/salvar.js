@@ -42,11 +42,15 @@ export const TAMANHOS_TOQUE = ['P', 'M', 'G'];
 export const CONFIG_PADRAO = {
   volume: 0.8, sensibilidade: 1, tremor: true, texto: 1,
   reduzirFlashes: null, cameraLenta: true, toqueTam: 'M', inverterLados: false, mostrarFps: false,
+  musica: 0.8, efeitos: 0.8, // volumes separados (o "volume" antigo vale para os dois)
 };
 // saves antigos usavam 1,15 e 1,3: vão para o tamanho mais perto (1,2 e 1,5)
 const MIGRAR_TEXTO = { 1.15: 1.2, 1.3: 1.5 };
 export function lerConfig() {
-  const c = { ...CONFIG_PADRAO, ...(ler(CHAVE_CONFIG) ?? {}) };
+  const salvo = ler(CHAVE_CONFIG) ?? {};
+  const c = { ...CONFIG_PADRAO, ...salvo };
+  if (typeof salvo.volume === 'number' && salvo.musica === undefined) { c.musica = salvo.volume; c.efeitos = salvo.volume; }
+  delete c.volume;
   c.texto = MIGRAR_TEXTO[c.texto] ?? (ESCALAS_TEXTO.includes(+c.texto) ? +c.texto : 1);
   if (typeof c.reduzirFlashes !== 'boolean') c.reduzirFlashes = !!globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
   if (!TAMANHOS_TOQUE.includes(c.toqueTam)) c.toqueTam = CONFIG_PADRAO.toqueTam;

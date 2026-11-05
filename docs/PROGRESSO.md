@@ -24,6 +24,14 @@ Medido com bot Playwright (Chromium sem GPU): botões de toque sem sobreposiçã
 em P, M e G, com e sem lados invertidos, a 640×360; G cabe a 360 dp de altura. **Falta:** medir num
 Android de verdade e o "!" de golpe vindo como sprite 3D (parte separada).
 
+Acabamento (fase 5, revisão de UX): layout do celular deitado refeito para Grande/Maior em 640×360
+(zona A em uma linha, objetivo do lado oposto aos botões, poder como anel no botão Poder, aviso numa
+faixa própria); no chefe só avisos críticos e só as falas de virada; em luta as falas esperam; foco
+visível nas opções; ←/→ (teclado e controle) mudam selects e sliders; menus seguem o tamanho de texto
+e nada abaixo de 14 px; alvos dos menus no celular com 48 px e 8 px de espaço; volumes separados de
+Música e Efeitos (o volume antigo vale para os dois). Medido com bot: nenhuma sobreposição entre os
+elementos visíveis do HUD em Normal e Maior, com e sem inverter, na exploração e no chefe.
+
 ## Situação de cada fase
 
 | Fase | Situação | O que foi feito / o que falta |

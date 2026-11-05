@@ -597,6 +597,7 @@ export function criarCombate({ cena, mapa, mundo, terreno, inimigos, campanha, j
     }
     botaoPoder?.classList.toggle('pronto', est.poder >= 1);
     botaoPoder?.classList.toggle('indisponivel', est.poder < 1);
+    botaoPoder?.style.setProperty('--carga', est.poder); // anel de carga em volta do botão (toque)
   }
   // onda: um anel de luz que cresce rente ao chão
   const matOnda = new THREE.MeshBasicMaterial({ color: '#ffe9a8', transparent: true, opacity: 0.9, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide });

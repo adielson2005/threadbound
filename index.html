@@ -7,7 +7,7 @@
 <!-- fontes da interface (sem internet, caem para a fonte do sistema) -->
 <link rel="icon" href="data:,">
 <link rel="stylesheet" href="vendor/fontes/fontes.css">
-<meta name="versao-site" content="3789ada1eb">
+<meta name="versao-site" content="d5b0fd28dd">
 <script>
   // O GitHub Pages deixa o navegador reaproveitar esta página por até 10 minutos (e um endereço
   // que já foi aberto, como "?v=22", pode continuar vindo da memória). Aqui a página pergunta ao site,
@@ -58,7 +58,7 @@
   canvas { display: block; touch-action: none; }
   button { font-family: inherit; }
   kbd { display: inline-flex; align-items: center; justify-content: center; min-width: 20px; height: 20px; padding: 0 5px; box-sizing: border-box; margin-right: 8px;
-    border-radius: 5px; border: 1.5px solid currentColor; color: var(--texto); font: 700 11px var(--fonte); opacity: .9; }
+    border-radius: 5px; border: 1.5px solid currentColor; color: var(--texto); font: 700 14px var(--fonte); opacity: .9; }
 
   /* ---------- opções de menu: texto; o fio dourado entra na escolhida ---------- */
   .item-menu, .botao { position: relative; display: flex; align-items: center; gap: 12px; width: 100%; min-height: 40px; padding: 2px 4px 2px 0; box-sizing: border-box; touch-action: manipulation; border: 0; background: none; cursor: pointer;
@@ -111,7 +111,7 @@
   /* poder (Explosão de Fios): só na luta ou quando cheio; cheio = palavra "Pronto!" + pulso 1 Hz */
   #poder { display: none; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 999px; transform-origin: 0 50%; }
   body.em-luta #poder, #poder.cheio { display: flex; }
-  #poder.vazio { opacity: .5; }
+  #poder.vazio .i, #poder.vazio .trilho { opacity: .5; } /* (a pílula e a tecla V ficam 100%) */
   #poder .i { width: 20px; height: 20px; color: var(--lilas); filter: drop-shadow(0 0 1px #0a080e); }
   #poder .trilho { width: 80px; height: 8px; border-radius: 4px; background: var(--hud-trilho); overflow: hidden; }
   #poder .trilho i { display: block; height: 100%; background: var(--lilas); transform-origin: 0 50%; transform: scaleX(0); transition: transform .2s; }
@@ -136,7 +136,7 @@
   #arma .racha { width: 14px; height: 14px; color: var(--vermelho); filter: drop-shadow(0 0 1px #0a080e); }
   #arma kbd { margin: 0; }
   #arma.baixo { outline-color: var(--vermelho); }
-  kbd { font-size: 12px; }
+  kbd { font-size: 14px; }
   :is(#arma, #poder, #interagir, #tutorial, #dicaTutorial, #dica) kbd { min-width: 24px; height: 24px; font-size: 14px; }
   /* canto direito: pausa 40 px (PC) / 48 dp (toque) */
   .icone-botao { pointer-events: auto; display: inline-flex; align-items: center; justify-content: center; width: 40px; height: 40px; padding: 0; border: 0; border-radius: 50%; cursor: pointer;
@@ -168,7 +168,7 @@
   #ventoArena .folhas { display: flex; gap: 3px; }
   #ventoArena .folhas .i { width: 14px; height: 14px; }
   #ventoArena .folha.cheia { fill: currentColor; } #ventoArena .folha.vazia { fill: none; }
-  #ventoArena .muda { display: none; color: var(--ouro); font-weight: 800; }
+  #ventoArena .muda { display: none; color: var(--texto); font-weight: 800; }
   #ventoArena.troca .muda { display: inline; }
   #ventoArena.troca .seta { animation: piscaVento .5s steps(1) infinite; outline: 2px solid var(--ouro); outline-offset: 1px; }
   @keyframes piscaVento { 50% { opacity: .25; } }
@@ -176,7 +176,6 @@
   #objetivo { position: fixed; top: calc((var(--m-hud) + env(safe-area-inset-top, 0px) + 56px) * var(--ez)); right: calc((var(--m-hud) + env(safe-area-inset-right, 0px)) * var(--ez)); width: min(260px, 40vw); box-sizing: border-box;
     padding: 6px 12px; border-radius: 12px; text-align: right; pointer-events: none; z-index: 2; transition: outline-color .3s, background .3s, opacity .3s; }
   #objetivo:empty { display: none; }
-  #hud .esq #objetivo { position: static; zoom: 1; width: auto; max-width: min(260px, 44vw); text-align: left; }
   #objetivo b { font: 700 14px/1.3 var(--fonte); }
   #objetivo span.detalhe { display: block; font: 700 14px/1.3 var(--fonte); }
   #objetivo .ok { display: none; width: 16px; height: 16px; margin-right: 6px; vertical-align: -3px; padding: 2px; box-sizing: border-box; border-radius: 50%; background: var(--ouro); color: var(--hud-noite-cor); }
@@ -253,7 +252,7 @@
   .lado-texto, .lado-acoes { display: flex; flex-direction: column; gap: 16px; }
   .lado-acoes { gap: 2px; }
   .cabecalho { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; }
-  .selo { font: 700 11px var(--fonte); letter-spacing: 2.4px; text-transform: uppercase; color: var(--ouro); text-shadow: var(--sombra-texto); }
+  .selo { font: 700 14px var(--fonte); letter-spacing: 2.4px; text-transform: uppercase; color: var(--ouro); text-shadow: var(--sombra-texto); }
   .faixa { display: block; }
   #tela h1 { margin: 0; font: 700 clamp(44px, 6.4vw, 66px) var(--titulo); letter-spacing: .5px; line-height: 1; color: #fff; text-shadow: 0 3px 0 rgba(90, 60, 140, 0.55), 0 6px 24px rgba(0, 0, 0, 0.5); }
   /* fio costurado embaixo do título */
@@ -261,33 +260,33 @@
   .sub { margin: 0; font: 500 17px var(--titulo); color: var(--texto-2); text-shadow: var(--sombra-texto); }
   #tela p { margin: 0; }
   #tela h1 { white-space: nowrap; }
-  #historia { display: flex; flex-direction: column; gap: 6px; font-size: 13px; font-weight: 600; line-height: 1.55; color: var(--texto-2); text-shadow: var(--sombra-texto); max-width: 380px; }
+  #historia { display: flex; flex-direction: column; gap: 6px; font-size: 14px; font-weight: 600; line-height: 1.55; color: var(--texto-2); text-shadow: var(--sombra-texto); max-width: 380px; }
   #historia:empty { display: none; }
   #historia p { opacity: 0; animation: surgir .45s forwards; }
   #historia p:nth-child(2) { animation-delay: .36s; } #historia p:nth-child(3) { animation-delay: .72s; }
   @keyframes surgir { to { opacity: 1; } }
-  #msg { font-size: 13px; font-weight: 600; color: var(--texto-2); line-height: 1.5; text-shadow: var(--sombra-texto); max-width: 380px; }
+  #msg { font-size: 14px; font-weight: 600; color: var(--texto-2); line-height: 1.5; text-shadow: var(--sombra-texto); max-width: 380px; }
   #msg em { color: var(--ouro); font-style: normal; font-weight: 700; display: block; margin-top: 10px; }
   #barra { width: 180px; height: 2px; background: rgba(255, 255, 255, 0.15); }
   #barra div { height: 100%; width: 0; background: var(--ouro); transition: width .2s; }
   .acoes { display: flex; flex-direction: column; }
   .acoes .botao { font-size: 25px; min-height: 46px; }
   #botao, #continuar, #continuarJogo, #confirmarNovo { display: none; }
-  #confirmarNovo { font-size: 12px; font-weight: 700; color: var(--vermelho); text-shadow: var(--sombra-texto); margin: 2px 0 6px 34px !important; }
+  #confirmarNovo { font-size: 14px; font-weight: 700; color: var(--vermelho); text-shadow: var(--sombra-texto); margin: 2px 0 6px 34px !important; }
   .menu-links { display: flex; flex-direction: column; }
   /* dicas de tecla no rodapé */
-  .prompts { position: absolute; right: 28px; bottom: 22px; display: flex; gap: 20px; font-size: 12px; font-weight: 700; color: var(--texto-2); text-shadow: var(--sombra-texto); }
+  .prompts { position: absolute; right: 28px; bottom: 22px; display: flex; gap: 20px; font-size: 14px; font-weight: 700; color: var(--texto-2); text-shadow: var(--sombra-texto); }
   .prompts span { display: flex; align-items: center; } .prompts kbd { margin-right: 6px; } .prompts kbd + kbd { margin-left: -2px; }
   @media (pointer: coarse) { .prompts { display: none; } }
   .resumo { display: flex; gap: 26px; }
-  .resumo span { display: flex; flex-direction: column; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.4px; color: var(--texto-2); }
+  .resumo span { display: flex; flex-direction: column; font-size: 14px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.4px; color: var(--texto-2); }
   .resumo b { font: 600 30px var(--titulo); color: #fff; letter-spacing: 0; }
   @media (max-width: 760px) {
     #tela { align-items: flex-end; background-position: 72% center; /* a Brisa fica a 2/3 da capa */ }
     #tela::before { background: linear-gradient(180deg, rgba(10, 7, 14, 0.15) 0%, rgba(10, 7, 14, 0.75) 45%, rgba(10, 7, 14, 0.94) 100%); }
     .cartao { width: 100%; padding: 24px 24px calc(22px + env(safe-area-inset-bottom)); gap: 20px; }
     #tela h1 { font-size: 44px; }
-    #historia { font-size: 12px; }
+    #historia { font-size: 14px; }
     .acoes .botao { font-size: 22px; } .item-menu { font-size: 19px; }
   }
   /* celular em pé: a capa ocupa a parte de cima (a Brisa a 2/3 da largura) e o menu fica embaixo,
@@ -313,7 +312,7 @@
   .janela h2 { margin: 0; font: 600 32px var(--titulo); letter-spacing: .4px; flex: 1; color: #fff; }
   .janela .corpo { padding: 18px 0; overflow: auto; min-height: 0; flex: 1 1 auto; }
   .janela .corpo > * { flex-shrink: 0; }
-  .janela .corpo > p, .janela .texto { margin: 0 0 16px; font-size: 13px; font-weight: 600; color: var(--texto-2); line-height: 1.55; max-width: 480px; }
+  .janela .corpo > p, .janela .texto { margin: 0 0 16px; font-size: 14px; font-weight: 600; color: var(--texto-2); line-height: 1.55; max-width: 480px; }
   .janela footer { display: flex; gap: 24px; padding-top: 10px; border-top: 1px solid var(--linha); }
   /* abas: texto, a escolhida com o fio dourado embaixo */
   .abas { display: flex; gap: 26px; border-bottom: 1px solid var(--linha); }
@@ -326,8 +325,12 @@
   /* opções: nome à esquerda, controle à direita, numa linha */
   .opcao { display: grid; grid-template-columns: 1fr minmax(150px, 46%) 44px; align-items: center; gap: 14px; min-height: 48px; padding: 4px 8px; margin: 0 -8px; border-radius: 6px;
     border-bottom: 1px solid rgba(255, 255, 255, 0.06); font: 600 15px var(--fonte); color: var(--texto); }
-  .opcao:hover, .opcao:focus-within { background: rgba(255, 255, 255, 0.05); }
-  .opcao > span { order: 3; font: 700 13px var(--fonte); color: var(--ouro); font-variant-numeric: tabular-nums; text-align: right; }
+  .opcao:hover { background: rgba(255, 255, 255, 0.05); }
+  .opcao:focus-within { background: rgba(255, 255, 255, 0.10); color: #fff; box-shadow: inset 3px 0 0 var(--ouro); }
+  .opcao input:focus, .opcao select:focus { outline: 2px solid var(--ouro); outline-offset: 2px; }
+  .opcao.marcar input:focus { outline: 2px solid var(--ouro); outline-offset: 3px; }
+  .aba:focus-visible, .voltar:focus-visible, [data-nivel]:focus-visible { outline: 2px solid var(--ouro); outline-offset: 2px; }
+  .opcao > span { order: 3; font: 700 14px var(--fonte); color: var(--ouro); font-variant-numeric: tabular-nums; text-align: right; }
   .opcao input[type=range] { order: 2; width: 100%; height: 22px; margin: 0; accent-color: var(--ouro); outline: none; }
   .opcao select { grid-column: 2 / 4; justify-self: end; font: 600 14px var(--fonte); padding: 0 24px 0 4px; height: 32px; border: 0; color: #fff; outline: none; cursor: pointer;
     background: transparent url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23f2c76b' stroke-width='2.5'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") right 2px center / 14px no-repeat; appearance: none; -webkit-appearance: none; }
@@ -339,21 +342,21 @@
   .opcao.marcar input:checked { background: var(--ouro); }
   .opcao.marcar input:checked::after { transform: translateX(18px); }
   /* controles */
-  .grade { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0 28px; font-size: 13px; font-weight: 600; color: var(--texto-2); }
+  .grade { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0 28px; font-size: 14px; font-weight: 600; color: var(--texto-2); }
   .grade div { display: flex; align-items: center; gap: 2px; min-height: 36px; border-bottom: 1px solid rgba(255, 255, 255, 0.06); }
   .grade kbd { margin-right: 3px; }
   .grade span { margin-left: 8px; }
-  .controle-pad { margin: 16px 0 0 !important; font-size: 12px !important; }
+  .controle-pad { margin: 16px 0 0 !important; font-size: 14px !important; }
   /* capítulos */
   .capitulos { list-style: none; margin: 0; padding: 0; counter-reset: cap; }
   .capitulos li { display: grid; grid-template-columns: 1fr auto; gap: 2px 18px; align-items: center; padding: 14px 0; border-bottom: 1px solid rgba(255, 255, 255, 0.07); }
   .capitulos b { font: 600 18px var(--titulo); color: #fff; }
-  .capitulos span { grid-column: 1; font-size: 12px; font-weight: 600; color: var(--texto-2); line-height: 1.45; }
+  .capitulos span { grid-column: 1; font-size: 14px; font-weight: 600; color: var(--texto-2); line-height: 1.45; }
   .capitulos button, .capitulos em { grid-column: 2; grid-row: 1 / span 2; font-style: normal; }
   .capitulos .trancado { opacity: .42; }
   .capitulos .botao { font-size: 17px; min-height: 34px; color: var(--ouro); }
   /* créditos */
-  .creditos { font-size: 13px !important; line-height: 1.8 !important; }
+  .creditos { font-size: 14px !important; line-height: 1.8 !important; }
   .autor { display: flex; flex-direction: column; align-items: flex-start; gap: 10px; margin: 4px 0 20px; }
   .autor .feito { margin: 0; font: 600 18px var(--titulo); letter-spacing: 1px; color: var(--texto-2); }
   .autor .feito b { color: #fff; }
@@ -366,13 +369,13 @@
     border-bottom: 1px solid rgba(255, 255, 255, 0.06); background: none; cursor: pointer; color: var(--texto-2); text-align: left; font: 600 19px var(--titulo); outline: none; }
   #graficos button[data-nivel]::before { content: ''; width: 10px; height: 10px; border-radius: 50%; border: 1.5px solid var(--texto-3); justify-self: center; }
   #graficos button[data-nivel]:focus { background: rgba(255, 255, 255, 0.05); color: #fff; }
-  #graficos button[data-nivel] small { font: 600 12px var(--fonte); color: var(--texto-3); line-height: 1.4; }
+  #graficos button[data-nivel] small { font: 600 14px var(--fonte); color: var(--texto-3); line-height: 1.4; }
   #graficos button.ativo { color: #fff; }
   #graficos button.ativo::before { background: var(--ouro); border-color: var(--ouro); box-shadow: 0 0 8px var(--ouro); }
   #graficos button.ativo small { color: var(--texto-2); }
   #perfil-pc { margin: 16px 0 0 !important; }
-  #versao { font-size: 11px !important; color: var(--texto-3) !important; margin: 8px 0 0 !important; }
-  #aviso-aa { display: none; font-size: 12px; font-weight: 700; color: var(--vermelho); margin-top: 10px; }
+  #versao { font-size: 14px !important; color: var(--texto-3) !important; margin: 8px 0 0 !important; }
+  #aviso-aa { display: none; font-size: 14px; font-weight: 700; color: var(--vermelho); margin-top: 10px; }
   /* pausa */
   #pausa { z-index: 9; background: linear-gradient(90deg, rgba(8, 6, 12, 0.9) 0%, rgba(8, 6, 12, 0.6) 55%, rgba(8, 6, 12, 0.3) 100%); }
   #pausa .janela { justify-content: center; width: min(420px, 100%); }
@@ -394,9 +397,9 @@
   #gameover h1 { margin: 0; font: 700 clamp(40px, 9vw, 72px) var(--titulo); letter-spacing: 8px; color: var(--vermelho); text-shadow: 0 0 30px rgba(255, 70, 60, 0.4); transform: translateY(-24px); transition: transform 1.4s cubic-bezier(.2,.8,.2,1); }
   #gameover.visivel h1 { transform: none; }
   #gameover p { margin: 0; max-width: 520px; font-weight: 600; opacity: .9; }
-  #gameover .estat { font-size: 13px; opacity: .7; }
+  #gameover .estat { font-size: 14px; opacity: .7; }
   #gameover .botoes { display: flex; flex-direction: column; align-items: center; margin-top: 10px; }
-  #gameover small { opacity: .55; font-size: 12px; font-weight: 600; }
+  #gameover small { opacity: .55; font-size: 14px; font-weight: 600; }
 
   /* botões de toque: grade 3 colunas x 4 linhas no canto de baixo (direita; "inverter lados" espelha),
      tamanho P/M/G por --tb (48/56/64 dp), 8 dp de espaço, 12 dp de borda mais a área segura.
@@ -430,6 +433,44 @@
   @media (pointer: fine) { .so-toque { display: none !important; } }
   .pausa-hora { display: flex; align-items: center; gap: 8px; margin: 0 0 8px; font: 600 16px var(--titulo); color: var(--texto-2); font-variant-numeric: tabular-nums; }
 
+
+  /* ---------- toque (celular deitado): layout da revisão de UX (production/ui/hud/review-ux-designer.md, D).
+     Zona A em uma linha (fôlego + fragmentos); objetivo na linha 2, do lado oposto aos botões; poder vira
+     um anel em volta do botão Poder (sem pílula); aviso e memória numa faixa própria, centrados na área
+     livre (fora da coluna de botões); interagir logo acima da fala. Os valores com "* var(--ez)" são
+     medidas de tela já descontado o zoom da escala de texto. ---------- */
+  @media (pointer: coarse) {
+    #hud .esq { flex-direction: row; flex-wrap: nowrap; align-items: center; max-width: none; }
+    #poder { display: none !important; }
+    #arma .nome, #arma kbd { display: none; }
+    #energia .trilho { width: 56px; }
+    #objetivo { top: calc((20px + env(safe-area-inset-top, 0px)) * var(--ez) + 32px); right: auto; left: calc((var(--m-hud) + env(safe-area-inset-left, 0px)) * var(--ez)); text-align: left; }
+    #objetivo .detalhe { display: none; }
+    /* com inverter o objetivo vai para a direita, embaixo da pausa (48 dp + 8) */
+    body.inverter #objetivo { left: auto; right: calc((var(--m-hud) + env(safe-area-inset-right, 0px)) * var(--ez)); top: calc((20px + env(safe-area-inset-top, 0px)) * var(--ez) + 48px); text-align: right; }
+    #energia.cheia { display: none; }
+    :is(#aviso, #memoria) { top: calc((32px + env(safe-area-inset-top, 0px)) * var(--ez) + 96px); left: calc(50% - var(--largura-toque) / 2 * var(--ez)); transform: translateX(-50%);
+      max-width: calc(100% - (var(--largura-toque) + 24px) * var(--ez)); }
+    #memoria { width: calc(100% - (var(--largura-toque) + 24px) * var(--ez)); }
+    #interagir { bottom: calc((20px + env(safe-area-inset-bottom, 0px)) * var(--ez) + 76px); left: calc(50% - var(--largura-toque) / 2 * var(--ez)); }
+    body.inverter :is(#aviso, #memoria, #interagir) { left: calc(50% + var(--largura-toque) / 2 * var(--ez)); }
+    #chefe { width: calc(294px * var(--ez)); display: grid; grid-template-columns: 1fr auto; column-gap: 8px; align-items: center; }
+    #chefe .topo { display: contents; }
+    #chefe .nome { grid-column: 1 / -1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    #chefe .barra { grid-column: 1; grid-row: 2; }
+    #chefe .num { grid-column: 2; grid-row: 2; }
+    /* anel de carga do poder em volta do botão (cheio: dourado + "Pronto!") */
+    #tPoder::before { content: ''; position: absolute; inset: -5px; border-radius: 50%; pointer-events: none;
+      background: conic-gradient(var(--lilas) calc(var(--carga, 0) * 1turn), rgba(251, 247, 239, .22) 0);
+      -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 4px), #000 calc(100% - 3.5px)); mask: radial-gradient(farthest-side, transparent calc(100% - 4px), #000 calc(100% - 3.5px)); }
+    #tPoder.pronto::before { background: var(--ouro-claro); }
+    /* com lados invertidos o "Pronto!" vai para o lado do botão voltado ao centro (não toca a zona A) */
+    body.inverter #tPoder.pronto::after { bottom: auto; top: 50%; left: calc(100% + 10px); transform: translateY(-50%); }
+  }
+  /* Grande/Maior em tela baixa: a zona A mostra só o carretel do estado atual + "1/5" (+ "!") */
+  @media (pointer: coarse) and (max-height: 420px) {
+    :root[data-texto-grande="sim"] #vida .carretel:not(.atual) { display: none; }
+  }
   /* ---------- telas menores ---------- */
   :root { --largura-toque: calc(3 * var(--tb) + 2 * var(--gap-toque) + 2 * var(--m-toque)); --altura-toque: calc(4 * var(--tb) + 3 * var(--gap-toque) + var(--m-toque) + 8px); }
   @media (max-width: 1060px) { #dicaTutorial { top: auto; bottom: 150px; max-width: min(440px, calc(100% - 32px)); } #interagir { bottom: 222px; } }
@@ -442,7 +483,6 @@
     .janela { padding: 22px 22px 14px; }
   }
   @media (pointer: coarse) and (orientation: landscape) {
-    #objetivo { right: auto; left: calc((var(--m-hud) + env(safe-area-inset-left, 0px)) * var(--ez)); text-align: left; }
     #fala { left: calc(12px * var(--ez)); right: calc(var(--largura-toque) * var(--ez)); width: auto; transform: none; bottom: calc(10px * var(--ez)); }
     #dicaTutorial { left: calc(12px * var(--ez)); right: calc(var(--largura-toque) * var(--ez)); transform: none; max-width: none; top: auto; bottom: 86px; text-align: left; }
     #interagir { bottom: 150px; left: calc(50% - 80px); }
@@ -459,13 +499,23 @@
     #tela::before { background: linear-gradient(90deg, rgba(10, 7, 14, 0.9) 0%, rgba(10, 7, 14, 0.7) 60%, rgba(10, 7, 14, 0.15) 100%); }
     .lado-texto { flex: 1; gap: 8px; } .lado-acoes { flex: 0 0 220px; }
     .cabecalho { gap: 2px; } #tela h1 { font-size: 32px; } .faixa::after { margin-top: 6px; } .sub { font-size: 14px; }
-    #historia { font-size: 11px; line-height: 1.45; gap: 4px; } #msg { font-size: 11px; line-height: 1.45; }
-    .acoes .botao { font-size: 20px; min-height: 38px; } .item-menu { font-size: 17px; min-height: 34px; }
+    #historia { font-size: 14px; line-height: 1.45; gap: 4px; } #msg { font-size: 14px; line-height: 1.45; }
+    .acoes .botao { font-size: 20px; min-height: 48px; } .item-menu { font-size: 17px; min-height: 48px; }
     .janela { padding: 12px 20px 8px max(20px, env(safe-area-inset-left)); }
     .janela h2 { font-size: 22px; } .janela header { padding-bottom: 6px; } .janela .corpo { padding: 8px 0; }
-    .aba { padding: 8px 0 7px; } .opcao { min-height: 40px; }
-    #pausa h2 { font-size: 28px; } #pausa .item-menu { min-height: 34px; }
+    .aba { padding: 8px 0 7px; min-height: 48px; } .opcao { min-height: 48px; }
+    #pausa h2 { font-size: 28px; } #pausa .item-menu { min-height: 48px; }
+    .item-menu, .acoes .botao, .voltar { min-height: 48px; }
+    #pausa .corpo { flex: 1 1 auto; min-height: 0; overflow: auto; }
   }
+  /* alvos de toque: 48 px de altura e 8 px entre um e outro (menus no celular) */
+  @media (pointer: coarse) {
+    .item-menu, .botao, .voltar, .aba, .opcao { min-height: 48px; }
+    .janela .corpo > .item-menu + .item-menu, #pausa .corpo > * + *, .acoes > * + *, .opcao + .opcao { margin-top: 8px; }
+    #pausa footer { display: none; } /* "Esc Continuar" repete o Continuar */
+  }
+  /* os menus seguem o tamanho de texto (Normal / Grande / Maior) */
+  .janela, #tela .cartao, #gameover, #mapaMundi .mm-topo, #mapaMundi .mm-baixo { zoom: var(--escala-texto); }
   /* ---------- animações: só opacidade e deslocamento (a placa de vídeo faz sem redesenhar a página),
      bem curtas (0,07 a 0,2 s) e em cascata rápida nas listas ---------- */
   @keyframes aparecer { from { opacity: 0; } }
@@ -556,7 +606,7 @@
   .barra-aa { position: absolute; left: 13.5%; right: 13.5%; top: calc(62.9% - 1.5px); height: 3px; background: var(--ouro); transform-origin: 0 50%;
     transform: scaleX(0); animation: barra-aa .5s cubic-bezier(.65, 0, .35, 1) .95s forwards; will-change: transform; }
   @keyframes barra-aa { to { transform: scaleX(1); } }
-  .apresenta { margin: 34px 0 0; padding-left: 8px; font: 600 11px var(--fonte); letter-spacing: 8px; text-transform: uppercase; color: rgba(246, 242, 234, 0.55);
+  .apresenta { margin: 34px 0 0; padding-left: 8px; font: 600 14px var(--fonte); letter-spacing: 8px; text-transform: uppercase; color: rgba(246, 242, 234, 0.55);
     opacity: 0; animation: aparecer-texto .6s ease-out 1.35s forwards; will-change: opacity; }
   @keyframes aparecer-texto { to { opacity: 1; } }
   @media (max-width: 520px) { .marca-aa { width: 134px; height: 99px; } }
@@ -569,31 +619,34 @@
   .progresso { height: 1px; background: rgba(246, 242, 234, 0.14); overflow: hidden; }
   .progresso i { display: block; height: 100%; background: var(--ouro); transform-origin: 0 50%; transform: scaleX(var(--progresso, 0.02));
     transition: transform .6s cubic-bezier(.4, 0, .2, 1); will-change: transform; }
-  .conteudo-carga p { display: flex; justify-content: space-between; margin: -8px 0 0; font: 600 10px var(--fonte); letter-spacing: 2px; text-transform: uppercase; color: rgba(246, 242, 234, 0.45); }
+  .conteudo-carga p { display: flex; justify-content: space-between; margin: -8px 0 0; font: 600 14px var(--fonte); letter-spacing: 2px; text-transform: uppercase; color: rgba(246, 242, 234, 0.45); }
   #porcentoCarga { font-variant-numeric: tabular-nums; color: rgba(246, 242, 234, 0.7); }
   /* Chamar o Nuvem (pausa): apagado quando não dá, com o motivo ao lado */
-  #pausaNuvem:disabled { opacity: .45; cursor: default; }
-  #pausaNuvem small { font-size: .7em; opacity: .8; font-weight: 500; }
+  /* desativado: rótulo em --texto-2 (sem opacidade extra) + cadeado (forma); motivo 14 px legível */
+  #pausaNuvem:disabled { color: var(--texto-2); cursor: default; }
+  #pausaNuvem small { font: 600 14px var(--fonte); color: var(--texto-2); }
+  #pausaNuvem .cadeado { display: none; width: 18px; height: 18px; }
+  #pausaNuvem:disabled .cadeado { display: block; }
   /* escolha da dificuldade (depois de Novo jogo): uma opção por nível, nome grande e a descrição embaixo */
   #tituloDificuldade, #escolhaDificuldade { display: none; }
   #tela[data-modo="dificuldade"] :is(#msg, #barra, #continuarJogo, #botao, #continuar, #confirmarNovo) { display: none !important; }
-  #tela[data-modo="dificuldade"] #tituloDificuldade { display: block; margin: 0 0 6px; font: 700 12px var(--fonte); letter-spacing: 2px; text-transform: uppercase; color: var(--ouro); }
+  #tela[data-modo="dificuldade"] #tituloDificuldade { display: block; margin: 0 0 6px; font: 700 14px var(--fonte); letter-spacing: 2px; text-transform: uppercase; color: var(--ouro); }
   #tela[data-modo="dificuldade"] #escolhaDificuldade { display: flex; flex-direction: column; gap: 4px; width: min(420px, 100%); }
   .opcao-dificuldade { flex-wrap: wrap; row-gap: 0; column-gap: 10px; font-size: 21px !important; min-height: 0 !important; padding: 6px 4px 6px 0 !important; }
   .opcao-dificuldade b { font-weight: 700; color: #fff; }
-  .opcao-dificuldade small { font: 600 11px var(--fonte); letter-spacing: 1px; text-transform: uppercase; color: var(--ouro); }
-  .opcao-dificuldade span { flex-basis: 100%; padding-left: 34px; font: 500 12px/1.35 var(--fonte); color: var(--texto-2); text-align: left; } /* (34 px: o traço da opção marcada, 22 px, e o espaço depois dele) */
-  @media (max-width: 760px), (pointer: coarse) { .opcao-dificuldade { font-size: 18px !important; } .opcao-dificuldade span { font-size: 11px; } }
+  .opcao-dificuldade small { font: 600 14px var(--fonte); letter-spacing: 1px; text-transform: uppercase; color: var(--ouro); }
+  .opcao-dificuldade span { flex-basis: 100%; padding-left: 34px; font: 500 14px/1.35 var(--fonte); color: var(--texto-2); text-align: left; } /* (34 px: o traço da opção marcada, 22 px, e o espaço depois dele) */
+  @media (max-width: 760px), (pointer: coarse) { .opcao-dificuldade { font-size: 18px !important; } .opcao-dificuldade span { font-size: 14px; } }
   /* cena (fuga do fim do capítulo) e mapa das ilhas: sem HUD, falas nem botões de toque */
   body.cinema :is(#hud, #objetivo, #fala, #interagir, #golpe, #dicaTutorial, #dica, .toque, #tutorial, #chefe, #aviso, #memoria) { opacity: 0 !important; visibility: hidden !important; }
   /* mapa das ilhas: nome da ilha no alto, setas e "Embarcar" embaixo */
   #mapaMundi { position: fixed; inset: 0; display: none; flex-direction: column; justify-content: space-between; align-items: center; pointer-events: none; z-index: 30; opacity: 0; transition: opacity .25s; padding: 22px 16px; box-sizing: border-box; }
   #mapaMundi > * { pointer-events: auto; }
   .mm-topo { text-align: center; color: #fff; text-shadow: 0 2px 8px rgba(0, 0, 0, 0.5); background: rgba(16, 10, 26, 0.45); padding: 10px 22px; border-radius: 12px; }
-  .mm-topo small { display: block; font: 700 11px var(--fonte); letter-spacing: 2px; text-transform: uppercase; color: var(--ouro); }
+  .mm-topo small { display: block; font: 700 14px var(--fonte); letter-spacing: 2px; text-transform: uppercase; color: var(--ouro); }
   .mm-topo b { display: block; font: 700 26px var(--titulo); margin: 2px 0; }
-  .mm-topo span { display: block; font-size: 13px; color: #f2e6d0; }
-  .mm-topo em { display: block; margin-top: 4px; font: 700 12px var(--fonte); font-style: normal; color: #bfe8b0; }
+  .mm-topo span { display: block; font-size: 14px; color: #f2e6d0; }
+  .mm-topo em { display: block; margin-top: 4px; font: 700 14px var(--fonte); font-style: normal; color: #bfe8b0; }
   .mm-baixo { display: flex; gap: 14px; align-items: center; }
   .mm-baixo .mm-esq, .mm-baixo .mm-dir { width: 52px; height: 52px; border-radius: 50%; border: 2px solid rgba(255, 255, 255, 0.7); background: rgba(16, 10, 26, 0.45); color: #fff; font-size: 20px; cursor: pointer; }
   .mm-embarcar { width: auto !important; padding: 8px 22px !important; background: rgba(16, 10, 26, 0.55) !important; border-radius: 10px; font-size: 20px !important; color: #fff; }
@@ -601,7 +654,7 @@
   .mm-voltar { position: absolute; left: 16px; bottom: 22px; width: auto; color: #fff; }
   /* mini tutorial: um passo por vez, embaixo, no meio */
   #tutorial { position: fixed; left: 50%; bottom: 96px; transform: translateX(-50%); width: calc(min(420px, 86vw) * var(--ez)); padding: 12px 16px 10px; border-radius: 10px; text-align: center;
-    background: var(--hud-fundo); color: #fff; pointer-events: none; opacity: 0; transition: opacity .3s, box-shadow .2s; z-index: 6; zoom: var(--escala-texto); }
+    background: var(--hud-fundo-forte); color: #fff; pointer-events: none; opacity: 0; transition: opacity .3s, box-shadow .2s; z-index: 6; zoom: var(--escala-texto); }
   #tutorial b { display: block; font: 700 14px var(--fonte); letter-spacing: 2px; text-transform: uppercase; color: var(--ouro); margin: 6px 0 3px; }
   #tutorial span { display: block; font-size: 15px; line-height: 1.35; }
   #tutorial .pontos { display: flex; gap: 6px; justify-content: center; }
@@ -612,7 +665,7 @@
   @media (pointer: coarse) { #tutorial { bottom: auto; top: 64px; } }
 </style>
 <!-- bibliotecas na própria pasta (vendor/): three 0.165.0, three-mesh-bvh 0.7.6, meshoptimizer 0.21.0. O jogo roda sem internet (e dentro do APK) -->
-<script type="importmap">{"imports":{"three":"./vendor/three/build/three.module.js","three/addons/":"./vendor/three/examples/jsm/","three-mesh-bvh":"./vendor/three-mesh-bvh/build/index.module.js","meshoptimizer/simplifier":"./vendor/meshoptimizer/meshopt_simplifier.module.js","./src/agua.js":"./src/agua.js?v=e2a2da6b9b","./src/altos.js":"./src/altos.js?v=ac761e4342","./src/animLuta.js":"./src/animLuta.js?v=ba5d6f9de7","./src/animais.js":"./src/animais.js?v=5a63b0bc33","./src/boneca.js":"./src/boneca.js?v=0eef2507c2","./src/bonecaNova.js":"./src/bonecaNova.js?v=7ea290af16","./src/cachoeira.js":"./src/cachoeira.js?v=f700bc46b9","./src/cambalhota.js":"./src/cambalhota.js?v=aff8debf26","./src/campanha.js":"./src/campanha.js?v=496939789a","./src/canvasTextura.js":"./src/canvasTextura.js?v=8ddd89e18a","./src/capitulo.js":"./src/capitulo.js?v=5631f04f86","./src/casas.js":"./src/casas.js?v=f3dfa565ca","./src/ceu.js":"./src/ceu.js?v=8ffb931fd1","./src/chuva.js":"./src/chuva.js?v=6cf0295986","./src/colisao.js":"./src/colisao.js?v=ac6260ec0b","./src/combate.js":"./src/combate.js?v=07b4497810","./src/dia.js":"./src/dia.js?v=e05b6cc395","./src/dificuldade.js":"./src/dificuldade.js?v=cfdf2ff62e","./src/distancia.js":"./src/distancia.js?v=9a5844420e","./src/estilo.js":"./src/estilo.js?v=0c453af42f","./src/fisica.js":"./src/fisica.js?v=7949a2cbcf","./src/folhas.js":"./src/folhas.js?v=0703e7d0dd","./src/graficos.js":"./src/graficos.js?v=66a6779bf1","./src/historia.js":"./src/historia.js?v=7aff3796aa","./src/ilha.js":"./src/ilha.js?v=670fb485d3","./src/inimigos.js":"./src/inimigos.js?v=39857a4c33","./src/jogo.js":"./src/jogo.js?v=f80705ba56","./src/lotes.js":"./src/lotes.js?v=f3831174bf","./src/mapa.js":"./src/mapa.js?v=eb1d8bbcc0","./src/mapaMundi.js":"./src/mapaMundi.js?v=3eb13da7fc","./src/mundo.js":"./src/mundo.js?v=262a267749","./src/nevoa.js":"./src/nevoa.js?v=9bccad8ac5","./src/objetos.js":"./src/objetos.js?v=a78546e0b2","./src/oclusao.js":"./src/oclusao.js?v=a1ec74f05f","./src/particulas.js":"./src/particulas.js?v=efad11a94e","./src/pegaso.js":"./src/pegaso.js?v=08c8aa3a88","./src/pes.js":"./src/pes.js?v=9f8ed5d180","./src/praia.js":"./src/praia.js?v=700cd3c717","./src/praiaForma.js":"./src/praiaForma.js?v=79c406a618","./src/reparos.js":"./src/reparos.js?v=e805cead1a","./src/resolucao.js":"./src/resolucao.js?v=0d1e50cb15","./src/salvar.js":"./src/salvar.js?v=c6cce24000","./src/simplificar.js":"./src/simplificar.js?v=a439e6c6ca","./src/som.js":"./src/som.js?v=b03701df1b","./src/sombraBoneca.js":"./src/sombraBoneca.js?v=02b8ff3403","./src/suavizar.js":"./src/suavizar.js?v=042d8dcf4b","./src/terreno.js":"./src/terreno.js?v=30a71b0a42","./src/texturas.js":"./src/texturas.js?v=5b74c7049c","./src/tutorial.js":"./src/tutorial.js?v=1f1fb0bc8d","./src/vilao.js":"./src/vilao.js?v=5742a89aa1"}}</script>
+<script type="importmap">{"imports":{"three":"./vendor/three/build/three.module.js","three/addons/":"./vendor/three/examples/jsm/","three-mesh-bvh":"./vendor/three-mesh-bvh/build/index.module.js","meshoptimizer/simplifier":"./vendor/meshoptimizer/meshopt_simplifier.module.js","./src/agua.js":"./src/agua.js?v=e2a2da6b9b","./src/altos.js":"./src/altos.js?v=ac761e4342","./src/animLuta.js":"./src/animLuta.js?v=ba5d6f9de7","./src/animais.js":"./src/animais.js?v=5a63b0bc33","./src/boneca.js":"./src/boneca.js?v=0eef2507c2","./src/bonecaNova.js":"./src/bonecaNova.js?v=7ea290af16","./src/cachoeira.js":"./src/cachoeira.js?v=f700bc46b9","./src/cambalhota.js":"./src/cambalhota.js?v=aff8debf26","./src/campanha.js":"./src/campanha.js?v=79c5bb4be1","./src/canvasTextura.js":"./src/canvasTextura.js?v=8ddd89e18a","./src/capitulo.js":"./src/capitulo.js?v=5631f04f86","./src/casas.js":"./src/casas.js?v=f3dfa565ca","./src/ceu.js":"./src/ceu.js?v=8ffb931fd1","./src/chuva.js":"./src/chuva.js?v=6cf0295986","./src/colisao.js":"./src/colisao.js?v=ac6260ec0b","./src/combate.js":"./src/combate.js?v=c6a26d1ad3","./src/dia.js":"./src/dia.js?v=e05b6cc395","./src/dificuldade.js":"./src/dificuldade.js?v=cfdf2ff62e","./src/distancia.js":"./src/distancia.js?v=9a5844420e","./src/estilo.js":"./src/estilo.js?v=0c453af42f","./src/fisica.js":"./src/fisica.js?v=7949a2cbcf","./src/folhas.js":"./src/folhas.js?v=0703e7d0dd","./src/graficos.js":"./src/graficos.js?v=66a6779bf1","./src/historia.js":"./src/historia.js?v=7aff3796aa","./src/ilha.js":"./src/ilha.js?v=670fb485d3","./src/inimigos.js":"./src/inimigos.js?v=39857a4c33","./src/jogo.js":"./src/jogo.js?v=3fa6f349f8","./src/lotes.js":"./src/lotes.js?v=f3831174bf","./src/mapa.js":"./src/mapa.js?v=eb1d8bbcc0","./src/mapaMundi.js":"./src/mapaMundi.js?v=3eb13da7fc","./src/mundo.js":"./src/mundo.js?v=262a267749","./src/nevoa.js":"./src/nevoa.js?v=9bccad8ac5","./src/objetos.js":"./src/objetos.js?v=a78546e0b2","./src/oclusao.js":"./src/oclusao.js?v=a1ec74f05f","./src/particulas.js":"./src/particulas.js?v=efad11a94e","./src/pegaso.js":"./src/pegaso.js?v=08c8aa3a88","./src/pes.js":"./src/pes.js?v=9f8ed5d180","./src/praia.js":"./src/praia.js?v=700cd3c717","./src/praiaForma.js":"./src/praiaForma.js?v=79c406a618","./src/reparos.js":"./src/reparos.js?v=e805cead1a","./src/resolucao.js":"./src/resolucao.js?v=0d1e50cb15","./src/salvar.js":"./src/salvar.js?v=6a8167f025","./src/simplificar.js":"./src/simplificar.js?v=a439e6c6ca","./src/som.js":"./src/som.js?v=d812dac563","./src/sombraBoneca.js":"./src/sombraBoneca.js?v=02b8ff3403","./src/suavizar.js":"./src/suavizar.js?v=042d8dcf4b","./src/terreno.js":"./src/terreno.js?v=30a71b0a42","./src/texturas.js":"./src/texturas.js?v=5b74c7049c","./src/tutorial.js":"./src/tutorial.js?v=1f1fb0bc8d","./src/vilao.js":"./src/vilao.js?v=5742a89aa1"}}</script>
 </head>
 <body>
 <!-- ícones do HUD (sprite único: <use href="#i-...">): traço 2, pontas redondas, 24x24 (carretéis 14x20) -->
@@ -631,6 +684,7 @@
   <symbol id="i-folha" viewBox="0 0 24 24"><path d="M5 19C5 10 10 5 20 4c0 10-5 15-15 15zM5 19l8-8" stroke-width="2"/></symbol>
   <symbol id="i-sol" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M19 5l-2 2M7 17l-2 2"/></symbol>
   <symbol id="i-lua" viewBox="0 0 24 24"><path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a6.8 6.8 0 0 0 10.5 10.5z"/></symbol>
+  <symbol id="i-cadeado" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></symbol>
   <symbol id="i-fechar" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></symbol>
   <symbol id="i-carta" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3.5 6.5 8.5 7 8.5-7"/></symbol>
   <symbol id="i-usar" viewBox="0 0 24 24"><path d="M9 11V5.5a1.5 1.5 0 0 1 3 0V11"/><path d="M12 10.5a1.5 1.5 0 0 1 3 0v1a1.5 1.5 0 0 1 3 0V15a6 6 0 0 1-6 6h-1a6 6 0 0 1-5-3l-2-3.5a1.5 1.5 0 0 1 2.5-1.5L9 14"/><path d="M5.5 4 4 2.5M4 8H2M14 3l1-2"/></symbol>
@@ -769,7 +823,8 @@
     </div>
     <div class="corpo">
       <div class="pagina ativa" data-pagina="geral">
-        <label class="opcao">Volume <span id="volumeValor"></span><input type="range" id="cfgVolume" min="0" max="1" step="0.05"></label>
+        <label class="opcao">Música <span id="musicaValor"></span><input type="range" id="cfgMusica" min="0" max="1" step="0.05"></label>
+        <label class="opcao">Efeitos <span id="efeitosValor"></span><input type="range" id="cfgEfeitos" min="0" max="1" step="0.05"></label>
         <label class="opcao">Sensibilidade da câmera <span id="sensValor"></span><input type="range" id="cfgSens" min="0.4" max="2" step="0.1"></label>
         <label class="opcao">Tamanho dos textos
           <select id="cfgTexto"><option value="1">Normal</option><option value="1.2">Grande</option><option value="1.5">Maior</option></select></label>
@@ -842,7 +897,7 @@
       <p id="perfil-pc"></p>
       <label class="opcao marcar"><input type="checkbox" id="cfgFps"> Mostrar desempenho (fps)</label>
       <div id="aviso-aa">O antisserrilhado deste nível só muda ao abrir o jogo de novo.</div>
-      <p id="versao">versão 05/11/2026 00:30 · f80705</p>
+      <p id="versao">versão 05/11/2026 00:48 · 3fa6f3</p>
     </div>
     <footer><button id="fechar-graficos" class="voltar"><kbd>Esc</kbd>Voltar</button></footer>
   </div>
@@ -853,7 +908,7 @@
     <div class="corpo">
       <p class="pausa-hora" id="pausaHora"><svg class="i" aria-hidden="true"><use id="pausaHoraIcone" href="#i-sol"/></svg><span id="pausaHoraTexto">10:00</span></p>
       <button id="pausaContinuar" class="item-menu">Continuar</button>
-      <button class="item-menu" id="pausaNuvem"><span>Chamar o Nuvem</span><small id="pausaNuvemMotivo"></small></button>
+      <button class="item-menu" id="pausaNuvem"><svg class="i cadeado" aria-hidden="true"><use href="#i-cadeado"/></svg><span>Chamar o Nuvem</span><small id="pausaNuvemMotivo"></small></button>
       <button class="item-menu" data-painel="config"><span>Configurações</span></button>
       <button class="item-menu" id="pausaGraficos"><span>Gráficos</span></button>
       <button class="item-menu" id="pausaControles"><span>Controles</span></button>
@@ -911,6 +966,6 @@
     msg.appendChild(b);
   }, true);
 </script>
-<script type="module" src="src/jogo.js?v=f80705ba56"></script>
+<script type="module" src="src/jogo.js?v=3fa6f349f8"></script>
 </body>
 </html>
