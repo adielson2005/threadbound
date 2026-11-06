@@ -766,6 +766,20 @@ function chamarNuvem() {
 }
 $('pausaNuvem').addEventListener('click', chamarNuvem);
 
+// ---------- pílula de Fuxicos no HUD: aparece por 3 s quando o saldo muda (IP 2.2) ----------
+// (o saldo vem do inventário na etapa d; até lá ninguém chama, e a pílula fica oculta)
+const MS_PILULA_MOEDA = 3000;
+const pilulaFuxicos = $('hudFuxicos'), numeroFuxicos = pilulaFuxicos.querySelector('b');
+let tempoPilula = null, saldoMostrado = null;
+function mostrarFuxicos(saldo) {
+  if (saldo === saldoMostrado) return;
+  saldoMostrado = saldo;
+  numeroFuxicos.textContent = saldo.toLocaleString('pt-BR');
+  pilulaFuxicos.setAttribute('aria-label', `Fuxicos: ${saldo}`);
+  pilulaFuxicos.hidden = false;
+  clearTimeout(tempoPilula); tempoPilula = setTimeout(() => { pilulaFuxicos.hidden = true; }, MS_PILULA_MOEDA);
+}
+
 // ---------- vento na arena (3ª fase do Ravi) ----------
 const hudVento = $('ventoArena'), _direitaCam = new THREE.Vector3();
 const setaVento = hudVento.querySelector('.seta'), folhasVento = hudVento.querySelectorAll('.folha'), FOLHAS_VENTO = 3;
@@ -2221,7 +2235,7 @@ Promise.all([
     progressoCarga(1); textoCarga('Pronto');
     dispatchEvent(new Event('jogo-pronto'));
     window.__jogo = {
-      lerVolumes, jogador, personagem, get vilao() { return vilao; }, camera, camera3p, mapa, terreno, correntes, renderer, cena, sol, medidor, altos, mundo, inimigos, campanha, agua, nevoa, cachoeiras, praia, ceu: ceuJogo, get combate() { return combate; }, get animais() { return animais; },
+      lerVolumes, mostrarFuxicos, jogador, personagem, get vilao() { return vilao; }, camera, camera3p, mapa, terreno, correntes, renderer, cena, sol, medidor, altos, mundo, inimigos, campanha, agua, nevoa, cachoeiras, praia, ceu: ceuJogo, get combate() { return combate; }, get animais() { return animais; },
       terminarCapitulo, get mapaMundi() { return mapaMundi; }, get fuga() { return fuga; },
       animacao: () => animAtual, estado: () => estado, nivel: () => nomeNivel, aplicarNivel, ocioso, get oclusao() { return oclusao; },
     };

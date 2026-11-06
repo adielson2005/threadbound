@@ -7,7 +7,7 @@
 <!-- fontes da interface (sem internet, caem para a fonte do sistema) -->
 <link rel="icon" href="data:,">
 <link rel="stylesheet" href="vendor/fontes/fontes.css">
-<meta name="versao-site" content="a21ecd418d">
+<meta name="versao-site" content="34e8c0cd41">
 <script>
   // O GitHub Pages deixa o navegador reaproveitar esta página por até 10 minutos (e um endereço
   // que já foi aberto, como "?v=22", pode continuar vindo da memória). Aqui a página pergunta ao site,
@@ -455,6 +455,7 @@
   :root[data-toque-tam="P"] { --tb: 48px; } :root[data-toque-tam="M"] { --tb: 56px; } :root[data-toque-tam="G"] { --tb: 64px; }
   @media (pointer: coarse) { .icone-botao { width: 48px; height: 48px; } }
   @media (pointer: fine) { .so-toque { display: none !important; } }
+  .so-leitor { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
   .pausa-hora { display: flex; align-items: center; gap: 8px; margin: 0 0 8px; font: 600 16px var(--titulo); color: var(--texto-2); font-variant-numeric: tabular-nums; }
 
 
@@ -468,12 +469,12 @@
     #poder { display: none !important; }
     #arma .nome, #arma kbd { display: none; }
     #energia .trilho { width: 56px; }
-    #objetivo { top: calc((20px + env(safe-area-inset-top, 0px)) * var(--ez) + 32px); right: auto; left: calc((var(--m-hud) + env(safe-area-inset-left, 0px)) * var(--ez)); text-align: left; }
+    #objetivo { top: calc((20px + env(safe-area-inset-top, 0px)) * var(--ez) + 46px); /* (zona A: pílulas de 44 dp com borda) */ right: auto; left: calc((var(--m-hud) + env(safe-area-inset-left, 0px)) * var(--ez)); text-align: left; }
     #objetivo .detalhe { display: none; }
     /* com inverter o objetivo vai para a direita, embaixo da pausa (48 dp + 8) */
     body.inverter #objetivo { left: auto; right: calc((var(--m-hud) + env(safe-area-inset-right, 0px)) * var(--ez)); top: calc((20px + env(safe-area-inset-top, 0px)) * var(--ez) + 48px); text-align: right; }
     #energia.cheia { display: none; }
-    :is(#aviso, #memoria) { top: calc((32px + env(safe-area-inset-top, 0px)) * var(--ez) + 96px); left: calc(50% - var(--largura-toque) / 2 * var(--ez)); transform: translateX(-50%);
+    :is(#aviso, #memoria) { top: calc((32px + env(safe-area-inset-top, 0px)) * var(--ez) + 112px); left: calc(50% - var(--largura-toque) / 2 * var(--ez)); transform: translateX(-50%);
       max-width: calc(100% - (var(--largura-toque) + 24px) * var(--ez)); }
     #memoria { width: calc(100% - (var(--largura-toque) + 24px) * var(--ez)); }
     #interagir { bottom: calc((20px + env(safe-area-inset-bottom, 0px)) * var(--ez) + 76px); left: calc(50% - var(--largura-toque) / 2 * var(--ez)); }
@@ -692,6 +693,123 @@
   #tutorial.certo { box-shadow: 0 0 0 2px rgba(255, 214, 140, 0.8); }
   #tutorial button { pointer-events: auto; margin: 8px auto 0; font-size: 14px; min-height: 48px; width: auto; justify-content: center; color: var(--texto-2); }
   @media (pointer: coarse) { #tutorial { bottom: auto; top: 64px; } }
+  /* ==================== PELE NOVA DO HUD (etapa c) ====================
+     production/ui/nova-ui/visual-design.md §1.8 e §2 + restyle-hud-menus.md §2. Só a pele muda: posições,
+     tamanhos, estados e regras (fila, luta, chefe, área segura, P/M/G, inverter) continuam os mesmos.
+     "Painel de cena": branco 92% com borda 2 px azul-vivo e sombra suave; texto sempre tinta. Os tokens
+     antigos do HUD são redefinidos aqui, então as regras de estado antigas já saem nas cores novas. */
+  #hud, #objetivo, #dica, #dicaTutorial, #aviso, #interagir, #fala, #memoria, #fps, #golpe, #tutorial, .toque {
+    --hud-fundo: rgba(255, 255, 255, 0.92); --hud-fundo-forte: rgba(255, 255, 255, 0.92); --hud-fundo-toque: rgba(255, 255, 255, 0.85);
+    --hud-trilho: var(--slot); --texto: var(--tinta); --texto-2: var(--tinta-2); --texto-3: var(--tinta-2);
+    --ouro: var(--azul-vivo); --ouro-claro: var(--limao); --ouro-fio: var(--azul-vivo); --lilas: var(--azul-vivo); --vermelho: var(--erro);
+    --sombra-texto: none; --sombra-retalho: var(--sombra-suave); --titulo: var(--fonte-ui); --fonte: var(--fonte-ui);
+    --contorno-tinta: 0 2px 0 var(--tinta), 0 -2px 0 var(--tinta), 2px 0 0 var(--tinta), -2px 0 0 var(--tinta), 1.5px 1.5px 0 var(--tinta), -1.5px 1.5px 0 var(--tinta), 1.5px -1.5px 0 var(--tinta), -1.5px -1.5px 0 var(--tinta);
+  }
+  /* painel de cena (antes: retalho escuro com pesponto dourado) */
+  .retalho { background: var(--hud-fundo); color: var(--tinta); text-shadow: none; outline: none; border: 2px solid var(--azul-vivo); box-shadow: var(--sombra-suave); }
+  #memoria::before { border-color: rgba(11, 92, 173, 0.35); }
+  :is(#hud, #objetivo, #aviso, #interagir, #fala, #memoria, #tutorial, #dica, #dicaTutorial) kbd { background: var(--branco); color: var(--tinta); border: 2px solid var(--tinta); box-shadow: 0 2px 0 var(--ceu-2); opacity: 1; font-family: var(--fonte-ui); }
+  /* fôlego: carretéis azul-vivo (cheio) / contorno tinta (vazio); último: vermelho de erro + "!" */
+  #vida .carretel { color: var(--azul-vivo); filter: none; }
+  #vida .carretel.vazio { color: var(--tinta-2); }
+  #vida.baixo .carretel:not(.vazio), #vida .alerta { color: var(--erro); filter: none; }
+  #vida .num { color: var(--tinta); font: 800 18px var(--fonte-ui); }
+  /* corrida: disco branco com borda azul; barra azul; cansada = listras laranja + ícone de cansaço */
+  #energia .mini { background: var(--branco); border: 2px solid var(--azul-vivo); color: var(--azul-vivo); }
+  #energia .trilho { background: var(--slot); box-shadow: 0 0 0 2px var(--azul-vivo); }
+  #energia .trilho i { background: var(--azul-vivo); }
+  #energia.cansada .trilho i { background: repeating-linear-gradient(45deg, var(--laranja) 0 3px, var(--branco) 3px 6px); }
+  #energia.cansada .mini { color: var(--laranja); border-color: var(--laranja); }
+  /* poder (PC): barra azul; pronto = limão + "Pronto!" tinta sobre limão */
+  #poder .i { color: var(--azul-vivo); filter: none; }
+  #poder .trilho { background: var(--slot); }
+  #poder .trilho i { background: var(--azul-vivo); }
+  #poder.cheio { outline: none; border-color: var(--tinta); }
+  #poder.cheio .trilho i { background: var(--limao); }
+  #poder.cheio .i { color: var(--tinta); }
+  #poder .pronto { background: var(--limao); color: var(--tinta); border: 2px solid var(--tinta); font: 800 14px var(--fonte-ui); text-transform: uppercase; }
+  /* fragmentos e Fuxicos: pílulas de moeda (IP 2.2): azul-fundo-pilula opaco, número branco, borda branca (separa da noite) */
+  #moedas, #hudFuxicos { background: var(--azul-fundo-pilula); color: var(--branco); border: 2px solid rgba(255, 255, 255, 0.8); box-shadow: var(--sombra-suave); font: 800 18px var(--fonte-ui); }
+  #moedas .i { color: var(--start-b); filter: none; }
+  #moedas b, #moedas .total { color: var(--branco); }
+  #hudFuxicos { display: flex; align-items: center; gap: 6px; padding: 4px 12px 4px 6px; border-radius: 999px; font-variant-numeric: tabular-nums; transition: opacity var(--t-ui) var(--ease-ui); }
+  #hudFuxicos[hidden] { display: none; }
+  #hudFuxicos .i { width: 24px; height: 24px; color: var(--start-b); }
+  body.no-chefe #hudFuxicos { display: none; }
+  /* arma */
+  #arma { color: var(--tinta); }
+  #arma .i { color: var(--tinta); }
+  #arma .racha { color: var(--erro); filter: none; }
+  #arma.baixo { border-color: var(--erro); }
+  /* pausa e mochila: discos brancos 85% com borda azul-vivo, ícone tinta */
+  #hud .dir { gap: 8px; }
+  .icone-botao { background: var(--hud-fundo-toque, rgba(255, 255, 255, 0.85)); border: 2px solid var(--azul-vivo); outline: none; color: var(--tinta); filter: none; box-shadow: var(--sombra-suave); position: relative; }
+  .icone-botao:hover { background: var(--branco); }
+  .icone-botao:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--tinta), 0 0 0 5px var(--branco); }
+  .icone-botao .i { width: 24px; height: 24px; }
+  #abrir-mochila[aria-disabled="true"] { cursor: default; }
+  .ponto-novo { position: absolute; top: -6px; right: -10px; padding: 0 6px; border-radius: 999px; background: var(--laranja); color: var(--branco); border: 2px solid var(--branco); font: 800 14px/18px var(--fonte-ui); }
+  .ponto-novo[hidden] { display: none; }
+  /* fps */
+  #fps { color: var(--tinta); }
+  /* chefe: nome em faixa azul com corte, barra laranja sobre trilho slot, número tinta, marcas tinta (acesa = laranja + ponto) */
+  #chefe { color: var(--tinta); }
+  #chefe .nome { display: inline-block; margin: -2px 0 2px -4px; padding: 2px 18px 2px 8px; color: var(--branco); background: var(--azul-vivo); font: 800 14px var(--fonte-ui);
+    clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 0 100%); justify-self: start; }
+  #chefe .num { color: var(--tinta); font: 800 16px var(--fonte-ui); }
+  #chefe .barra { background: var(--slot); box-shadow: 0 0 0 1.5px var(--tinta); }
+  #chefe .barra > i { background: var(--laranja); }
+  #chefe .barra > s { background: var(--start-b); }
+  #chefe .marca { background: var(--tinta); }
+  #chefe .marca.acesa, #chefe .marca.acesa::before { background: var(--laranja); }
+  #chefe .marca.acesa::before { box-shadow: 0 0 0 1.5px var(--tinta); }
+  /* vento */
+  #ventoArena { color: var(--tinta); }
+  #ventoArena .seta { color: var(--tinta); }
+  #ventoArena .folhas .i { color: var(--laranja); }
+  #ventoArena .muda { color: var(--tinta); }
+  #ventoArena.troca .seta { outline-color: var(--laranja); }
+  /* objetivo: mudou = borda laranja 3 px; concluído = selo check limão */
+  #objetivo { color: var(--tinta); }
+  #objetivo.mudou { outline: none; border: 2px solid var(--laranja); box-shadow: 0 0 0 1px var(--laranja), var(--sombra-suave); background: var(--branco); }
+  #objetivo .ok { background: var(--limao); color: var(--tinta); box-shadow: 0 0 0 1.5px var(--tinta); }
+  /* aviso = toast (IP 2.10 / VD 1.12): branco, borda azul, faixa limão à esquerda + selo */
+  #aviso { color: var(--tinta); font-family: var(--fonte-ui); box-shadow: inset 6px 0 0 var(--limao), var(--sombra-suave); padding-left: 20px; }
+  #aviso .i.ok { color: var(--tinta); background: var(--limao); border-radius: 50%; padding: 2px; box-sizing: border-box; box-shadow: 0 0 0 1.5px var(--tinta); }
+  #aviso .i.alerta { color: var(--erro); filter: none; }
+  #aviso:has(.i.alerta) { box-shadow: inset 6px 0 0 var(--laranja), var(--sombra-suave); }
+  /* fala, memória, dicas */
+  #fala { color: var(--tinta); }
+  #fala b { color: var(--azul-vivo); font-family: var(--fonte-ui); }
+  #memoria { color: var(--tinta); }
+  #memoria h3 { color: var(--azul-vivo); }
+  #memoria h3 .i { color: var(--laranja); }
+  #memoria p { color: var(--tinta); font-family: var(--fonte-ui); }
+  #dicaTutorial, #dica { color: var(--tinta); }
+  #tutorial { background: rgba(255, 255, 255, 0.92); color: var(--tinta); border: 2px solid var(--azul-vivo); box-shadow: var(--sombra-suave); }
+  #tutorial b { color: var(--azul-vivo); }
+  #tutorial span { color: var(--tinta); }
+  #tutorial .pontos i { background: var(--slot); } #tutorial .pontos i.atual { background: var(--tinta); } #tutorial .pontos i.feito { background: var(--azul-vivo); }
+  #tutorial.certo { box-shadow: 0 0 0 3px var(--limao), var(--sombra-suave); }
+  #tutorial .voltar { color: var(--tinta); text-shadow: none; }
+  /* interagir */
+  #interagir { color: var(--tinta); }
+  #interagir kbd { border-color: var(--azul-vivo); color: var(--azul-vivo); background: var(--branco); }
+  #interagir.apertado kbd { background: var(--limao); color: var(--tinta); }
+  /* texto solto sobre a cena (nome do que pegou, golpes): branco com contorno tinta */
+  #golpe { color: var(--branco); text-shadow: var(--contorno-tinta); font-family: var(--fonte-ui); font-weight: 800; }
+  /* botões de toque: discos brancos 85%, borda azul-vivo, ícone tinta; apertado = limão e desce 2 px */
+  .toque { background: rgba(255, 255, 255, 0.85); border: 2px solid var(--azul-vivo); outline: none; color: var(--tinta); filter: none; box-shadow: var(--sombra-suave); }
+  .toque svg { filter: none; }
+  .toque:active { background: var(--limao); color: var(--tinta); transform: translateY(2px); box-shadow: none; }
+  .toque.indisponivel { border: 2px dashed var(--tinta-2); background: rgba(255, 255, 255, 0.85); }
+  #tPoder.pronto { border: 3px solid var(--tinta); background: var(--limao); }
+  #tPoder.pronto::after { background: var(--limao); color: var(--tinta); border: 2px solid var(--tinta); text-shadow: none; text-transform: uppercase; font-family: var(--fonte-ui); }
+  @keyframes brilhoPoder { from { box-shadow: 0 0 0 0 rgba(181, 230, 29, .6); } to { box-shadow: 0 0 0 6px rgba(181, 230, 29, .9); } }
+  #tPoder::before { background: conic-gradient(var(--azul-vivo) calc(var(--carga, 0) * 1turn), rgba(15, 42, 71, .2) 0); }
+  #tPoder.pronto::before { background: var(--limao); }
+  #bastao { border: 2px solid var(--azul-vivo); background: rgba(255, 255, 255, 0.25); }
+  body.sem-flashes .toque:active { transform: none; }
   /* ==================== PELE NOVA DOS MENUS ("Céu de Retalho Claro", etapa b) ====================
      design/ux/interaction-patterns.md + production/ui/nova-ui/visual-design.md §1.1–1.7. Vem por último no CSS
      e vale só dentro das telas de menu (o HUD muda na etapa c). Os tokens antigos são redefinidos dentro de cada
@@ -894,7 +1012,7 @@
   }
 </style>
 <!-- bibliotecas na própria pasta (vendor/): three 0.165.0, three-mesh-bvh 0.7.6, meshoptimizer 0.21.0. O jogo roda sem internet (e dentro do APK) -->
-<script type="importmap">{"imports":{"three":"./vendor/three/build/three.module.js","three/addons/":"./vendor/three/examples/jsm/","three-mesh-bvh":"./vendor/three-mesh-bvh/build/index.module.js","meshoptimizer/simplifier":"./vendor/meshoptimizer/meshopt_simplifier.module.js","./src/agua.js":"./src/agua.js?v=e2a2da6b9b","./src/altos.js":"./src/altos.js?v=ac761e4342","./src/animLuta.js":"./src/animLuta.js?v=ba5d6f9de7","./src/animais.js":"./src/animais.js?v=5a63b0bc33","./src/boneca.js":"./src/boneca.js?v=0eef2507c2","./src/bonecaNova.js":"./src/bonecaNova.js?v=7ea290af16","./src/cachoeira.js":"./src/cachoeira.js?v=f700bc46b9","./src/cambalhota.js":"./src/cambalhota.js?v=aff8debf26","./src/campanha.js":"./src/campanha.js?v=47fb9ee53d","./src/canvasTextura.js":"./src/canvasTextura.js?v=8ddd89e18a","./src/capitulo.js":"./src/capitulo.js?v=5631f04f86","./src/casas.js":"./src/casas.js?v=f3dfa565ca","./src/ceu.js":"./src/ceu.js?v=8ffb931fd1","./src/chuva.js":"./src/chuva.js?v=6cf0295986","./src/colisao.js":"./src/colisao.js?v=ac6260ec0b","./src/combate.js":"./src/combate.js?v=c6a26d1ad3","./src/dia.js":"./src/dia.js?v=e05b6cc395","./src/dificuldade.js":"./src/dificuldade.js?v=cfdf2ff62e","./src/distancia.js":"./src/distancia.js?v=9a5844420e","./src/estilo.js":"./src/estilo.js?v=0c453af42f","./src/fisica.js":"./src/fisica.js?v=7949a2cbcf","./src/folhas.js":"./src/folhas.js?v=0703e7d0dd","./src/graficos.js":"./src/graficos.js?v=66a6779bf1","./src/historia.js":"./src/historia.js?v=7aff3796aa","./src/ilha.js":"./src/ilha.js?v=670fb485d3","./src/inimigos.js":"./src/inimigos.js?v=39857a4c33","./src/jogo.js":"./src/jogo.js?v=3fa6f349f8","./src/lotes.js":"./src/lotes.js?v=f3831174bf","./src/mapa.js":"./src/mapa.js?v=eb1d8bbcc0","./src/mapaMundi.js":"./src/mapaMundi.js?v=3eb13da7fc","./src/mundo.js":"./src/mundo.js?v=262a267749","./src/nevoa.js":"./src/nevoa.js?v=9bccad8ac5","./src/objetos.js":"./src/objetos.js?v=a78546e0b2","./src/oclusao.js":"./src/oclusao.js?v=a1ec74f05f","./src/particulas.js":"./src/particulas.js?v=efad11a94e","./src/pegaso.js":"./src/pegaso.js?v=08c8aa3a88","./src/pes.js":"./src/pes.js?v=9f8ed5d180","./src/praia.js":"./src/praia.js?v=700cd3c717","./src/praiaForma.js":"./src/praiaForma.js?v=79c406a618","./src/reparos.js":"./src/reparos.js?v=e805cead1a","./src/resolucao.js":"./src/resolucao.js?v=0d1e50cb15","./src/salvar.js":"./src/salvar.js?v=6a8167f025","./src/simplificar.js":"./src/simplificar.js?v=a439e6c6ca","./src/som.js":"./src/som.js?v=d812dac563","./src/sombraBoneca.js":"./src/sombraBoneca.js?v=02b8ff3403","./src/suavizar.js":"./src/suavizar.js?v=042d8dcf4b","./src/terreno.js":"./src/terreno.js?v=30a71b0a42","./src/texturas.js":"./src/texturas.js?v=5b74c7049c","./src/tutorial.js":"./src/tutorial.js?v=1f1fb0bc8d","./src/vilao.js":"./src/vilao.js?v=5742a89aa1"}}</script>
+<script type="importmap">{"imports":{"three":"./vendor/three/build/three.module.js","three/addons/":"./vendor/three/examples/jsm/","three-mesh-bvh":"./vendor/three-mesh-bvh/build/index.module.js","meshoptimizer/simplifier":"./vendor/meshoptimizer/meshopt_simplifier.module.js","./src/agua.js":"./src/agua.js?v=e2a2da6b9b","./src/altos.js":"./src/altos.js?v=ac761e4342","./src/animLuta.js":"./src/animLuta.js?v=ba5d6f9de7","./src/animais.js":"./src/animais.js?v=5a63b0bc33","./src/boneca.js":"./src/boneca.js?v=0eef2507c2","./src/bonecaNova.js":"./src/bonecaNova.js?v=7ea290af16","./src/cachoeira.js":"./src/cachoeira.js?v=f700bc46b9","./src/cambalhota.js":"./src/cambalhota.js?v=aff8debf26","./src/campanha.js":"./src/campanha.js?v=47fb9ee53d","./src/canvasTextura.js":"./src/canvasTextura.js?v=8ddd89e18a","./src/capitulo.js":"./src/capitulo.js?v=5631f04f86","./src/casas.js":"./src/casas.js?v=f3dfa565ca","./src/ceu.js":"./src/ceu.js?v=8ffb931fd1","./src/chuva.js":"./src/chuva.js?v=6cf0295986","./src/colisao.js":"./src/colisao.js?v=ac6260ec0b","./src/combate.js":"./src/combate.js?v=c6a26d1ad3","./src/dia.js":"./src/dia.js?v=e05b6cc395","./src/dificuldade.js":"./src/dificuldade.js?v=cfdf2ff62e","./src/distancia.js":"./src/distancia.js?v=9a5844420e","./src/estilo.js":"./src/estilo.js?v=0c453af42f","./src/fisica.js":"./src/fisica.js?v=7949a2cbcf","./src/folhas.js":"./src/folhas.js?v=0703e7d0dd","./src/graficos.js":"./src/graficos.js?v=66a6779bf1","./src/historia.js":"./src/historia.js?v=7aff3796aa","./src/ilha.js":"./src/ilha.js?v=670fb485d3","./src/inimigos.js":"./src/inimigos.js?v=39857a4c33","./src/jogo.js":"./src/jogo.js?v=c4c7ed55db","./src/lotes.js":"./src/lotes.js?v=f3831174bf","./src/mapa.js":"./src/mapa.js?v=eb1d8bbcc0","./src/mapaMundi.js":"./src/mapaMundi.js?v=3eb13da7fc","./src/mundo.js":"./src/mundo.js?v=262a267749","./src/nevoa.js":"./src/nevoa.js?v=9bccad8ac5","./src/objetos.js":"./src/objetos.js?v=a78546e0b2","./src/oclusao.js":"./src/oclusao.js?v=a1ec74f05f","./src/particulas.js":"./src/particulas.js?v=efad11a94e","./src/pegaso.js":"./src/pegaso.js?v=08c8aa3a88","./src/pes.js":"./src/pes.js?v=9f8ed5d180","./src/praia.js":"./src/praia.js?v=700cd3c717","./src/praiaForma.js":"./src/praiaForma.js?v=79c406a618","./src/reparos.js":"./src/reparos.js?v=e805cead1a","./src/resolucao.js":"./src/resolucao.js?v=0d1e50cb15","./src/salvar.js":"./src/salvar.js?v=6a8167f025","./src/simplificar.js":"./src/simplificar.js?v=a439e6c6ca","./src/som.js":"./src/som.js?v=d812dac563","./src/sombraBoneca.js":"./src/sombraBoneca.js?v=02b8ff3403","./src/suavizar.js":"./src/suavizar.js?v=042d8dcf4b","./src/terreno.js":"./src/terreno.js?v=30a71b0a42","./src/texturas.js":"./src/texturas.js?v=5b74c7049c","./src/tutorial.js":"./src/tutorial.js?v=1f1fb0bc8d","./src/vilao.js":"./src/vilao.js?v=5742a89aa1"}}</script>
 </head>
 <body>
 <!-- ícones da nova UI (production/ui/nova-ui/visual-design.md §4; gerado por um script, um símbolo por linha):
@@ -1061,8 +1179,9 @@
     <div id="poder" class="retalho vazio" title="Explosão de Fios"><svg class="i" aria-hidden="true"><use href="#i-poder"/></svg><div class="trilho"><i></i></div><kbd>V</kbd><span class="pronto">Pronto!</span></div>
     <span id="moedas" class="retalho" title="Fragmentos" hidden><svg class="i" aria-hidden="true"><use href="#i-fragmento"/></svg><b>0</b><span class="total">/ 0</span></span>
     <div id="arma" class="retalho"></div>
+    <div id="hudFuxicos" role="status" aria-label="Fuxicos: 0" hidden><svg class="i" aria-hidden="true"><use href="#i-fuxico"/></svg><b>0</b></div>
   </div>
-  <span class="dir"><button class="icone-botao" id="abrir-pausa" title="Pausa (P / Esc)" aria-label="Pausa"><svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg></button></span>
+  <span class="dir"><button class="icone-botao" id="abrir-mochila" aria-label="Mochila (em breve)" aria-disabled="true" title="Mochila (em breve)"><svg class="i" aria-hidden="true"><use href="#i-mochila"/></svg><span class="ponto-novo" hidden>NOVO<span class="so-leitor"> — 1 item novo</span></span></button><button class="icone-botao" id="abrir-pausa" title="Pausa (P / Esc)" aria-label="Pausa"><svg class="i" aria-hidden="true"><use href="#i-pausa"/></svg></button></span>
 </div>
 <div id="fps" class="retalho" hidden aria-hidden="true"></div>
 <div id="objetivo" class="retalho" aria-live="polite"></div>
@@ -1198,7 +1317,7 @@
       <p id="perfil-pc"></p>
       <label class="opcao marcar"><input type="checkbox" id="cfgFps"> Mostrar desempenho (fps)</label>
       <div id="aviso-aa">O antisserrilhado deste nível só muda ao abrir o jogo de novo.</div>
-      <p id="versao">versão 06/11/2026 23:45 · 3fa6f3</p>
+      <p id="versao">versão 06/11/2026 23:48 · c4c7ed</p>
     </div>
     <footer><button id="fechar-graficos" class="voltar"><kbd>Esc</kbd>Voltar</button></footer>
   </div>
@@ -1268,6 +1387,6 @@
     msg.appendChild(b);
   }, true);
 </script>
-<script type="module" src="src/jogo.js?v=3fa6f349f8"></script>
+<script type="module" src="src/jogo.js?v=c4c7ed55db"></script>
 </body>
 </html>
