@@ -7,7 +7,7 @@
 <!-- fontes da interface (sem internet, caem para a fonte do sistema) -->
 <link rel="icon" href="data:,">
 <link rel="stylesheet" href="vendor/fontes/fontes.css">
-<meta name="versao-site" content="a4453dea30">
+<meta name="versao-site" content="a21ecd418d">
 <script>
   // O GitHub Pages deixa o navegador reaproveitar esta página por até 10 minutos (e um endereço
   // que já foi aberto, como "?v=22", pode continuar vindo da memória). Aqui a página pergunta ao site,
@@ -47,7 +47,7 @@
     --hud-noite: 10, 8, 14; --hud-noite-cor: #0a080e;
     --hud-fundo: rgba(10, 8, 14, 0.64); --hud-fundo-forte: rgba(10, 8, 14, 0.72); --hud-fundo-toque: rgba(10, 8, 14, 0.55); --hud-trilho: #241a2b;
     --ouro-fio: rgba(242, 199, 107, 0.75); --ouro-claro: #ffe3a3;
-    --papel: #f3ead6; --papel-texto: #3b2b1a; --papel-2: #5c4630;
+    --papel: #FFF8E7; --papel-texto: #3b2b1a; --papel-2: #5c4630;
     --sombra-retalho: 0 2px 8px rgba(0, 0, 0, 0.35); --sombra-papel: 0 20px 50px rgba(0, 0, 0, 0.6);
     --ease-fora: cubic-bezier(.2, .8, .2, 1); --ease-entra: cubic-bezier(.4, 0, 1, 1);
     --m-hud: 16px;            /* margem de borda do HUD (12 no celular) */
@@ -692,6 +692,206 @@
   #tutorial.certo { box-shadow: 0 0 0 2px rgba(255, 214, 140, 0.8); }
   #tutorial button { pointer-events: auto; margin: 8px auto 0; font-size: 14px; min-height: 48px; width: auto; justify-content: center; color: var(--texto-2); }
   @media (pointer: coarse) { #tutorial { bottom: auto; top: 64px; } }
+  /* ==================== PELE NOVA DOS MENUS ("Céu de Retalho Claro", etapa b) ====================
+     design/ux/interaction-patterns.md + production/ui/nova-ui/visual-design.md §1.1–1.7. Vem por último no CSS
+     e vale só dentro das telas de menu (o HUD muda na etapa c). Os tokens antigos são redefinidos dentro de cada
+     tela (texto escuro sobre claro), então as regras antigas que usam var(--texto) etc. já saem certas. */
+  #tela, .fundo-modal, #gameover, #mapaMundi, #bilhete {
+    --titulo: var(--fonte-ui); --fonte: var(--fonte-ui);
+    --texto: var(--tinta); --texto-2: var(--tinta-2); --texto-3: var(--tinta-2); --linha: rgba(15, 42, 71, 0.16);
+    --ouro: var(--azul-vivo); --sombra-texto: none;
+    --losangos: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='170' height='170'%3E%3Crect x='25' y='25' width='120' height='120' transform='rotate(45 85 85)' fill='%23ffffff' fill-opacity='.08' stroke='%23ffffff' stroke-opacity='.35' stroke-width='2'/%3E%3C/svg%3E");
+    --anel-foco: 0 0 0 3px var(--tinta), 0 0 0 5px var(--branco);
+    --contorno-texto-btn: 0 2px 0 var(--contorno-btn), 0 -2px 0 var(--contorno-btn), 2px 0 0 var(--contorno-btn), -2px 0 0 var(--contorno-btn),
+      1.5px 1.5px 0 var(--contorno-btn), -1.5px 1.5px 0 var(--contorno-btn), 1.5px -1.5px 0 var(--contorno-btn), -1.5px -1.5px 0 var(--contorno-btn), 0 3px 0 var(--contorno-btn);
+    font-family: var(--fonte-ui); color: var(--tinta);
+  }
+  /* ---- fundos: céu com losangos (telas cheias); véu tinta sobre o jogo (pausa, game over, carta) ---- */
+  #paineis, #graficos { background: var(--losangos) center / 170px, var(--fundo-ceu); justify-content: center; }
+  #pausa, #bilhete { background: rgba(15, 42, 71, 0.4); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); justify-content: center; align-items: center; }
+  #gameover { background: rgba(15, 42, 71, 0.55); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); }
+  /* véu claro: forte onde há texto (até ~48% da largura), some depois; em telas estreitas cobre tudo */
+  #tela::before { background: linear-gradient(90deg, rgba(244, 251, 255, 0.95) 0%, rgba(244, 251, 255, 0.9) 48%, rgba(205, 235, 251, 0) 74%); }
+  @media (max-width: 900px) { #tela::before { background: linear-gradient(90deg, rgba(244, 251, 255, 0.95), rgba(244, 251, 255, 0.9) 70%, rgba(244, 251, 255, 0.55)); } }
+  /* ---- tipos: títulos inclinados, caixa alta ---- */
+  :is(#paineis, #graficos, #pausa, #gameover) h2, #gameover h1 { font: 800 28px/1.1 var(--fonte-ui); text-transform: uppercase; letter-spacing: .5px; }
+  /* ---- tecla "de pano" ---- */
+  :is(#tela, .fundo-modal, #gameover, #mapaMundi, #bilhete) kbd { background: var(--branco); color: var(--tinta); border: 2px solid var(--tinta); box-shadow: 0 3px 0 var(--ceu-2); opacity: 1; font-family: var(--fonte-ui); min-height: 24px; }
+  /* ---- foco universal: anel duplo + elevação 2 px ---- */
+  :is(#tela, .fundo-modal, #gameover, #mapaMundi, #bilhete) :is(button, select, input, a):focus { outline: none; box-shadow: var(--anel-foco); }
+  /* ---- item de lista de menu (IP 2.14): linha branca 56 dp, ícone, seta › ---- */
+  :is(#tela, .fundo-modal, #mapaMundi) .item-menu { min-height: 56px; padding: 0 16px; gap: 12px; border-radius: 14px; background: var(--branco); color: var(--tinta);
+    font: 700 18px var(--fonte-ui); text-shadow: none; box-shadow: var(--sombra-suave); transform: none; transition: transform var(--t-ui) var(--ease-ui), box-shadow var(--t-ui); }
+  :is(#tela, .fundo-modal, #mapaMundi) .item-menu::before { display: none; }
+  :is(#tela, .fundo-modal, #mapaMundi) .item-menu:focus { color: var(--tinta); transform: translateY(-2px); box-shadow: var(--anel-foco), var(--sombra-suave); }
+  :is(#tela, .fundo-modal, #mapaMundi) .item-menu:active { transform: translateY(2px); }
+  .fundo-modal .item-menu::after { content: '›'; margin-left: auto; font: 800 24px var(--fonte-ui); color: var(--azul-vivo); }
+  .fundo-modal .item-menu .i { width: 24px; height: 24px; color: var(--azul-vivo); stroke-width: 2.5; }
+  .fundo-modal .item-menu small { font: 700 14px var(--fonte-ui); color: var(--tinta-2); }
+  .fundo-modal .item-menu:disabled { background: var(--desab-fundo); color: var(--tinta-2); box-shadow: none; cursor: not-allowed; }
+  .fundo-modal .item-menu:disabled::after { content: none; }
+  .fundo-modal .item-menu:disabled .i { color: var(--tinta-2); }
+  :is(.fundo-modal, #tela) .corpo > * + *, #tela .menu-links > * + * { margin-top: 8px; }
+  /* ---- botão de ação inclinado (IP 2.7): fundo em paralelogramo (::before), texto reto com contorno escuro ---- */
+  :is(#tela, .fundo-modal, #gameover, #mapaMundi, #bilhete) :is(.botao.principal, #jogar, #pausaContinuar, #tentarDeNovo, .mm-embarcar, .fechar-carta) {
+    position: relative; isolation: isolate; display: inline-flex; align-items: center; justify-content: center; gap: 10px; width: auto; min-width: 160px; min-height: 64px; padding: 0 32px;
+    border: 0; border-radius: 0; background: none !important; box-shadow: none; outline: none; color: var(--branco); font: 800 20px var(--fonte-ui); text-transform: uppercase; letter-spacing: .5px;
+    text-shadow: var(--contorno-texto-btn); transform: skewX(var(--incl-texto-botao)); transition: transform 60ms linear; }
+  :is(#tela, .fundo-modal, #gameover, #mapaMundi, #bilhete) :is(.botao.principal, #jogar, #pausaContinuar, #tentarDeNovo, .mm-embarcar, .fechar-carta)::before {
+    content: ''; display: block; position: absolute; inset: 0; z-index: -1; width: auto; height: auto; border-radius: 12px; transform: skewX(-8deg) scaleX(1);
+    background: linear-gradient(90deg, var(--start-a), var(--start-b)); box-shadow: var(--sombra-botao); outline: var(--pesponto-claro); outline-offset: -6px; }
+  :is(#tela, .fundo-modal, #gameover, #mapaMundi, #bilhete) :is(.botao.principal, #jogar, #pausaContinuar, #tentarDeNovo, .mm-embarcar, .fechar-carta):focus { box-shadow: none; transform: skewX(var(--incl-texto-botao)) translateY(-2px); }
+  :is(#tela, .fundo-modal, #gameover, #mapaMundi, #bilhete) :is(.botao.principal, #jogar, #pausaContinuar, #tentarDeNovo, .mm-embarcar, .fechar-carta):focus::before { box-shadow: var(--anel-foco), var(--sombra-botao); }
+  :is(#tela, .fundo-modal, #gameover, #mapaMundi, #bilhete) :is(.botao.principal, #jogar, #pausaContinuar, #tentarDeNovo, .mm-embarcar, .fechar-carta):active { transform: skewX(var(--incl-texto-botao)) translateY(2px); }
+  :is(#tela, .fundo-modal, #gameover, #mapaMundi, #bilhete) :is(.botao.principal, #jogar, #pausaContinuar, #tentarDeNovo, .mm-embarcar, .fechar-carta):active::before { box-shadow: none; filter: brightness(.92); }
+  :is(#tela, .fundo-modal, #gameover, #mapaMundi) :is(.botao.principal, #jogar, #pausaContinuar, #tentarDeNovo, .mm-embarcar):disabled { color: var(--tinta-2); text-shadow: none; }
+  :is(#tela, .fundo-modal, #gameover, #mapaMundi) :is(.botao.principal, #jogar, #pausaContinuar, #tentarDeNovo, .mm-embarcar):disabled::before { background: var(--desab-fundo); box-shadow: none; }
+  /* ---- botão secundário (IP 2.8): pílula branca, borda azul-vivo ---- */
+  :is(#tela, .fundo-modal, #gameover, #mapaMundi) :is(.botao.secundario, #recomecar, .capitulos .botao, .opcao-dificuldade) {
+    min-height: 48px; padding: 0 20px; border: 2px solid var(--azul-vivo); border-radius: 999px; background: var(--branco); color: var(--tinta); font: 800 16px var(--fonte-ui);
+    text-transform: uppercase; text-shadow: none; transform: none; }
+  :is(#tela, .fundo-modal, #gameover, #mapaMundi) :is(.botao.secundario, #recomecar, .capitulos .botao)::before { display: none; }
+  #tela .menu-links .item-menu { justify-content: center; border: 2px solid var(--azul-vivo); border-radius: 999px; min-height: 52px; text-transform: uppercase; font-size: 18px; }
+  #tela .menu-links #jogar { min-height: 64px; font-size: 22px; margin-bottom: 6px; }
+  #tela .menu-links { display: flex; flex-direction: column; align-items: stretch; gap: 0; }
+  /* ---- Voltar (barra de topo IP 2.1): azul-vivo, seta dupla, texto branco ---- */
+  :is(.fundo-modal, #tela, #mapaMundi) .voltar { min-height: 56px; padding: 0 18px; gap: 8px; border-radius: 14px; background: var(--azul-vivo); color: var(--branco); font: 800 16px var(--fonte-ui); text-transform: uppercase; text-shadow: none; }
+  :is(.fundo-modal, #tela, #mapaMundi) .voltar::before { display: inline; content: '«'; font-size: 24px; line-height: 1; margin-right: 2px; }
+  :is(.fundo-modal, #tela, #mapaMundi) .voltar kbd { background: transparent; color: var(--branco); border-color: var(--branco); box-shadow: none; }
+  :is(.fundo-modal, #tela, #mapaMundi) .voltar:focus { color: var(--branco); }
+  /* ---- telas cheias (Configurações, Créditos, Capítulos, Sinopse, Gráficos): barra de topo + painel de lista ---- */
+  :is(#paineis, #graficos) .janela { position: relative; width: min(860px, 100%); padding: max(16px, env(safe-area-inset-top)) max(24px, env(safe-area-inset-right)) 16px max(24px, env(safe-area-inset-left)); color: var(--tinta); }
+  :is(#paineis, #graficos) .janela header { min-height: 56px; padding: 0 0 0 calc(var(--voltar-largura, 150px) + 16px); border: 0; align-items: center; }
+  :is(#paineis, #graficos) .janela h2 { flex: none; padding: 10px 40px 10px 20px; color: var(--branco); background: var(--azul-vivo);
+    clip-path: polygon(0 0, calc(100% - var(--corte)) 0, 100% var(--corte), 100% 100%, 0 100%); transform: skewX(var(--incl-titulo)); font-size: 28px; }
+  :is(#paineis, #graficos) .janela footer { position: absolute; top: max(16px, env(safe-area-inset-top)); left: max(24px, env(safe-area-inset-left)); border: 0; padding: 0; }
+  :is(#paineis, #graficos) .janela .corpo { margin-top: 16px; padding: 16px; border-radius: var(--r-painel); background: rgba(244, 251, 255, 0.92); box-shadow: var(--sombra-suave); }
+  :is(#paineis, #graficos) .janela .corpo > p, :is(#paineis, #graficos) .janela .texto, #graficos p { color: var(--tinta-2); font: 600 16px/1.5 var(--fonte-ui); }
+  /* abas pílula (IP 2.4) */
+  #paineis .abas { display: flex; gap: 8px; margin-top: 12px; border: 0; }
+  #paineis .aba { min-height: 48px; padding: 0 22px; border: 2px solid var(--ceu-2); border-radius: 999px; background: var(--branco); color: var(--tinta); font: 800 16px var(--fonte-ui); }
+  #paineis .aba.ativa { background: var(--azul-vivo); border-color: var(--azul-vivo); color: var(--branco); }
+  #paineis .aba.ativa::before { content: '✓ '; }
+  #paineis .aba.ativa::after { display: none; }
+  /* linhas de opção (IP 2.14) com interruptor (2.15), slider (2.16) e seleção (2.17) */
+  .fundo-modal .opcao { grid-template-columns: 1fr minmax(150px, 46%) auto; min-height: 56px; margin: 0; padding: 4px 16px; border-radius: 14px; background: var(--branco); color: var(--tinta);
+    font: 700 16px var(--fonte-ui); box-shadow: none; }
+  .fundo-modal .opcao:hover { background: var(--branco); }
+  .fundo-modal .opcao + .opcao { margin-top: 8px; }
+  .fundo-modal .opcao:focus-within { background: var(--branco); color: var(--tinta); box-shadow: var(--anel-foco); }
+  .fundo-modal .opcao > span { color: var(--tinta); font: 800 16px var(--fonte-ui); min-width: 44px; }
+  .fundo-modal .opcao input[type=range] { -webkit-appearance: none; appearance: none; height: 48px; background: transparent; accent-color: var(--azul-vivo); }
+  .fundo-modal .opcao input[type=range]::-webkit-slider-runnable-track { height: 12px; border-radius: 999px; background: var(--slot); border: 1px solid var(--ceu-2); }
+  .fundo-modal .opcao input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 32px; height: 32px; margin-top: -11px; border-radius: 50%; background: var(--branco); border: 3px solid var(--tinta); }
+  :is(#paineis, #graficos) .opcao input[type=range]:focus { box-shadow: none; } /* (o anel fica no botão do slider) */
+  .fundo-modal .opcao input[type=range]:focus::-webkit-slider-thumb { box-shadow: var(--anel-foco); }
+  .fundo-modal .opcao select { height: 48px; padding: 0 40px 0 18px; border: 2px solid var(--ceu-2); border-radius: 999px; color: var(--tinta); font: 800 16px var(--fonte-ui);
+    background: var(--branco) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%230B5CAD' stroke-width='3' stroke-linecap='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") right 12px center / 18px no-repeat; }
+  .fundo-modal .opcao select option { background: var(--branco); color: var(--tinta); }
+  .fundo-modal .opcao.marcar { grid-template-columns: 1fr auto auto; column-gap: 12px; }
+  .fundo-modal .opcao.marcar input { grid-column: auto; width: 64px; height: 36px; border: 2px solid var(--tinta); background: var(--slot); }
+  .fundo-modal .opcao.marcar input::after { top: 4px; left: 4px; width: 24px; height: 24px; background: var(--branco); box-shadow: 0 0 0 2px var(--tinta); }
+  .fundo-modal .opcao.marcar input:checked { background: var(--azul-vivo); border-color: var(--azul-vivo); }
+  .fundo-modal .opcao.marcar input:checked::after { transform: translateX(28px); }
+  .fundo-modal .opcao.marcar::after { content: 'DESLIGADO'; order: 3; min-width: 92px; font: 800 14px var(--fonte-ui); color: var(--tinta-2); text-align: right; }
+  .fundo-modal .opcao.marcar:has(input:checked)::after { content: 'LIGADO ✓'; color: var(--azul-vivo); }
+  /* controles: grade de teclas de pano */
+  #paineis .grade { color: var(--tinta); font: 700 16px var(--fonte-ui); }
+  #paineis .grade span, #paineis .controle-pad { color: var(--tinta-2); font: 700 16px/1.5 var(--fonte-ui); }
+  /* gráficos: predefinições como lista de escolha única (selecionada = limão + check + borda 3 px) */
+  #graficos button[data-nivel] { margin: 0; padding: 12px 16px; border: 2px solid var(--ceu-2); border-radius: 14px; background: var(--branco); color: var(--tinta); font: 800 18px var(--fonte-ui); }
+  #graficos button[data-nivel] + button[data-nivel] { margin-top: 8px; }
+  #graficos button[data-nivel] small { color: var(--tinta-2); font: 600 14px/1.4 var(--fonte-ui); }
+  #graficos button[data-nivel]::before { border: 2px solid var(--tinta); width: 14px; height: 14px; }
+  #graficos button[data-nivel]:focus { background: var(--branco); color: var(--tinta); }
+  #graficos button.ativo { background: var(--limao); border: 3px solid var(--tinta); color: var(--tinta); }
+  #graficos button.ativo small { color: var(--tinta); }
+  #graficos button.ativo::before { content: '✓'; display: grid; place-items: center; background: var(--tinta); border-color: var(--tinta); box-shadow: none; color: var(--limao); font: 800 12px/1 var(--fonte-ui); }
+  #graficos #versao, #aviso-aa { color: var(--tinta-2); }
+  /* capítulos e créditos */
+  #paineis .capitulos li { padding: 12px 16px; margin-bottom: 8px; border: 0; border-radius: 14px; background: var(--branco); }
+  #paineis .capitulos b { color: var(--tinta); font: 800 18px var(--fonte-ui); }
+  #paineis .capitulos span { color: var(--tinta-2); }
+  #paineis .capitulos .trancado { opacity: 1; background: var(--desab-fundo); }
+  #paineis .sinopse { color: var(--tinta); } #paineis .sinopse .chamada { color: var(--azul-vivo); }
+  #paineis .autor, #paineis .feito, #paineis .instagram { color: var(--tinta); }
+  /* ---- pausa: modal branco (IP 2.9) com faixa azul de corte diagonal ---- */
+  #pausa .janela { width: min(440px, calc(100% - 32px)); height: auto; max-height: calc(100% - 24px); padding: 0 0 16px; border-radius: var(--r-modal); background: var(--branco); box-shadow: var(--sombra-suave); overflow: hidden; }
+  #pausa header { padding: 0; border: 0; }
+  #pausa h2 { flex: 1; margin: 0; padding: 14px 24px; color: var(--branco); background: var(--azul-vivo); font-size: 28px; clip-path: polygon(0 0, 100% 0, 100% calc(100% - var(--corte)), calc(100% - var(--corte)) 100%, 0 100%); }
+  #pausa .corpo { padding: 12px 20px 4px; overflow: auto; }
+  #pausa .corpo .item-menu { box-shadow: none; border: 2px solid var(--ceu-1); }
+  #pausa #pausaContinuar { align-self: stretch; margin: 4px 8px 8px; }
+  #pausa #pausaContinuar::after, #pausa #pausaMenu::after { content: none; }
+  #pausa #pausaMenu { justify-content: center; margin-top: 16px; border: 2px solid var(--azul-vivo); border-radius: 999px; min-height: 48px; text-transform: uppercase; font-size: 16px; }
+  #pausa .pausa-hora { color: var(--tinta-2); font: 700 16px var(--fonte-ui); margin: 0 0 4px; }
+  #pausa footer { padding: 0 20px; } #pausa footer .voltar { background: var(--branco); color: var(--tinta); border: 2px solid var(--ceu-2); }
+  #pausa footer .voltar kbd { color: var(--tinta); border-color: var(--tinta); }
+  #pausa #pausaNuvem:disabled, #pausa #pausaNuvem small { color: var(--tinta-2); }
+  /* ---- menu inicial e dificuldade ---- */
+  #tela .selo { color: var(--azul-vivo); text-shadow: none; font: 800 16px var(--fonte-ui); }
+  #tela h1 { font: 800 clamp(56px, 8vw, 96px)/1 var(--fonte-ui); color: var(--branco); letter-spacing: 1px; transform: skewX(var(--incl-titulo));
+    text-shadow: 0 3px 0 var(--azul-vivo), 0 -3px 0 var(--azul-vivo), 3px 0 0 var(--azul-vivo), -3px 0 0 var(--azul-vivo), 2px 2px 0 var(--azul-vivo), -2px 2px 0 var(--azul-vivo), 2px -2px 0 var(--azul-vivo), -2px -2px 0 var(--azul-vivo), 0 8px 0 var(--azul-fundo-pilula); }
+  #tela .faixa::after { border-top-color: var(--azul-vivo); }
+  #tela .sub { color: var(--tinta); font: 700 18px var(--fonte-ui); }
+  #tela #historia, #tela #msg { color: var(--tinta); font: 600 16px/1.5 var(--fonte-ui); }
+  #tela #msg em { color: var(--laranja); }
+  #tela #barra { height: 12px; width: 220px; border-radius: 999px; background: var(--slot); overflow: hidden; }
+  #tela #barra div { background: var(--azul-vivo); }
+  #tela .prompts { padding: 6px 14px; border-radius: 999px; background: rgba(255, 255, 255, 0.85); color: var(--tinta-2); }
+  #tela[data-modo="dificuldade"] #tituloDificuldade { color: var(--azul-vivo); font: 800 18px var(--fonte-ui); }
+  #tela .opcao-dificuldade { display: flex; flex-wrap: wrap; align-items: center; min-height: 72px !important; padding: 10px 18px !important; border-radius: 18px; text-transform: none; font-size: 20px !important; color: var(--tinta); }
+  #tela .opcao-dificuldade::before { display: none; }
+  #tela[data-modo="dificuldade"] #escolhaDificuldade { gap: 8px; }
+  #tela .opcao-dificuldade b { color: var(--tinta); }
+  #tela .opcao-dificuldade small { color: var(--laranja); font: 800 14px var(--fonte-ui); }
+  #tela .opcao-dificuldade span { padding-left: 0; color: var(--tinta-2); font: 600 14px/1.35 var(--fonte-ui); }
+  #tela .opcao-dificuldade:focus { transform: translateY(-2px); }
+  #tela #confirmarNovo { color: var(--tinta); font: 700 16px var(--fonte-ui); padding: 8px 14px; border-radius: 14px; background: var(--branco); }
+  #tela #confirmarNovo b { color: var(--laranja); }
+  /* ---- game over: modal branco com faixa azul ---- */
+  #gameover { color: var(--tinta); }
+  #gameover > * { position: relative; }
+  #gameover::before { content: ''; position: absolute; left: 50%; top: 50%; width: min(520px, calc(100% - 32px)); height: min(440px, calc(100% - 32px)); transform: translate(-50%, -50%); border-radius: var(--r-modal); background: var(--branco); box-shadow: var(--sombra-suave); }
+  #gameover h1 { padding: 12px 32px; color: var(--branco); background: var(--azul-vivo); text-shadow: none; letter-spacing: 2px; font-size: clamp(32px, 6vw, 44px);
+    clip-path: polygon(0 0, calc(100% - var(--corte)) 0, 100% var(--corte), 100% 100%, 0 100%); }
+  #gameover p, #gameover .estat { color: var(--tinta); opacity: 1; font: 700 16px/1.45 var(--fonte-ui); }
+  #gameover .estat { color: var(--tinta-2); }
+  #gameover small { color: var(--tinta-2); opacity: 1; }
+  #gameover .botoes { gap: 12px; }
+  /* ---- mapa das ilhas (parte HTML) ---- */
+  #mapaMundi .mm-topo { padding: 0 0 12px; border-radius: var(--r-painel); background: var(--branco); color: var(--tinta); text-shadow: none; box-shadow: var(--sombra-suave); overflow: hidden; }
+  #mapaMundi .mm-topo small { display: block; padding: 8px 24px; background: var(--azul-vivo); color: var(--branco); font: 800 16px var(--fonte-ui); clip-path: polygon(0 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%); }
+  #mapaMundi .mm-topo b { color: var(--tinta); font: 800 26px var(--fonte-ui); padding: 4px 22px 0; }
+  #mapaMundi .mm-topo span { color: var(--tinta-2); font: 600 16px var(--fonte-ui); padding: 0 22px; }
+  #mapaMundi .mm-topo em { color: var(--ok); font: 800 16px var(--fonte-ui); padding: 0 22px; }
+  #mapaMundi :is(.mm-esq, .mm-dir) { width: 56px; height: 56px; border: 2px solid var(--azul-vivo); background: var(--branco); color: var(--azul-vivo); box-shadow: var(--sombra-suave); font-size: 22px; }
+  #mapaMundi .mm-embarcar { width: auto !important; padding: 0 32px !important; font-size: 20px !important; color: var(--branco); }
+  #mapaMundi .mm-embarcar:disabled { opacity: 1; }
+  /* ---- carta / bilhete: papel claro, faixa azul com alfinete, FECHAR inclinado ---- */
+  #bilhete .papel { position: relative; padding: 0 0 18px; border-radius: 6px; background: var(--papel); color: var(--tinta); box-shadow: var(--sombra-suave);
+    background-image: repeating-linear-gradient(transparent 0 31px, rgba(205, 235, 251, 0.4) 31px 32px); font: 600 17px/1.75 var(--fonte-ui); }
+  #bilhete .faixa-carta { display: flex; align-items: center; gap: 8px; margin: 0 0 6px; padding: 8px 24px 8px 40px; width: fit-content; color: var(--branco); background: var(--azul-vivo);
+    font: 800 18px var(--fonte-ui); text-transform: uppercase; clip-path: polygon(0 0, calc(100% - var(--corte)) 0, 100% var(--corte), 100% 100%, 0 100%); }
+  #bilhete .alfinete { position: absolute; left: 10px; top: 6px; width: 26px; height: 26px; color: var(--laranja); z-index: 1; }
+  #bilhete .papel p { margin: 0; padding: 4px 26px 0; }
+  #bilhete small { color: var(--tinta-2); padding: 0 26px; }
+  #bilhete .fechar-carta { margin: 12px 26px 0 auto; display: flex; }
+  #bilhete .fechar-carta .i { width: 20px; height: 20px; filter: drop-shadow(0 0 1px var(--contorno-btn)); }
+  /* Reduzir flashes: sem elevação no foco nem deslocamento ao apertar */
+  body.sem-flashes :is(#tela, .fundo-modal, #gameover, #mapaMundi, #bilhete) :is(button, .item-menu):is(:focus, :active) { transform: none; }
+  body.sem-flashes :is(#tela, .fundo-modal, #gameover, #mapaMundi, #bilhete) :is(.botao.principal, #jogar, #pausaContinuar, #tentarDeNovo, .mm-embarcar, .fechar-carta):is(:focus, :active) { transform: skewX(var(--incl-texto-botao)); }
+  /* celular deitado: telas cheias mais compactas, alvos continuam ≥ 48 */
+  @media (max-height: 520px) {
+    :is(#paineis, #graficos) .janela { padding-top: max(8px, env(safe-area-inset-top)); }
+    :is(#paineis, #graficos) .janela footer { top: max(8px, env(safe-area-inset-top)); }
+    :is(#paineis, #graficos) .janela h2 { font-size: 22px; padding: 8px 32px 8px 16px; }
+    :is(#paineis, #graficos) .janela .corpo { margin-top: 8px; padding: 8px; }
+    #paineis .abas { margin-top: 8px; }
+    #pausa h2 { padding: 8px 20px; font-size: 22px; }
+    #pausa .corpo { padding: 8px 16px 4px; }
+    #tela h1 { font-size: 52px; }
+  }
 </style>
 <!-- bibliotecas na própria pasta (vendor/): three 0.165.0, three-mesh-bvh 0.7.6, meshoptimizer 0.21.0. O jogo roda sem internet (e dentro do APK) -->
 <script type="importmap">{"imports":{"three":"./vendor/three/build/three.module.js","three/addons/":"./vendor/three/examples/jsm/","three-mesh-bvh":"./vendor/three-mesh-bvh/build/index.module.js","meshoptimizer/simplifier":"./vendor/meshoptimizer/meshopt_simplifier.module.js","./src/agua.js":"./src/agua.js?v=e2a2da6b9b","./src/altos.js":"./src/altos.js?v=ac761e4342","./src/animLuta.js":"./src/animLuta.js?v=ba5d6f9de7","./src/animais.js":"./src/animais.js?v=5a63b0bc33","./src/boneca.js":"./src/boneca.js?v=0eef2507c2","./src/bonecaNova.js":"./src/bonecaNova.js?v=7ea290af16","./src/cachoeira.js":"./src/cachoeira.js?v=f700bc46b9","./src/cambalhota.js":"./src/cambalhota.js?v=aff8debf26","./src/campanha.js":"./src/campanha.js?v=47fb9ee53d","./src/canvasTextura.js":"./src/canvasTextura.js?v=8ddd89e18a","./src/capitulo.js":"./src/capitulo.js?v=5631f04f86","./src/casas.js":"./src/casas.js?v=f3dfa565ca","./src/ceu.js":"./src/ceu.js?v=8ffb931fd1","./src/chuva.js":"./src/chuva.js?v=6cf0295986","./src/colisao.js":"./src/colisao.js?v=ac6260ec0b","./src/combate.js":"./src/combate.js?v=c6a26d1ad3","./src/dia.js":"./src/dia.js?v=e05b6cc395","./src/dificuldade.js":"./src/dificuldade.js?v=cfdf2ff62e","./src/distancia.js":"./src/distancia.js?v=9a5844420e","./src/estilo.js":"./src/estilo.js?v=0c453af42f","./src/fisica.js":"./src/fisica.js?v=7949a2cbcf","./src/folhas.js":"./src/folhas.js?v=0703e7d0dd","./src/graficos.js":"./src/graficos.js?v=66a6779bf1","./src/historia.js":"./src/historia.js?v=7aff3796aa","./src/ilha.js":"./src/ilha.js?v=670fb485d3","./src/inimigos.js":"./src/inimigos.js?v=39857a4c33","./src/jogo.js":"./src/jogo.js?v=3fa6f349f8","./src/lotes.js":"./src/lotes.js?v=f3831174bf","./src/mapa.js":"./src/mapa.js?v=eb1d8bbcc0","./src/mapaMundi.js":"./src/mapaMundi.js?v=3eb13da7fc","./src/mundo.js":"./src/mundo.js?v=262a267749","./src/nevoa.js":"./src/nevoa.js?v=9bccad8ac5","./src/objetos.js":"./src/objetos.js?v=a78546e0b2","./src/oclusao.js":"./src/oclusao.js?v=a1ec74f05f","./src/particulas.js":"./src/particulas.js?v=efad11a94e","./src/pegaso.js":"./src/pegaso.js?v=08c8aa3a88","./src/pes.js":"./src/pes.js?v=9f8ed5d180","./src/praia.js":"./src/praia.js?v=700cd3c717","./src/praiaForma.js":"./src/praiaForma.js?v=79c406a618","./src/reparos.js":"./src/reparos.js?v=e805cead1a","./src/resolucao.js":"./src/resolucao.js?v=0d1e50cb15","./src/salvar.js":"./src/salvar.js?v=6a8167f025","./src/simplificar.js":"./src/simplificar.js?v=a439e6c6ca","./src/som.js":"./src/som.js?v=d812dac563","./src/sombraBoneca.js":"./src/sombraBoneca.js?v=02b8ff3403","./src/suavizar.js":"./src/suavizar.js?v=042d8dcf4b","./src/terreno.js":"./src/terreno.js?v=30a71b0a42","./src/texturas.js":"./src/texturas.js?v=5b74c7049c","./src/tutorial.js":"./src/tutorial.js?v=1f1fb0bc8d","./src/vilao.js":"./src/vilao.js?v=5742a89aa1"}}</script>
@@ -872,7 +1072,7 @@
 <div id="interagir" class="retalho"></div>
 <div id="fala" class="retalho retalho-forte" aria-live="polite"><b></b><span></span></div>
 <div id="memoria" class="retalho retalho-forte" aria-live="polite"><h3><svg class="i" aria-hidden="true"><use href="#i-fragmento"/></svg><span>Fragmento de Lembrança</span></h3><p></p></div>
-<div id="bilhete" role="dialog" aria-modal="true" aria-label="Carta"><div class="papel"><p></p><small>Enter ou E para fechar</small><button type="button" class="fechar-carta"><svg class="i" aria-hidden="true"><use href="#i-fechar"/></svg>Fechar</button></div></div>
+<div id="bilhete" role="dialog" aria-modal="true" aria-label="Carta"><div class="papel"><svg class="alfinete" aria-hidden="true"><use href="#i-alfinete"/></svg><h3 class="faixa-carta">Bilhete</h3><p></p><small>Enter ou E para fechar</small><button type="button" class="fechar-carta"><svg class="i" aria-hidden="true"><use href="#i-fechar"/></svg>Fechar</button></div></div>
 <div id="tela" data-modo="menu">
   <div class="cartao">
    <div class="lado-texto">
@@ -998,7 +1198,7 @@
       <p id="perfil-pc"></p>
       <label class="opcao marcar"><input type="checkbox" id="cfgFps"> Mostrar desempenho (fps)</label>
       <div id="aviso-aa">O antisserrilhado deste nível só muda ao abrir o jogo de novo.</div>
-      <p id="versao">versão 06/11/2026 23:32 · 3fa6f3</p>
+      <p id="versao">versão 06/11/2026 23:45 · 3fa6f3</p>
     </div>
     <footer><button id="fechar-graficos" class="voltar"><kbd>Esc</kbd>Voltar</button></footer>
   </div>
@@ -1009,10 +1209,11 @@
     <div class="corpo">
       <p class="pausa-hora" id="pausaHora"><svg class="i" aria-hidden="true"><use id="pausaHoraIcone" href="#i-sol"/></svg><span id="pausaHoraTexto">10:00</span></p>
       <button id="pausaContinuar" class="item-menu">Continuar</button>
+      <button class="item-menu" id="pausaMochila" disabled aria-label="Mochila (em breve)"><svg class="i" aria-hidden="true"><use href="#i-mochila"/></svg><span>Mochila</span><small>em breve</small></button>
       <button class="item-menu" id="pausaNuvem"><svg class="i cadeado" aria-hidden="true"><use href="#i-cadeado"/></svg><span>Chamar o Nuvem</span><small id="pausaNuvemMotivo"></small></button>
-      <button class="item-menu" data-painel="config"><span>Configurações</span></button>
-      <button class="item-menu" id="pausaGraficos"><span>Gráficos</span></button>
-      <button class="item-menu" id="pausaControles"><span>Controles</span></button>
+      <button class="item-menu" data-painel="config"><svg class="i" aria-hidden="true"><use href="#i-engrenagem"/></svg><span>Configurações</span></button>
+      <button class="item-menu" id="pausaGraficos"><svg class="i" aria-hidden="true"><use href="#i-graficos"/></svg><span>Gráficos</span></button>
+      <button class="item-menu" id="pausaControles"><svg class="i" aria-hidden="true"><use href="#i-controle"/></svg><span>Controles</span></button>
       <button class="item-menu" id="pausaMenu"><span>Menu principal</span></button>
     </div>
     <footer><button class="voltar" id="pausaVoltar"><kbd>Esc</kbd>Continuar</button></footer>
