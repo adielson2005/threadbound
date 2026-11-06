@@ -1,11 +1,12 @@
 // Progresso e configurações guardados no navegador (localStorage). Sem armazenamento (modo
 // privado restrito), o jogo funciona igual: só não lembra de uma vez para outra.
-import { CAPITULO_ATUAL } from './capitulo.js';
+import { CAPITULO_ATUAL, TOTAL_CAPITULOS } from './capitulo.js';
 
 const CHAVE_PROGRESSO = 'threadbound.progresso';
 const CHAVE_CONFIG = 'threadbound.config';
 const CHAVE_CONCLUIDOS = 'threadbound.concluidos'; // capítulos terminados (desbloqueiam o seguinte)
 const CHAVE_ULTIMO = 'threadbound.ultimo';         // o último capítulo jogado (o "Continuar" do menu)
+const CHAVE_INVENTARIO = 'threadbound.inventario'; // Mochila, Fuxicos e melhorias: um só para o jogo todo (inventario.js)
 
 function ler(chave) { try { return JSON.parse(localStorage.getItem(chave)); } catch { return null; } }
 function gravar(chave, valor) { try { localStorage.setItem(chave, JSON.stringify(valor)); return true; } catch { return false; } }
@@ -32,6 +33,17 @@ export function lerConcluidos() {
   return [...lista];
 }
 export function marcarConcluido(n) { gravar(CHAVE_CONCLUIDOS, [...new Set([...lerConcluidos(), n])]); }
+// ---------- inventário (o jogo todo) ----------
+// sem inventário salvo (save de antes da Mochila): reconstrói os itens de história a partir das cartas e
+// lembranças já lidas nos progressos dos capítulos; os Fuxicos começam em 0
+export function lerInventario(migrar) {
+  const s = ler(CHAVE_INVENTARIO);
+  if (s && typeof s === 'object' && s.versao >= 1) return s;
+  const progressos = {};
+  for (let n = 1; n <= TOTAL_CAPITULOS; n++) progressos[n] = lerProgresso(n);
+  return migrar(progressos);
+}
+export function salvarInventario(estado) { return gravar(CHAVE_INVENTARIO, estado); }
 export function ultimoCapitulo() { const n = ler(CHAVE_ULTIMO); return Number.isInteger(n) ? n : 1; }
 
 // ---------- configurações ----------

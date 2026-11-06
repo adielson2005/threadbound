@@ -4,6 +4,7 @@ import { aplicarPose } from './cambalhota.js';
 import { linhaLivre } from './colisao.js';
 import { brilhoDeDia } from './dia.js';
 import { dificuldade } from './dificuldade.js';
+import { ARMAS_BASE } from './itens.js';
 import { som } from './som.js';
 import { criarCorpo, lancar, passo as passoObjeto, aplicar, empurrar as empurrarCorpo } from './objetos.js';
 
@@ -45,12 +46,8 @@ const COMBO = ['soco2', 'soco4', 'socoFinal'];
 const JANELA_COMBO = 0.3; // (lâmina) a partir de quanto do golpe atual o próximo toque já fica guardado
 const FOLGA_COMBO = 0.4;  // (lâmina) segundos depois de um golpe em que um toque ainda continua a sequência
 
-const ARMAS = {
-  galho: { nome: 'Galho', dano: 2, alcance: 2.1, usos: 8 },
-  agulha: { nome: 'Agulha de Prata', dano: 3, alcance: 2.4, usos: 16 },
-  // metade da tesoura gigante da oficina de Aurélia: arma branca de verdade, com combo de 3 cortes
-  tesoura: { nome: 'Lâmina da Tesoura', dano: 2, alcance: 2.3, usos: 45, corte: true },
-};
+// as armas (dano, alcance, usos) moram no catálogo da Mochila (itens.js), que mostra o detalhe delas
+const ARMAS = ARMAS_BASE;
 // Explosão de Fios (o poder da Brisa): a barra enche acertando golpes, defendendo e esquivando na
 // hora certa; cheia (V, RT ou o botão ✦), uma onda de fios de luz empurra e atordoa todos em volta
 const PODER = { raio: 6.5, dano: 4, empurrao: 10, atordoa: 2.2, lento: 0.9 };

@@ -10,7 +10,8 @@ import { criarChuva } from './chuva.js';
 import { criarOclusao } from './oclusao.js';
 import { criarSombraBoneca } from './sombraBoneca.js';
 import { criarParticulas } from './particulas.js';
-import { lerProgresso, salvarProgresso, apagarProgresso, lerConfig, salvarConfig, lerConcluidos, ultimoCapitulo } from './salvar.js';
+import { lerProgresso, salvarProgresso, apagarProgresso, lerConfig, salvarConfig, lerConcluidos, ultimoCapitulo, lerInventario, salvarInventario } from './salvar.js';
+import { criarInventario, migrarDeProgressos } from './inventario.js';
 import { CAPITULO_ATUAL, TOTAL_CAPITULOS, CONFIG, urlCapitulo } from './capitulo.js';
 import { analisarTerreno, calcularLancamento } from './terreno.js';
 import { moverComColisao, RAIO, ALTURA } from './fisica.js';
@@ -779,6 +780,22 @@ function mostrarFuxicos(saldo) {
   pilulaFuxicos.hidden = false;
   clearTimeout(tempoPilula); tempoPilula = setTimeout(() => { pilulaFuxicos.hidden = true; }, MS_PILULA_MOEDA);
 }
+
+// ---------- inventário (Mochila, Fuxicos, melhorias): um só para o jogo todo, salvo a cada mudança ----------
+const inventario = criarInventario({ estado: lerInventario(migrarDeProgressos), gravar: salvarInventario });
+inventario.visitarCapitulo(CAPITULO_ATUAL);
+salvarInventario(inventario.exportar()); // (o inventário migrado de um save antigo fica gravado desde já)
+saldoMostrado = inventario.saldo; // (ao abrir o jogo a pílula não aparece: só quando o saldo muda)
+inventario.eventos.addEventListener('moeda-mudou', ev => { if (ev.detail.delta !== 0) mostrarFuxicos(ev.detail.saldo); else saldoMostrado = ev.detail.saldo; });
+// ponto "NOVO" no botão da Mochila (sem número; o leitor de tela ouve quantos)
+const botaoMochila = $('abrir-mochila'), pontoNovo = botaoMochila.querySelector('.ponto-novo');
+function atualizarPontoNovo() {
+  const n = inventario.quantosNovos();
+  pontoNovo.hidden = n === 0;
+  pontoNovo.querySelector('.so-leitor').textContent = n === 1 ? ' — 1 item novo' : ` — ${n} itens novos`;
+}
+inventario.eventos.addEventListener('item-obtido', atualizarPontoNovo);
+atualizarPontoNovo();
 
 // ---------- vento na arena (3ª fase do Ravi) ----------
 const hudVento = $('ventoArena'), _direitaCam = new THREE.Vector3();
@@ -2235,7 +2252,7 @@ Promise.all([
     progressoCarga(1); textoCarga('Pronto');
     dispatchEvent(new Event('jogo-pronto'));
     window.__jogo = {
-      lerVolumes, mostrarFuxicos, jogador, personagem, get vilao() { return vilao; }, camera, camera3p, mapa, terreno, correntes, renderer, cena, sol, medidor, altos, mundo, inimigos, campanha, agua, nevoa, cachoeiras, praia, ceu: ceuJogo, get combate() { return combate; }, get animais() { return animais; },
+      lerVolumes, mostrarFuxicos, inventario, jogador, personagem, get vilao() { return vilao; }, camera, camera3p, mapa, terreno, correntes, renderer, cena, sol, medidor, altos, mundo, inimigos, campanha, agua, nevoa, cachoeiras, praia, ceu: ceuJogo, get combate() { return combate; }, get animais() { return animais; },
       terminarCapitulo, get mapaMundi() { return mapaMundi; }, get fuga() { return fuga; },
       animacao: () => animAtual, estado: () => estado, nivel: () => nomeNivel, aplicarNivel, ocioso, get oclusao() { return oclusao; },
     };
