@@ -7,7 +7,7 @@
 <!-- fontes da interface (sem internet, caem para a fonte do sistema) -->
 <link rel="icon" href="data:,">
 <link rel="stylesheet" href="vendor/fontes/fontes.css">
-<meta name="versao-site" content="a24b7b4b18">
+<meta name="versao-site" content="0407979d9f">
 <script>
   // O GitHub Pages deixa o navegador reaproveitar esta página por até 10 minutos (e um endereço
   // que já foi aberto, como "?v=22", pode continuar vindo da memória). Aqui a página pergunta ao site,
@@ -1044,7 +1044,7 @@
   :is(#mochila, #armarinho) .mb-losango { grid-row: 1 / 3; display: grid; place-items: center; width: 52px; height: 52px; margin: 6px; transform: rotate(45deg); border-radius: 10px; background: var(--branco); border: 2px solid var(--ceu-2); box-shadow: var(--sombra-suave); }
   :is(#mochila, #armarinho) .mb-cat-icone { width: 40px; height: 40px; transform: rotate(-45deg); }
   :is(#mochila, #armarinho) .mb-cat-nome { align-self: end; }
-  :is(#mochila, #armarinho) .mb-cat-conta { align-self: start; font: 800 14px var(--fonte-ui); color: var(--tinta-2); }
+  :is(#mochila, #armarinho) .mb-cat-conta { align-self: start; font: 800 14px var(--fonte-ui); color: var(--tinta); } /* (tinta: o fundo atrás do losango é o céu) */
   :is(#mochila, #armarinho) .mb-cat.ativa { background: var(--laranja); color: var(--branco); padding-right: 16px; clip-path: polygon(0 0, 100% 0, 100% calc(100% - var(--corte)), calc(100% - var(--corte)) 100%, 0 100%); }
   :is(#mochila, #armarinho) .mb-cat.ativa .mb-cat-conta { color: var(--branco); }
   :is(#mochila, #armarinho) .mb-cat.ativa .mb-losango { transform: none; border-radius: 50%; border-color: var(--branco); }
@@ -1168,7 +1168,7 @@
   :is(#mochila, #armarinho) .mb-coluna { display: flex; flex-direction: column; gap: 12px; min-height: 0; }
   #mochila .mb-armarinho { align-self: flex-start; margin-top: 4px; }
   #armarinho { z-index: 13; }
-  .pilula-moeda.mb-mais { border: 0; cursor: pointer; padding-right: 6px; }
+  .pilula-moeda.mb-mais, :is(#mochila, #armarinho) .pilula-moeda.mb-mais { border: 0; cursor: pointer; padding-right: 6px; min-height: 48px; } /* (alvo de 48) */
   .pilula-moeda .mb-mais-sinal { display: grid; place-items: center; width: 28px; height: 28px; border-radius: 50%; background: var(--mais); color: var(--tinta); }
   .pilula-moeda .mb-mais-sinal .i { width: 18px; height: 18px; color: var(--tinta); stroke-width: 3.5; }
   @media (max-height: 520px) and (orientation: landscape), (max-width: 600px) and (orientation: portrait) {
@@ -1531,7 +1531,7 @@
       <p id="perfil-pc"></p>
       <label class="opcao marcar"><input type="checkbox" id="cfgFps"> Mostrar desempenho (fps)</label>
       <div id="aviso-aa">O antisserrilhado deste nível só muda ao abrir o jogo de novo.</div>
-      <p id="versao">versão 07/11/2026 00:11 · 2c3615</p>
+      <p id="versao">versão 07/11/2026 00:18 · 2c3615</p>
     </div>
     <footer><button id="fechar-graficos" class="voltar"><kbd>Esc</kbd>Voltar</button></footer>
   </div>
