@@ -7,7 +7,7 @@
 <!-- fontes da interface (sem internet, caem para a fonte do sistema) -->
 <link rel="icon" href="data:,">
 <link rel="stylesheet" href="vendor/fontes/fontes.css">
-<meta name="versao-site" content="8770bb8b7e">
+<meta name="versao-site" content="28b73395ca">
 <script>
   // O GitHub Pages deixa o navegador reaproveitar esta página por até 10 minutos (e um endereço
   // que já foi aberto, como "?v=22", pode continuar vindo da memória). Aqui a página pergunta ao site,
@@ -42,12 +42,45 @@
     --titulo: 'Fredoka', 'Nunito', system-ui, sans-serif;
     --fonte: 'Nunito', system-ui, -apple-system, 'Segoe UI', sans-serif;
     --escala-texto: 1;
+    --ez: calc(1 / var(--escala-texto));
+    /* HUD "retalho de tecido": ver production/ui/hud/visual-design.md */
+    --hud-noite: 10, 8, 14; --hud-noite-cor: #0a080e;
+    --hud-fundo: rgba(10, 8, 14, 0.64); --hud-fundo-forte: rgba(10, 8, 14, 0.72); --hud-fundo-toque: rgba(10, 8, 14, 0.55); --hud-trilho: #241a2b;
+    --ouro-fio: rgba(242, 199, 107, 0.75); --ouro-claro: #ffe3a3;
+    --papel: #FFF8E7; --papel-texto: #3b2b1a; --papel-2: #5c4630;
+    --sombra-retalho: 0 2px 8px rgba(0, 0, 0, 0.35); --sombra-papel: 0 20px 50px rgba(0, 0, 0, 0.6);
+    --ease-fora: cubic-bezier(.2, .8, .2, 1); --ease-entra: cubic-bezier(.4, 0, 1, 1);
+    --m-hud: 16px;            /* margem de borda do HUD (12 no celular) */
+    --tb: 56px;               /* botão de toque: P 48 / M 56 / G 64 */
+    --gap-toque: 8px; --m-toque: 12px;
+    /* ---------- nova UI "Céu de Retalho Claro" (design/ux/interaction-patterns.md §1) ----------
+       Só os tokens nesta etapa: as telas passam a usá-los uma a uma (menus, HUD, Mochila...). */
+    --ceu-0: #F4FBFF; --ceu-1: #CDEBFB; --ceu-2: #8FD3F4; --branco: #FFFFFF;
+    --tinta: #0F2A47; --tinta-2: #4A5E73;
+    --azul-vivo: #0B5CAD; --azul-fundo-pilula: #0B4F94; --slot: #CFE9FA;
+    --laranja: #C2410C; --laranja-brilho: #FF8A1F; --start-a: #FF9F1C; --start-b: #FFD23F;
+    --marrom: #3B1700; --contorno-btn: #5A2300; --limao: #B5E61D; --mais: #D6F000;
+    --cadeado: #6B7B8C; --erro: #B3261E; --ok: #1B6E3A; --desab-texto: #5F7081; --desab-fundo: #E3EBF2;
+    --fundo-ceu: radial-gradient(ellipse at 50% 45%, var(--ceu-0) 0%, var(--ceu-1) 55%, var(--ceu-2) 100%);
+    --fonte-ui: 'Baloo 2', system-ui, sans-serif;
+    --r-slot: 14px; --r-painel: 24px; --r-modal: 28px; --corte: 16px;
+    --incl-titulo: -8deg; --incl-botao: -12deg; --incl-texto-botao: -4deg;
+    --sombra-suave: 0 6px 16px rgba(15, 42, 71, 0.18); --sombra-botao: 0 4px 0 rgba(90, 35, 0, 0.45);
+    --pesponto-claro: 2px dashed rgba(255, 255, 255, 0.7);
+    --t-ui: 160ms; --ease-ui: cubic-bezier(.2, .8, .2, 1);
+    --alvo: 48px; --botao-ui: 56px;
+    /* paleta de ilustração (só dentro de ícones; visual-design §3.1); os "-esc" sem valor na spec são
+       o mesmo tom escurecido, para o degradê e a sombra interna dos ícones */
+    --il-madeira: #C98B4E; --il-madeira-esc: #8A5A2B; --il-prata: #DDE6EE; --il-prata-esc: #8C9BAB;
+    --il-ouro: #FFC93C; --il-ouro-esc: #C98A00; --il-vidro: #9BE3D6; --il-vidro-esc: #4FB3A3;
+    --il-chita: #E8434F; --il-chita-esc: #A82431; --il-lilas-luz: #B79CEB; --il-lilas-esc: #7E62C4;
+    --il-folha: #6CC04A; --il-folha-esc: #3F8A2A; --il-rosa-pano: #F7A8C4; --il-rosa-esc: #D9749B; --il-papel-esc: #E9D9B4;
   }
   html, body { margin: 0; height: 100%; overflow: hidden; background: #0d0a12; font-family: var(--fonte); color: var(--texto); user-select: none; -webkit-tap-highlight-color: transparent; }
   canvas { display: block; touch-action: none; }
   button { font-family: inherit; }
   kbd { display: inline-flex; align-items: center; justify-content: center; min-width: 20px; height: 20px; padding: 0 5px; box-sizing: border-box; margin-right: 8px;
-    border-radius: 5px; border: 1.5px solid currentColor; color: var(--texto); font: 700 11px var(--fonte); opacity: .9; }
+    border-radius: 5px; border: 1.5px solid currentColor; color: var(--texto); font: 700 14px var(--fonte); opacity: .9; }
 
   /* ---------- opções de menu: texto; o fio dourado entra na escolhida ---------- */
   .item-menu, .botao { position: relative; display: flex; align-items: center; gap: 12px; width: 100%; min-height: 40px; padding: 2px 4px 2px 0; box-sizing: border-box; touch-action: manipulation; border: 0; background: none; cursor: pointer;
@@ -63,65 +96,174 @@
   .voltar::before { content: '‹'; display: none; font-size: 20px; margin-right: 8px; line-height: 1; }
   @media (pointer: coarse) { .voltar kbd { display: none; } .voltar::before { display: inline; } }
 
-  /* ---------- HUD ---------- */
-  #hud { position: fixed; top: var(--margem); left: var(--margem); right: var(--margem); display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; pointer-events: none; z-index: 2; }
-  #hud .esq { display: flex; flex-direction: column; gap: 6px; }
-  #hud .dir { display: flex; align-items: center; gap: 12px; }
-  #vida { display: flex; gap: 4px; filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.7)); }
-  /* Linha Viva: carretéis */
-  #vida i { width: 11px; height: 15px; border-radius: 2px;
-    background: linear-gradient(#f2d08a 0 16%, #9a6a35 16% 20%, transparent 20% 80%, #9a6a35 80% 84%, #f2d08a 84%), repeating-linear-gradient(#fff1d6 0 2px, #f4c7d8 2px 4px);
-    transition: filter .3s, opacity .3s, transform .3s; }
-  #vida i.vazio { filter: grayscale(1) brightness(0.55); opacity: .5; transform: scale(.85); }
-  #moedas { display: flex; align-items: center; gap: 5px; font: 600 13px var(--titulo); color: var(--texto-2); text-shadow: var(--sombra-texto); }
-  #moedas .icone { color: var(--ouro); }
-  #moedas b { color: #fff; font-size: 15px; font-weight: 600; }
-  .barrinha { display: block; width: 46px; height: 3px; border-radius: 2px; background: rgba(255, 255, 255, 0.22); overflow: hidden; margin-left: 4px; box-shadow: 0 1px 2px rgba(0, 0, 0, 0.5); }
-  .barrinha i { display: block; height: 100%; background: var(--ouro); transition: width .4s; }
+  /* ---------- HUD "retalho de tecido" (design/ux/hud.md + production/ui/hud/visual-design.md) ----------
+     Fundos escuros 0,64 (0,72 em fala, memória e dicas), pesponto tracejado dourado, ícones SVG do
+     sprite #sprite-icones. A escala de texto (--escala-texto) vale para todo o HUD: o "zoom" vai em
+     cada bloco e as posições dentro dele são divididas por ela (--ez) para manter as margens. ---------- */
+  #hud { position: fixed; top: calc(var(--m-hud) + env(safe-area-inset-top, 0px)); left: calc(var(--m-hud) + env(safe-area-inset-left, 0px)); right: calc(var(--m-hud) + env(safe-area-inset-right, 0px));
+    display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; pointer-events: none; z-index: 2; }
+  #hud .esq { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; max-width: 240px; }
+  #hud .dir { display: flex; align-items: center; }
+  .i { width: 18px; height: 18px; flex: none; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  /* retalho: fundo 0,64 (forte 0,72) com pesponto */
+  .retalho { background: var(--hud-fundo); box-shadow: var(--sombra-retalho); outline: 1.5px dashed var(--ouro-fio); outline-offset: -4px; color: var(--texto); text-shadow: var(--sombra-texto); }
+  .retalho-forte { background: var(--hud-fundo-forte); }
+  /* fôlego: carretéis de linha + número; o último vira vermelho com "!" (forma, não só cor) */
+  #vida { display: flex; align-items: center; gap: 4px; padding: 6px 12px; border-radius: 999px; }
+  #vida .carretel { width: 14px; height: 20px; color: var(--ouro); filter: drop-shadow(0 0 1px #0a080e); transform-origin: 50% 0; }
+  #vida .carretel.vazio { color: var(--texto); }
+  #vida.baixo .carretel:not(.vazio) { color: var(--vermelho); }
+  #vida .num { margin-left: 6px; font: 600 16px var(--titulo); font-variant-numeric: tabular-nums; }
+  #vida .alerta { display: none; width: 14px; height: 14px; color: var(--vermelho); filter: drop-shadow(0 0 1px #0a080e); }
+  #vida.baixo .alerta { display: block; }
+  #vida.baixo .carretel:not(.vazio), #vida.baixo .alerta { animation: piscaUltimo .25s steps(1) infinite alternate; }
+  #vida .carretel.desenrola { animation: desenrola .3s var(--ease-fora); }
+  @keyframes piscaUltimo { to { opacity: .35; } }
+  @keyframes desenrola { 0% { transform: scaleY(1); } 50% { transform: translateY(4px) rotate(10deg) scaleY(.8); opacity: .6; } 100% { transform: none; } }
+  /* corrida: barra 80x6; some quando cheia; cansada = listras + ícone de cansaço */
+  #energia { display: flex; align-items: center; gap: 6px; transition: opacity .35s; }
+  #energia.cheia { opacity: 0; }
+  #energia .mini { display: flex; padding: 3px; border-radius: 50%; background: var(--hud-fundo); color: var(--ouro); }
+  #energia .mini .i { width: 16px; height: 16px; }
+  #energia .i-cansaco { display: none; }
+  #energia.cansada .i-raio { display: none; } #energia.cansada .i-cansaco { display: block; }
+  #energia .trilho { width: 80px; height: 6px; border-radius: 4px; background: var(--hud-trilho); overflow: hidden; box-shadow: 0 0 0 1px rgba(0, 0, 0, .35); }
+  #energia .trilho i { display: block; height: 100%; background: var(--ouro); transform-origin: 0 50%; transform: scaleX(1); will-change: transform; }
+  #energia.cansada .trilho i { background: repeating-linear-gradient(45deg, var(--texto) 0 3px, var(--hud-trilho) 3px 6px); }
+  /* poder (Explosão de Fios): só na luta ou quando cheio; cheio = palavra "Pronto!" + pulso 1 Hz */
+  #poder { display: none; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 999px; transform-origin: 0 50%; }
+  body.em-luta #poder, #poder.cheio { display: flex; }
+  #poder.vazio .i, #poder.vazio .trilho { opacity: .5; } /* (a pílula e a tecla V ficam 100%) */
+  #poder .i { width: 20px; height: 20px; color: var(--lilas); filter: drop-shadow(0 0 1px #0a080e); }
+  #poder .trilho { width: 80px; height: 8px; border-radius: 4px; background: var(--hud-trilho); overflow: hidden; }
+  #poder .trilho i { display: block; height: 100%; background: var(--lilas); transform-origin: 0 50%; transform: scaleX(0); transition: transform .2s; }
+  #poder kbd { margin: 0; }
+  #poder .pronto { display: none; padding: 1px 8px; border-radius: 8px; background: var(--hud-fundo-forte); color: var(--ouro); font: 800 14px var(--fonte); }
+  #poder.cheio { outline: 2px solid var(--ouro); outline-offset: -3px; animation: pulsoPoder .5s ease-in-out infinite alternate; /* ida e volta = 1 Hz */ }
+  #poder.cheio .pronto { display: block; }
+  #poder.cheio .trilho i { background: var(--ouro-claro); }
+  #poder.cheio .i { color: var(--ouro-claro); }
+  @keyframes pulsoPoder { to { transform: scale(1.06); } }
+  /* fragmentos: ícone + "3/25" (o número cresce 1,15x ao pegar) */
+  /* antes de a campanha começar (tutorial) não há fôlego nem fragmentos: nada de retalho vazio */
+  #vida:empty, #moedas[hidden] { display: none !important; }
+  #moedas { display: flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 999px; font: 600 16px var(--titulo); font-variant-numeric: tabular-nums; }
+  #moedas .i { color: var(--ouro); fill: currentColor; stroke: none; filter: drop-shadow(0 0 1px #0a080e); }
+  #moedas b { display: inline-block; font-weight: 600; }
+  #moedas.pegou b { animation: cresceNumero .2s var(--ease-fora); }
+  @keyframes cresceNumero { 50% { transform: scale(1.15); } }
+  /* arma: nome + usos + F; usos baixos = rachadura */
   #arma:empty { display: none; }
-  #arma { display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 700; color: #fff; text-shadow: var(--sombra-texto); }
-  #arma kbd { margin-right: 0; }
-  .pilula { font: 600 14px var(--titulo); font-variant-numeric: tabular-nums; color: #fff; text-shadow: var(--sombra-texto); }
-  #fps { font-size: 10px; font-weight: 700; color: var(--texto-3); text-shadow: var(--sombra-texto); }
-  .icone-botao { pointer-events: auto; display: inline-flex; align-items: center; justify-content: center; width: 34px; height: 34px; border: 0; border-radius: 50%; background: none; cursor: pointer;
-    color: #fff; filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.8)); opacity: .85; }
-  .icone-botao:hover { opacity: 1; }
-  .icone-botao svg { width: 18px; height: 18px; }
-  /* objetivo: canto de cima à direita, texto com um fio dourado do lado */
-  #objetivo { position: fixed; top: calc(var(--margem) + 44px); right: var(--margem); width: min(250px, 40vw); text-align: right; padding-right: 10px; border-right: 2px solid var(--ouro); pointer-events: none; z-index: 2;
-    text-shadow: var(--sombra-texto); }
+  #arma { display: flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 999px; font: 700 14px/1.3 var(--fonte); }
+  #arma .usos { font-family: var(--titulo); font-weight: 600; font-variant-numeric: tabular-nums; }
+  #arma .i { width: 18px; height: 18px; }
+  #arma .racha { width: 14px; height: 14px; color: var(--vermelho); filter: drop-shadow(0 0 1px #0a080e); }
+  #arma kbd { margin: 0; }
+  #arma.baixo { outline-color: var(--vermelho); }
+  kbd { font-size: 14px; }
+  :is(#arma, #poder, #interagir, #tutorial, #dicaTutorial, #dica) kbd { min-width: 24px; height: 24px; font-size: 14px; }
+  /* canto direito: pausa 40 px (PC) / 48 dp (toque) */
+  .icone-botao { pointer-events: auto; display: inline-flex; align-items: center; justify-content: center; width: 40px; height: 40px; padding: 0; border: 0; border-radius: 50%; cursor: pointer;
+    background: var(--hud-fundo-toque); outline: 1.5px dashed var(--ouro-fio); outline-offset: -4px; color: var(--texto); filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.5)); }
+  .icone-botao:hover { background: var(--hud-fundo); }
+  .icone-botao svg { width: 20px; height: 20px; }
+  /* fps: oculto; liga em Gráficos > Mostrar desempenho */
+  #fps { position: fixed; left: calc((var(--m-hud) + env(safe-area-inset-left, 0px)) * var(--ez)); bottom: calc((var(--m-hud) + env(safe-area-inset-bottom, 0px)) * var(--ez)); padding: 2px 8px; border-radius: 8px;
+    font: 700 14px var(--fonte); font-variant-numeric: tabular-nums; pointer-events: none; z-index: 2; }
+  #fps[hidden] { display: none; }
+  /* topo central: barra do chefe e, logo abaixo, o vento da arena */
+  #topoCentro { position: fixed; top: calc((var(--m-hud) + env(safe-area-inset-top, 0px)) * var(--ez)); left: 50%; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; gap: 6px; pointer-events: none; z-index: 6; }
+  #chefe { width: calc(min(360px, 46vw) * var(--ez)); box-sizing: border-box; padding: 8px 14px 10px; border-radius: 12px; opacity: 0; transition: opacity .4s var(--ease-fora); }
+  #chefe .topo { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+  #chefe .nome { font: 600 14px var(--titulo); letter-spacing: 0; text-transform: uppercase; }
+  #chefe .num { font: 600 16px var(--titulo); font-variant-numeric: tabular-nums; }
+  #chefe .barra { position: relative; margin-top: 6px; height: 8px; border-radius: 4px; background: var(--hud-trilho); }
+  #chefe .barra > i, #chefe .barra > s { position: absolute; inset: 0; display: block; border-radius: 4px; transform-origin: 0 50%; }
+  #chefe .barra > i { background: var(--ouro); }
+  #chefe .barra > s { background: var(--ouro-claro); text-decoration: none; transition: transform .3s var(--ease-fora) .05s; }
+  /* marcas de fase: pontos de costura em 50% e 25%; acendem ao passar de fase */
+  #chefe .marca { position: absolute; top: -3px; width: 2px; height: 14px; margin-left: -1px; background: var(--texto); text-decoration: none; }
+  #chefe .marca.acesa { background: var(--ouro); transition: background .25s var(--ease-fora); }
+  #chefe .marca.acesa::before { content: ''; position: absolute; left: -1.5px; top: -7px; width: 5px; height: 5px; border-radius: 50%; background: var(--ouro); }
+  /* vento da arena: seta, folhas (cheia = resta, contorno = passou) e "muda!" */
+  #ventoArena { display: flex; align-items: center; gap: 8px; padding: 6px 14px; border-radius: 999px; font: 700 14px/1 var(--fonte); opacity: 0; transition: opacity .3s; }
+  #ventoArena.ativo { opacity: 1; }
+  #ventoArena .seta { width: 26px; height: 26px; border-radius: 6px; transition: transform .15s; }
+  #ventoArena .folhas { display: flex; gap: 3px; }
+  #ventoArena .folhas .i { width: 14px; height: 14px; }
+  #ventoArena .folha.cheia { fill: currentColor; } #ventoArena .folha.vazia { fill: none; }
+  #ventoArena .muda { display: none; color: var(--texto); font-weight: 800; }
+  #ventoArena.troca .muda { display: inline; }
+  #ventoArena.troca .seta { animation: piscaVento .5s steps(1) infinite; outline: 2px solid var(--ouro); outline-offset: 1px; }
+  @keyframes piscaVento { 50% { opacity: .25; } }
+  /* objetivo: uma linha (até 2), à direita no PC e à esquerda no celular; mudou = fio sólido 1,5 s; ✓ 1 s */
+  #objetivo { position: fixed; top: calc((var(--m-hud) + env(safe-area-inset-top, 0px) + 56px) * var(--ez)); right: calc((var(--m-hud) + env(safe-area-inset-right, 0px)) * var(--ez)); width: min(260px, 40vw); box-sizing: border-box;
+    padding: 6px 12px; border-radius: 12px; text-align: right; pointer-events: none; z-index: 2; transition: outline-color .3s, background .3s, opacity .3s; }
   #objetivo:empty { display: none; }
-  #objetivo small { display: block; font: 700 10px var(--fonte); letter-spacing: 1.6px; text-transform: uppercase; color: var(--ouro); margin-bottom: 2px; }
-  #objetivo b { display: block; font-size: 13px; font-weight: 700; line-height: 1.3; color: #fff; }
-  #objetivo span { display: block; margin-top: 3px; font-size: 11px; font-weight: 600; color: var(--texto-2); }
-  #dica { position: fixed; bottom: 14px; left: 50%; transform: translateX(-50%); font-size: 11px; font-weight: 600; color: var(--texto-2); pointer-events: none; transition: opacity .4s; opacity: 0;
-    text-align: center; width: max-content; max-width: calc(100% - 32px); text-shadow: var(--sombra-texto); }
-  #dica b { display: inline-flex; min-width: 16px; justify-content: center; border: 1.5px solid currentColor; border-radius: 4px; padding: 0 3px; font-size: 10px; color: #fff; }
-  #dicaTutorial { position: fixed; top: calc(var(--margem) + 2px); left: 50%; transform: translateX(-50%); padding: 8px 14px; border-radius: 8px; background: rgba(10, 8, 14, 0.55);
-    font-size: 13px; font-weight: 600; line-height: 1.4; color: #fff; max-width: min(440px, calc(100% - 600px)); text-align: center; opacity: 0; transition: opacity .35s; pointer-events: none; z-index: 2; }
-  /* fala: faixa escura simples, nome do personagem em dourado */
-  #fala { position: fixed; bottom: 46px; left: 50%; transform: translateX(-50%); width: min(600px, calc(100% - 32px)); padding: 12px 18px 14px; border-radius: 10px; background: rgba(10, 8, 14, 0.72);
-    font-size: 15px; font-weight: 600; line-height: 1.5; color: #fff; opacity: 0; transition: opacity .3s; pointer-events: none; box-sizing: border-box; z-index: 2; }
-  #fala b { display: block; margin-bottom: 2px; font: 600 13px var(--titulo); letter-spacing: .5px; color: var(--ouro); }
-  #aviso { position: fixed; top: 26%; left: 50%; transform: translateX(-50%); color: #fff; font: 600 26px var(--titulo); letter-spacing: .5px;
-    text-shadow: 0 2px 14px rgba(0, 0, 0, 0.7); opacity: 0; transition: opacity .3s; pointer-events: none; text-align: center; width: max-content; max-width: calc(100% - 32px); z-index: 2; }
-  /* "(E) fazer algo": tecla em círculo e texto, sem caixa */
-  #interagir { position: fixed; bottom: 150px; left: 50%; transform: translateX(-50%); display: flex; align-items: center; font-size: 14px; font-weight: 700; color: #fff; text-shadow: var(--sombra-texto);
-    opacity: 0; transition: opacity .2s; pointer-events: none; z-index: 2; }
+  #objetivo b { font: 700 14px/1.3 var(--fonte); }
+  #objetivo span.detalhe { display: block; font: 700 14px/1.3 var(--fonte); }
+  #objetivo .ok { display: none; width: 16px; height: 16px; margin-right: 6px; vertical-align: -3px; padding: 2px; box-sizing: border-box; border-radius: 50%; background: var(--ouro); color: var(--hud-noite-cor); }
+  #objetivo.concluido .ok { display: inline-block; }
+  #objetivo.mudou { outline: 1.5px solid var(--ouro); background: var(--hud-fundo-forte); }
+  #dica { position: fixed; bottom: 14px; left: 50%; transform: translateX(-50%); font-size: 14px; font-weight: 600; color: var(--texto); pointer-events: none; transition: opacity .4s; opacity: 0;
+    text-align: center; width: max-content; max-width: calc(100% - 32px); text-shadow: var(--sombra-texto); padding: 6px 12px; border-radius: 12px; }
+  #dica b { display: inline-flex; min-width: 20px; justify-content: center; border: 1.5px solid currentColor; border-radius: 4px; padding: 0 3px; font-size: 14px; color: var(--texto); }
+  #dicaTutorial { position: fixed; top: calc((var(--m-hud) + env(safe-area-inset-top, 0px)) * var(--ez) + 2px); left: 50%; transform: translateX(-50%); padding: 8px 14px; border-radius: 12px;
+    font: 700 14px/1.4 var(--fonte); max-width: min(440px, calc(100% - 600px)); text-align: center; opacity: 0; transition: opacity .35s; pointer-events: none; z-index: 2; }
+  /* fala: nome dourado e frase (até 2 linhas); 0,72 de fundo */
+  #fala { position: fixed; bottom: 46px; left: 50%; transform: translateX(-50%); width: min(600px, calc(100% - 32px)); padding: 12px 18px 14px; border-radius: 12px;
+    font: 700 15px/1.5 var(--fonte); opacity: 0; transition: opacity .24s var(--ease-entra); pointer-events: none; box-sizing: border-box; z-index: 2; }
+  #fala.visivel { opacity: 1; transition-timing-function: var(--ease-fora); }
+  #fala b { display: inline; margin-right: 6px; font: 600 15px var(--titulo); color: var(--ouro); }
+  #fala b::after { content: ':'; }
+  body.em-luta #fala { font-size: 14px; }
+  /* aviso: ícone + texto, no centro, 26-40% da altura */
+  #aviso { position: fixed; top: 26%; left: 50%; transform: translateX(-50%); display: flex; align-items: center; gap: 10px; padding: 10px 16px; border-radius: 12px;
+    font: 800 22px/1.3 var(--fonte); text-align: left; width: max-content; max-width: calc(100% - 32px); box-sizing: border-box; opacity: 0; transition: opacity .24s var(--ease-entra); pointer-events: none; z-index: 2; }
+  #aviso.visivel { opacity: 1; transition-duration: .18s; transition-timing-function: var(--ease-fora); }
+  #aviso .i { width: 22px; height: 22px; }
+  #aviso .i.ok { color: var(--ouro); } #aviso .i.alerta { color: var(--vermelho); filter: drop-shadow(0 0 1px #0a080e); }
+  /* interagir: tecla (ou ícone "usar" no toque) em círculo + verbo */
+  #interagir { position: fixed; bottom: 150px; left: 50%; transform: translateX(-50%); display: flex; align-items: center; gap: 8px; padding: 6px 14px 6px 8px; border-radius: 999px;
+    font: 800 14px var(--fonte); opacity: 0; transition: opacity .2s; pointer-events: none; z-index: 2; }
   #interagir:empty { display: none; }
-  #interagir kbd { width: 24px; height: 24px; min-width: 0; padding: 0; border-radius: 50%; border-color: var(--ouro); color: var(--ouro); background: rgba(10, 8, 14, 0.45); box-shadow: 0 0 10px rgba(242, 199, 107, 0.35); }
-  #memoria { position: fixed; top: 34%; left: 50%; transform: translate(-50%, -50%); width: min(460px, calc(100% - 32px)); text-align: center; opacity: 0; transition: opacity .5s; pointer-events: none; z-index: 3;
-    text-shadow: 0 2px 12px rgba(0, 0, 0, 0.8); }
-  #memoria h3 { display: flex; align-items: center; gap: 12px; margin: 0 0 8px; font: 700 11px var(--fonte); letter-spacing: 2px; text-transform: uppercase; color: var(--ouro); }
-  #memoria h3::before, #memoria h3::after { content: ''; flex: 1; height: 1px; background: linear-gradient(90deg, transparent, var(--ouro)); }
-  #memoria h3::after { background: linear-gradient(90deg, var(--ouro), transparent); }
-  #memoria p { margin: 0; font-style: italic; font-size: 17px; font-weight: 600; line-height: 1.5; color: #fff; }
-  #bilhete { position: fixed; inset: 0; display: none; align-items: center; justify-content: center; background: rgba(8, 6, 12, 0.7); z-index: 8; padding: 16px; }
-  #bilhete .papel { width: min(480px, 100%); background: #f3ead6; color: #3b2b1a; border-radius: 4px; padding: 24px 26px; font-family: Georgia, serif; font-size: 17px; line-height: 1.55; box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6); }
-  #bilhete small { display: block; margin-top: 14px; font-family: var(--fonte); color: #7a6248; font-size: 12px; text-align: right; }
-  #golpe { position: fixed; top: 58%; left: 50%; transform: translateX(-50%); color: #fff; font: 600 18px var(--titulo); text-shadow: var(--sombra-texto); opacity: 0; transition: opacity .2s; pointer-events: none; z-index: 2; }
-  #golpe.pequeno { top: auto; bottom: 112px; font: 700 12px var(--fonte); }
-  #fala, #objetivo, #dicaTutorial, #memoria, #bilhete .papel, #interagir { zoom: var(--escala-texto); }
+  #interagir kbd { width: 24px; height: 24px; min-width: 0; padding: 0; margin: 0; border-radius: 50%; border-color: var(--ouro); color: var(--ouro); background: var(--hud-fundo-forte); transition: transform .1s var(--ease-fora); }
+  #interagir kbd .i { width: 16px; height: 16px; }
+  #interagir.apertado kbd { transform: scale(1.1); background: var(--ouro-claro); color: var(--hud-noite-cor); }
+  /* memória: cartão com pesponto duplo (aviso tem um só) */
+  #memoria { position: fixed; top: 34%; left: 50%; transform: translate(-50%, -50%); width: min(460px, calc(100% - 32px)); box-sizing: border-box; padding: 12px 18px 14px; border-radius: 12px; text-align: center;
+    opacity: 0; transition: opacity .3s var(--ease-entra); pointer-events: none; z-index: 3; }
+  #memoria.visivel { opacity: 1; transition-timing-function: var(--ease-fora); }
+  #memoria::before { content: ''; position: absolute; inset: 7px; border: 1.5px dashed var(--ouro-fio); border-radius: 8px; pointer-events: none; }
+  #memoria h3 { display: flex; align-items: center; justify-content: center; gap: 8px; margin: 0 0 6px; font: 600 17px var(--titulo); color: var(--ouro); }
+  #memoria h3 .i { fill: currentColor; stroke: none; }
+  #memoria p { margin: 0; font-style: italic; font: italic 700 17px/1.5 var(--fonte); color: var(--texto); }
+  /* carta: papel com botão Fechar de 48 dp (toque) ou Enter / E */
+  #bilhete { position: fixed; inset: 0; display: none; align-items: center; justify-content: center; background: rgba(var(--hud-noite), .72); z-index: 8; padding: 16px; }
+  #bilhete .papel { width: min(480px, 100%); max-height: 100%; overflow: auto; box-sizing: border-box; background: var(--papel); color: var(--papel-texto); border-radius: 4px; padding: 24px 26px; font-family: Georgia, serif; font-size: 17px; line-height: 1.55;
+    box-shadow: var(--sombra-papel); animation: abrirCarta .2s var(--ease-fora); }
+  @keyframes abrirCarta { from { opacity: 0; transform: translateY(8px); } }
+  #bilhete small { display: block; margin-top: 14px; font: 600 14px var(--fonte); color: var(--papel-2); text-align: right; }
+  .fechar-carta { display: flex; align-items: center; justify-content: center; gap: 8px; min-width: 48px; min-height: 48px; margin: 14px 0 0 auto; padding: 0 20px; border: 0; border-radius: 10px; cursor: pointer;
+    background: var(--papel-texto); color: var(--papel); font: 800 16px var(--fonte); outline: 1.5px dashed var(--ouro); outline-offset: -4px; }
+  .fechar-carta .i { width: 20px; height: 20px; }
+  @media (pointer: coarse) { #bilhete small { display: none; } #poder kbd { display: none; } }
+  #golpe { position: fixed; top: 58%; left: 50%; transform: translateX(-50%); color: var(--texto); font: 600 18px var(--titulo); text-shadow: var(--sombra-texto); opacity: 0; transition: opacity .2s; pointer-events: none; z-index: 2; }
+  #golpe.pequeno { top: auto; bottom: 112px; font: 700 14px var(--fonte); }
+  /* a escala de texto vale para todo o HUD */
+  #hud .esq, #topoCentro, #objetivo, #dica, #dicaTutorial, #fala, #aviso, #interagir, #memoria, #bilhete .papel, #golpe, #fps { zoom: var(--escala-texto); }
+  /* contexto: luta (objetivo a 60%) e chefe (objetivo e fragmentos somem); fôlego baixo tem a vez de pulsar */
+  body.em-luta #objetivo { opacity: .6; }
+  body.no-chefe :is(#objetivo, #moedas) { display: none; }
+  body.folego-baixo #poder.cheio, body.folego-baixo #tPoder.pronto, body.folego-baixo #ventoArena.troca .seta { animation: none; }
+  /* Reduzir flashes: nada pulsa nem pisca; só fades */
+  body.sem-flashes :is(#vida.baixo .carretel, #vida.baixo .alerta, #poder.cheio, #tPoder.pronto, #ventoArena.troca .seta, #moedas.pegou b, #vida .carretel.desenrola, #bilhete .papel) { animation: none; }
+  body.sem-flashes #bilhete .papel { animation: abrirCartaFade .2s var(--ease-fora); }
+  body.sem-flashes #chefe .barra > s { transition: none; }
+  body.sem-flashes #chefe .marca.acesa, body.sem-flashes .toque, body.sem-flashes #interagir kbd { transition: none; }
+  body.sem-flashes .toque:active { transform: none; }
+  body.sem-flashes #interagir.apertado kbd { transform: none; }
+  @keyframes abrirCartaFade { from { opacity: 0; } }
   #escuro { position: fixed; inset: 0; background: #000; opacity: 0; pointer-events: none; transition: opacity .25s; z-index: 5; }
   #dano { position: fixed; inset: 0; pointer-events: none; opacity: 0; transition: opacity .35s; z-index: 4; box-shadow: inset 0 0 120px 30px #c8102ecc; }
 
@@ -134,7 +276,7 @@
   .lado-texto, .lado-acoes { display: flex; flex-direction: column; gap: 16px; }
   .lado-acoes { gap: 2px; }
   .cabecalho { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; }
-  .selo { font: 700 11px var(--fonte); letter-spacing: 2.4px; text-transform: uppercase; color: var(--ouro); text-shadow: var(--sombra-texto); }
+  .selo { font: 700 14px var(--fonte); letter-spacing: 2.4px; text-transform: uppercase; color: var(--ouro); text-shadow: var(--sombra-texto); }
   .faixa { display: block; }
   #tela h1 { margin: 0; font: 700 clamp(44px, 6.4vw, 66px) var(--titulo); letter-spacing: .5px; line-height: 1; color: #fff; text-shadow: 0 3px 0 rgba(90, 60, 140, 0.55), 0 6px 24px rgba(0, 0, 0, 0.5); }
   /* fio costurado embaixo do título */
@@ -142,33 +284,33 @@
   .sub { margin: 0; font: 500 17px var(--titulo); color: var(--texto-2); text-shadow: var(--sombra-texto); }
   #tela p { margin: 0; }
   #tela h1 { white-space: nowrap; }
-  #historia { display: flex; flex-direction: column; gap: 6px; font-size: 13px; font-weight: 600; line-height: 1.55; color: var(--texto-2); text-shadow: var(--sombra-texto); max-width: 380px; }
+  #historia { display: flex; flex-direction: column; gap: 6px; font-size: 14px; font-weight: 600; line-height: 1.55; color: var(--texto-2); text-shadow: var(--sombra-texto); max-width: 380px; }
   #historia:empty { display: none; }
   #historia p { opacity: 0; animation: surgir .45s forwards; }
   #historia p:nth-child(2) { animation-delay: .36s; } #historia p:nth-child(3) { animation-delay: .72s; }
   @keyframes surgir { to { opacity: 1; } }
-  #msg { font-size: 13px; font-weight: 600; color: var(--texto-2); line-height: 1.5; text-shadow: var(--sombra-texto); max-width: 380px; }
+  #msg { font-size: 14px; font-weight: 600; color: var(--texto-2); line-height: 1.5; text-shadow: var(--sombra-texto); max-width: 380px; }
   #msg em { color: var(--ouro); font-style: normal; font-weight: 700; display: block; margin-top: 10px; }
   #barra { width: 180px; height: 2px; background: rgba(255, 255, 255, 0.15); }
   #barra div { height: 100%; width: 0; background: var(--ouro); transition: width .2s; }
   .acoes { display: flex; flex-direction: column; }
   .acoes .botao { font-size: 25px; min-height: 46px; }
   #botao, #continuar, #continuarJogo, #confirmarNovo { display: none; }
-  #confirmarNovo { font-size: 12px; font-weight: 700; color: var(--vermelho); text-shadow: var(--sombra-texto); margin: 2px 0 6px 34px !important; }
+  #confirmarNovo { font-size: 14px; font-weight: 700; color: var(--vermelho); text-shadow: var(--sombra-texto); margin: 2px 0 6px 34px !important; }
   .menu-links { display: flex; flex-direction: column; }
   /* dicas de tecla no rodapé */
-  .prompts { position: absolute; right: 28px; bottom: 22px; display: flex; gap: 20px; font-size: 12px; font-weight: 700; color: var(--texto-2); text-shadow: var(--sombra-texto); }
+  .prompts { position: absolute; right: 28px; bottom: 22px; display: flex; gap: 20px; font-size: 14px; font-weight: 700; color: var(--texto-2); text-shadow: var(--sombra-texto); }
   .prompts span { display: flex; align-items: center; } .prompts kbd { margin-right: 6px; } .prompts kbd + kbd { margin-left: -2px; }
   @media (pointer: coarse) { .prompts { display: none; } }
   .resumo { display: flex; gap: 26px; }
-  .resumo span { display: flex; flex-direction: column; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.4px; color: var(--texto-2); }
+  .resumo span { display: flex; flex-direction: column; font-size: 14px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.4px; color: var(--texto-2); }
   .resumo b { font: 600 30px var(--titulo); color: #fff; letter-spacing: 0; }
   @media (max-width: 760px) {
     #tela { align-items: flex-end; background-position: 72% center; /* a Brisa fica a 2/3 da capa */ }
     #tela::before { background: linear-gradient(180deg, rgba(10, 7, 14, 0.15) 0%, rgba(10, 7, 14, 0.75) 45%, rgba(10, 7, 14, 0.94) 100%); }
     .cartao { width: 100%; padding: 24px 24px calc(22px + env(safe-area-inset-bottom)); gap: 20px; }
     #tela h1 { font-size: 44px; }
-    #historia { font-size: 12px; }
+    #historia { font-size: 14px; }
     .acoes .botao { font-size: 22px; } .item-menu { font-size: 19px; }
   }
   /* celular em pé: a capa ocupa a parte de cima (a Brisa a 2/3 da largura) e o menu fica embaixo,
@@ -194,7 +336,7 @@
   .janela h2 { margin: 0; font: 600 32px var(--titulo); letter-spacing: .4px; flex: 1; color: #fff; }
   .janela .corpo { padding: 18px 0; overflow: auto; min-height: 0; flex: 1 1 auto; }
   .janela .corpo > * { flex-shrink: 0; }
-  .janela .corpo > p, .janela .texto { margin: 0 0 16px; font-size: 13px; font-weight: 600; color: var(--texto-2); line-height: 1.55; max-width: 480px; }
+  .janela .corpo > p, .janela .texto { margin: 0 0 16px; font-size: 14px; font-weight: 600; color: var(--texto-2); line-height: 1.55; max-width: 480px; }
   .janela footer { display: flex; gap: 24px; padding-top: 10px; border-top: 1px solid var(--linha); }
   /* abas: texto, a escolhida com o fio dourado embaixo */
   .abas { display: flex; gap: 26px; border-bottom: 1px solid var(--linha); }
@@ -207,8 +349,12 @@
   /* opções: nome à esquerda, controle à direita, numa linha */
   .opcao { display: grid; grid-template-columns: 1fr minmax(150px, 46%) 44px; align-items: center; gap: 14px; min-height: 48px; padding: 4px 8px; margin: 0 -8px; border-radius: 6px;
     border-bottom: 1px solid rgba(255, 255, 255, 0.06); font: 600 15px var(--fonte); color: var(--texto); }
-  .opcao:hover, .opcao:focus-within { background: rgba(255, 255, 255, 0.05); }
-  .opcao > span { order: 3; font: 700 13px var(--fonte); color: var(--ouro); font-variant-numeric: tabular-nums; text-align: right; }
+  .opcao:hover { background: rgba(255, 255, 255, 0.05); }
+  .opcao:focus-within { background: rgba(255, 255, 255, 0.10); color: #fff; box-shadow: inset 3px 0 0 var(--ouro); }
+  .opcao input:focus, .opcao select:focus { outline: 2px solid var(--ouro); outline-offset: 2px; }
+  .opcao.marcar input:focus { outline: 2px solid var(--ouro); outline-offset: 3px; }
+  .aba:focus-visible, .voltar:focus-visible, [data-nivel]:focus-visible { outline: 2px solid var(--ouro); outline-offset: 2px; }
+  .opcao > span { order: 3; font: 700 14px var(--fonte); color: var(--ouro); font-variant-numeric: tabular-nums; text-align: right; }
   .opcao input[type=range] { order: 2; width: 100%; height: 22px; margin: 0; accent-color: var(--ouro); outline: none; }
   .opcao select { grid-column: 2 / 4; justify-self: end; font: 600 14px var(--fonte); padding: 0 24px 0 4px; height: 32px; border: 0; color: #fff; outline: none; cursor: pointer;
     background: transparent url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23f2c76b' stroke-width='2.5'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") right 2px center / 14px no-repeat; appearance: none; -webkit-appearance: none; }
@@ -220,21 +366,21 @@
   .opcao.marcar input:checked { background: var(--ouro); }
   .opcao.marcar input:checked::after { transform: translateX(18px); }
   /* controles */
-  .grade { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0 28px; font-size: 13px; font-weight: 600; color: var(--texto-2); }
+  .grade { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0 28px; font-size: 14px; font-weight: 600; color: var(--texto-2); }
   .grade div { display: flex; align-items: center; gap: 2px; min-height: 36px; border-bottom: 1px solid rgba(255, 255, 255, 0.06); }
   .grade kbd { margin-right: 3px; }
   .grade span { margin-left: 8px; }
-  .controle-pad { margin: 16px 0 0 !important; font-size: 12px !important; }
+  .controle-pad { margin: 16px 0 0 !important; font-size: 14px !important; }
   /* capítulos */
   .capitulos { list-style: none; margin: 0; padding: 0; counter-reset: cap; }
   .capitulos li { display: grid; grid-template-columns: 1fr auto; gap: 2px 18px; align-items: center; padding: 14px 0; border-bottom: 1px solid rgba(255, 255, 255, 0.07); }
   .capitulos b { font: 600 18px var(--titulo); color: #fff; }
-  .capitulos span { grid-column: 1; font-size: 12px; font-weight: 600; color: var(--texto-2); line-height: 1.45; }
+  .capitulos span { grid-column: 1; font-size: 14px; font-weight: 600; color: var(--texto-2); line-height: 1.45; }
   .capitulos button, .capitulos em { grid-column: 2; grid-row: 1 / span 2; font-style: normal; }
   .capitulos .trancado { opacity: .42; }
   .capitulos .botao { font-size: 17px; min-height: 34px; color: var(--ouro); }
   /* créditos */
-  .creditos { font-size: 13px !important; line-height: 1.8 !important; }
+  .creditos { font-size: 14px !important; line-height: 1.8 !important; }
   .autor { display: flex; flex-direction: column; align-items: flex-start; gap: 10px; margin: 4px 0 20px; }
   .autor .feito { margin: 0; font: 600 18px var(--titulo); letter-spacing: 1px; color: var(--texto-2); }
   .autor .feito b { color: #fff; }
@@ -247,13 +393,13 @@
     border-bottom: 1px solid rgba(255, 255, 255, 0.06); background: none; cursor: pointer; color: var(--texto-2); text-align: left; font: 600 19px var(--titulo); outline: none; }
   #graficos button[data-nivel]::before { content: ''; width: 10px; height: 10px; border-radius: 50%; border: 1.5px solid var(--texto-3); justify-self: center; }
   #graficos button[data-nivel]:focus { background: rgba(255, 255, 255, 0.05); color: #fff; }
-  #graficos button[data-nivel] small { font: 600 12px var(--fonte); color: var(--texto-3); line-height: 1.4; }
+  #graficos button[data-nivel] small { font: 600 14px var(--fonte); color: var(--texto-3); line-height: 1.4; }
   #graficos button.ativo { color: #fff; }
   #graficos button.ativo::before { background: var(--ouro); border-color: var(--ouro); box-shadow: 0 0 8px var(--ouro); }
   #graficos button.ativo small { color: var(--texto-2); }
   #perfil-pc { margin: 16px 0 0 !important; }
-  #versao { font-size: 11px !important; color: var(--texto-3) !important; margin: 8px 0 0 !important; }
-  #aviso-aa { display: none; font-size: 12px; font-weight: 700; color: var(--vermelho); margin-top: 10px; }
+  #versao { font-size: 14px !important; color: var(--texto-3) !important; margin: 8px 0 0 !important; }
+  #aviso-aa { display: none; font-size: 14px; font-weight: 700; color: var(--vermelho); margin-top: 10px; }
   /* pausa */
   #pausa { z-index: 9; background: linear-gradient(90deg, rgba(8, 6, 12, 0.9) 0%, rgba(8, 6, 12, 0.6) 55%, rgba(8, 6, 12, 0.3) 100%); }
   #pausa .janela { justify-content: center; width: min(420px, 100%); }
@@ -275,54 +421,102 @@
   #gameover h1 { margin: 0; font: 700 clamp(40px, 9vw, 72px) var(--titulo); letter-spacing: 8px; color: var(--vermelho); text-shadow: 0 0 30px rgba(255, 70, 60, 0.4); transform: translateY(-24px); transition: transform 1.4s cubic-bezier(.2,.8,.2,1); }
   #gameover.visivel h1 { transform: none; }
   #gameover p { margin: 0; max-width: 520px; font-weight: 600; opacity: .9; }
-  #gameover .estat { font-size: 13px; opacity: .7; }
+  #gameover .estat { font-size: 14px; opacity: .7; }
   #gameover .botoes { display: flex; flex-direction: column; align-items: center; margin-top: 10px; }
-  #gameover small { opacity: .55; font-size: 12px; font-weight: 600; }
+  #gameover small { opacity: .55; font-size: 14px; font-weight: 600; }
 
-  /* ---------- toque (celular): círculos finos, quase transparentes ---------- */
-  .toque { position: fixed; border-radius: 50%; background: rgba(0, 0, 0, 0.18); border: 1.5px solid rgba(255, 255, 255, 0.55); color: #fff; display: none; align-items: center; justify-content: center;
-    touch-action: none; font: 700 16px var(--fonte); z-index: 3; filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.4)); }
-  .toque:active { background: rgba(255, 255, 255, 0.2); }
-  .toque svg { width: 46%; height: 46%; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
-  #tPulo { bottom: 22px; right: 22px; width: 70px; height: 70px; border-width: 2px; }
-  #tSoco { bottom: 104px; right: 98px; width: 52px; height: 52px; }
-  #tChute { bottom: 28px; right: 106px; width: 48px; height: 48px; }
-  #tPegar { bottom: 106px; right: 30px; width: 44px; height: 44px; }
-  #tUsar { bottom: 164px; right: 34px; width: 42px; height: 42px; font-size: 15px; }
-  #tDefesa { bottom: 172px; right: 96px; width: 42px; height: 42px; }
-  #tEsquiva { bottom: 172px; right: 30px; width: 42px; height: 42px; }
+  /* botões de toque: grade 3 colunas x 4 linhas no canto de baixo (direita; "inverter lados" espelha),
+     tamanho P/M/G por --tb (48/56/64 dp), 8 dp de espaço, 12 dp de borda mais a área segura.
+     Só o FUNDO é translúcido: o ícone fica sempre opaco. ---------- */
+  .toque { position: fixed; box-sizing: border-box; width: var(--tb); height: var(--tb); border-radius: 50%; display: none; align-items: center; justify-content: center;
+    --passo: calc(var(--tb) + var(--gap-toque));
+    right: calc(var(--m-toque) + env(safe-area-inset-right, 0px) + var(--col) * var(--passo));
+    bottom: calc(var(--m-toque) + env(safe-area-inset-bottom, 0px) + var(--lin) * var(--passo));
+    background: var(--hud-fundo-toque); border: 1.5px solid var(--ouro-fio); outline: 1.5px dashed var(--ouro-fio); outline-offset: -5px; color: var(--texto);
+    touch-action: none; z-index: 3; filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.45)); transition: transform .08s var(--ease-fora), background .12s; }
+  body.inverter .toque { right: auto; left: calc(var(--m-toque) + env(safe-area-inset-left, 0px) + var(--col) * var(--passo)); }
+  .toque svg { width: 46%; height: 46%; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; filter: drop-shadow(0 1px 1px rgba(0, 0, 0, .6)); }
+  .toque:active { transform: scale(.92); background: rgba(251, 247, 239, .85); color: var(--hud-noite-cor); }
+  .toque:active svg { filter: none; }
+  /* indisponível: ícone a 0,3 e borda tracejada, sem o pesponto (forma diferente) */
+  .toque.indisponivel { outline: none; border: 2px dashed var(--texto-2); }
+  .toque.indisponivel svg { opacity: .3; }
+  #tPulo { --col: 0; --lin: 0; } #tChute { --col: 1; --lin: 0; } #tSuper { --col: 2; --lin: 0; }
+  #tPegar { --col: 0; --lin: 1; } #tSoco { --col: 1; --lin: 1; }
+  #tUsar { --col: 0; --lin: 2; } #tDefesa { --col: 1; --lin: 2; }
+  #tEsquiva { --col: 0; --lin: 3; } #tPoder { --col: 1; --lin: 3; }
+  /* poder pronto: borda sólida de 3 px + "Pronto!" acima do botão; pulso de brilho a 1 Hz */
+  #tPoder.pronto { outline: none; border: 3px solid var(--ouro-claro); animation: brilhoPoder .5s ease-in-out infinite alternate; }
+  #tPoder.pronto::after { content: 'Pronto!'; position: absolute; bottom: calc(100% + 4px); left: 50%; transform: translateX(-50%); padding: 1px 8px; border-radius: 8px; background: var(--hud-fundo-forte); color: var(--ouro);
+    font: 800 14px var(--fonte); text-shadow: var(--sombra-texto); white-space: nowrap; pointer-events: none; }
+  @keyframes brilhoPoder { from { box-shadow: 0 0 4px rgba(255, 227, 163, .5); } to { box-shadow: 0 0 14px rgba(255, 227, 163, 1); } }
   #bastao { position: fixed; width: 96px; height: 96px; border-radius: 50%; border: 1.5px solid rgba(255, 255, 255, 0.45); background: rgba(0, 0, 0, 0.12); display: none; pointer-events: none; }
   @media (pointer: coarse) { .toque { display: flex; } #dica { display: none; } }
+  :root[data-toque-tam="P"] { --tb: 48px; } :root[data-toque-tam="M"] { --tb: 56px; } :root[data-toque-tam="G"] { --tb: 64px; }
+  @media (pointer: coarse) { .icone-botao { width: 48px; height: 48px; } }
+  @media (pointer: fine) { .so-toque { display: none !important; } }
+  .so-leitor { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+  .pausa-hora { display: flex; align-items: center; gap: 8px; margin: 0 0 8px; font: 600 16px var(--titulo); color: var(--texto-2); font-variant-numeric: tabular-nums; }
 
+
+  /* ---------- toque (celular deitado): layout da revisão de UX (production/ui/hud/review-ux-designer.md, D).
+     Zona A em uma linha (fôlego + fragmentos); objetivo na linha 2, do lado oposto aos botões; poder vira
+     um anel em volta do botão Poder (sem pílula); aviso e memória numa faixa própria, centrados na área
+     livre (fora da coluna de botões); interagir logo acima da fala. Os valores com "* var(--ez)" são
+     medidas de tela já descontado o zoom da escala de texto. ---------- */
+  @media (pointer: coarse) {
+    #hud .esq { flex-direction: row; flex-wrap: nowrap; align-items: center; max-width: none; }
+    #poder { display: none !important; }
+    #arma .nome, #arma kbd { display: none; }
+    #energia .trilho { width: 56px; }
+    #objetivo { top: calc((20px + env(safe-area-inset-top, 0px)) * var(--ez) + 46px); /* (zona A: pílulas de 44 dp com borda) */ right: auto; left: calc((var(--m-hud) + env(safe-area-inset-left, 0px)) * var(--ez)); text-align: left; }
+    #objetivo .detalhe { display: none; }
+    /* com inverter o objetivo vai para a direita, embaixo da pausa (48 dp + 8) */
+    body.inverter #objetivo { left: auto; right: calc((var(--m-hud) + env(safe-area-inset-right, 0px)) * var(--ez)); top: calc((20px + env(safe-area-inset-top, 0px)) * var(--ez) + 48px); text-align: right; }
+    #energia.cheia { display: none; }
+    :is(#aviso, #memoria) { top: calc((32px + env(safe-area-inset-top, 0px)) * var(--ez) + 112px); left: calc(50% - var(--largura-toque) / 2 * var(--ez)); transform: translateX(-50%);
+      max-width: calc(100% - (var(--largura-toque) + 24px) * var(--ez)); }
+    #memoria { width: calc(100% - (var(--largura-toque) + 24px) * var(--ez)); }
+    #interagir { bottom: calc((20px + env(safe-area-inset-bottom, 0px)) * var(--ez) + 76px); left: calc(50% - var(--largura-toque) / 2 * var(--ez)); }
+    body.inverter :is(#aviso, #memoria, #interagir) { left: calc(50% + var(--largura-toque) / 2 * var(--ez)); }
+    #chefe { width: calc(294px * var(--ez)); display: grid; grid-template-columns: 1fr auto; column-gap: 8px; align-items: center; }
+    #chefe .topo { display: contents; }
+    #chefe .nome { grid-column: 1 / -1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    #chefe .barra { grid-column: 1; grid-row: 2; }
+    #chefe .num { grid-column: 2; grid-row: 2; }
+    /* anel de carga do poder em volta do botão (cheio: dourado + "Pronto!") */
+    #tPoder::before { content: ''; position: absolute; inset: -5px; border-radius: 50%; pointer-events: none;
+      background: conic-gradient(var(--lilas) calc(var(--carga, 0) * 1turn), rgba(251, 247, 239, .22) 0);
+      -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 4px), #000 calc(100% - 3.5px)); mask: radial-gradient(farthest-side, transparent calc(100% - 4px), #000 calc(100% - 3.5px)); }
+    #tPoder.pronto::before { background: var(--ouro-claro); }
+    /* com lados invertidos o "Pronto!" vai para o lado do botão voltado ao centro (não toca a zona A) */
+    body.inverter #tPoder.pronto::after { bottom: auto; top: 50%; left: calc(100% + 10px); transform: translateY(-50%); }
+  }
+  /* Grande/Maior em tela baixa: a zona A mostra só o carretel do estado atual + "1/5" (+ "!") */
+  @media (pointer: coarse) and (max-height: 420px) {
+    :root[data-texto-grande="sim"] #vida .carretel:not(.atual) { display: none; }
+  }
   /* ---------- telas menores ---------- */
+  :root { --largura-toque: calc(3 * var(--tb) + 2 * var(--gap-toque) + 2 * var(--m-toque)); --altura-toque: calc(4 * var(--tb) + 3 * var(--gap-toque) + var(--m-toque) + 8px); }
   @media (max-width: 1060px) { #dicaTutorial { top: auto; bottom: 150px; max-width: min(440px, calc(100% - 32px)); } #interagir { bottom: 222px; } }
   @media (max-width: 760px), (pointer: coarse) {
-    :root { --margem: 12px; }
-    #vida { gap: 3px; } #vida i { width: 9px; height: 12px; }
-    #moedas { font-size: 11px; } #moedas b { font-size: 12px; }
-    .barrinha { width: 34px; }
-    .pilula { font-size: 12px; }
-    .icone-botao { width: 30px; height: 30px; } .icone-botao svg { width: 16px; height: 16px; }
-    #objetivo { top: calc(var(--margem) + 34px); width: min(190px, 48vw); padding-right: 8px; }
-    #objetivo small { font-size: 9px; } #objetivo b { font-size: 11px; } #objetivo span { font-size: 10px; }
-    #dicaTutorial { font-size: 11px; padding: 6px 10px; }
-    #fala { font-size: 12px; padding: 9px 13px 10px; line-height: 1.45; }
-    #fala b { font-size: 11px; }
-    #interagir { font-size: 12px; }
-    #aviso { font-size: 19px; }
-    #memoria p { font-size: 14px; }
+    :root { --m-hud: 12px; --margem: 12px; }
+    #aviso { font-size: 20px; }
+    #fala { font-size: 14px; padding: 9px 13px 10px; line-height: 1.45; }
+    #fala b { font-size: 14px; }
+    #objetivo { width: min(220px, 48vw); }
     .janela { padding: 22px 22px 14px; }
   }
   @media (pointer: coarse) and (orientation: landscape) {
-    #objetivo { right: auto; left: var(--margem); top: calc(var(--margem) + 46px); text-align: left; border-right: 0; border-left: 2px solid var(--ouro); padding: 0 0 0 8px; }
-    #fala { left: 12px; right: 226px; width: auto; transform: none; bottom: 10px; }
-    #dicaTutorial { left: 12px; right: 226px; transform: none; max-width: none; top: auto; bottom: 86px; text-align: left; }
+    #fala { left: calc(12px * var(--ez)); right: calc(var(--largura-toque) * var(--ez)); width: auto; transform: none; bottom: calc(10px * var(--ez)); }
+    #dicaTutorial { left: calc(12px * var(--ez)); right: calc(var(--largura-toque) * var(--ez)); transform: none; max-width: none; top: auto; bottom: 86px; text-align: left; }
     #interagir { bottom: 150px; left: calc(50% - 80px); }
+    body.inverter :is(#fala, #dicaTutorial) { left: calc(var(--largura-toque) * var(--ez)); right: calc(12px * var(--ez)); }
   }
   @media (pointer: coarse) and (orientation: portrait) {
-    #fala { bottom: 232px; }
-    #dicaTutorial { top: auto; bottom: 310px; }
-    #interagir { bottom: 392px; }
+    #fala { bottom: calc(var(--altura-toque) * var(--ez)); }
+    #dicaTutorial { top: auto; bottom: calc((var(--altura-toque) + 90px) * var(--ez)); }
+    #interagir { bottom: calc((var(--altura-toque) + 180px) * var(--ez)); }
   }
   /* celular deitado (tela baixa): texto à esquerda, opções à direita, sem rolar */
   @media (max-height: 520px) and (min-width: 600px) {
@@ -330,13 +524,23 @@
     #tela::before { background: linear-gradient(90deg, rgba(10, 7, 14, 0.9) 0%, rgba(10, 7, 14, 0.7) 60%, rgba(10, 7, 14, 0.15) 100%); }
     .lado-texto { flex: 1; gap: 8px; } .lado-acoes { flex: 0 0 220px; }
     .cabecalho { gap: 2px; } #tela h1 { font-size: 32px; } .faixa::after { margin-top: 6px; } .sub { font-size: 14px; }
-    #historia { font-size: 11px; line-height: 1.45; gap: 4px; } #msg { font-size: 11px; line-height: 1.45; }
-    .acoes .botao { font-size: 20px; min-height: 38px; } .item-menu { font-size: 17px; min-height: 34px; }
+    #historia { font-size: 14px; line-height: 1.45; gap: 4px; } #msg { font-size: 14px; line-height: 1.45; }
+    .acoes .botao { font-size: 20px; min-height: 48px; } .item-menu { font-size: 17px; min-height: 48px; }
     .janela { padding: 12px 20px 8px max(20px, env(safe-area-inset-left)); }
     .janela h2 { font-size: 22px; } .janela header { padding-bottom: 6px; } .janela .corpo { padding: 8px 0; }
-    .aba { padding: 8px 0 7px; } .opcao { min-height: 40px; }
-    #pausa h2 { font-size: 28px; } #pausa .item-menu { min-height: 34px; }
+    .aba { padding: 8px 0 7px; min-height: 48px; } .opcao { min-height: 48px; }
+    #pausa h2 { font-size: 28px; } #pausa .item-menu { min-height: 48px; }
+    .item-menu, .acoes .botao, .voltar { min-height: 48px; }
+    #pausa .corpo { flex: 1 1 auto; min-height: 0; overflow: auto; }
   }
+  /* alvos de toque: 48 px de altura e 8 px entre um e outro (menus no celular) */
+  @media (pointer: coarse) {
+    .item-menu, .botao, .voltar, .aba, .opcao { min-height: 48px; }
+    .janela .corpo > .item-menu + .item-menu, #pausa .corpo > * + *, .acoes > * + *, .opcao + .opcao { margin-top: 8px; }
+    #pausa footer { display: none; } /* "Esc Continuar" repete o Continuar */
+  }
+  /* os menus seguem o tamanho de texto (Normal / Grande / Maior) */
+  .janela, #tela .cartao, #gameover, #mapaMundi .mm-topo, #mapaMundi .mm-baixo { zoom: var(--escala-texto); }
   /* ---------- animações: só opacidade e deslocamento (a placa de vídeo faz sem redesenhar a página),
      bem curtas (0,07 a 0,2 s) e em cascata rápida nas listas ---------- */
   @keyframes aparecer { from { opacity: 0; } }
@@ -375,9 +579,6 @@
   #fala span { display: block; animation: aparecer .113s ease-out; }
   #gameover .botoes > * { animation: subir .18s .45s ease-out backwards; }
   #gameover .botoes > :nth-child(2) { animation-delay: .486s; }
-  /* toque: o botão afunda ao apertar */
-  .toque { transition: transform .08s, background .12s; }
-  .toque:active { transform: scale(.92); }
   @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; animation-delay: 0s !important; transition-duration: .01ms !important; } }
   /* ---------- menu inicial em dois passos: "menu" (título + opções), "jogar" (Continuar / Novo jogo,
      ou a barra de carregamento se a ilha ainda estiver sendo montada) e "fim" (resumo do capítulo) ---------- */
@@ -386,6 +587,11 @@
   #tela[data-modo="dificuldade"] :is(.selo, .sub, #historia, .menu-links),
   #tela[data-modo="fim"] :is(#historia, .menu-links, #voltarMenu) { display: none !important; }
   #tela[data-modo="menu"] .cartao, #tela[data-modo="jogar"] .cartao, #tela[data-modo="dificuldade"] .cartao { justify-content: center; min-height: 100%; }
+  /* texto Grande/Maior: o zoom do cartão também aumentava a altura máxima dele (passava da tela) e o
+     conteúdo centralizado cortava o título em cima quando não cabia. A altura máxima desconta o
+     zoom, e "safe" deixa rolar até o topo em vez de cortar */
+  #tela .cartao { max-height: calc(100% / var(--escala-texto)); }
+  #tela[data-modo="menu"] .cartao, #tela[data-modo="jogar"] .cartao, #tela[data-modo="dificuldade"] .cartao { justify-content: safe center; }
   #tela .acoes { gap: 2px; }
   #tela .acoes > * { animation: deslizar .144s cubic-bezier(.2, .8, .2, 1) backwards; }
   #tela .acoes > :nth-child(4) { animation-delay: .023s; } #tela .acoes > :nth-child(5) { animation-delay: .045s; }
@@ -398,10 +604,10 @@
   /* sem o texto da história o menu cabe numa coluna só: fica embaixo no celular em pé e à esquerda
      no celular deitado, sem cobrir a Brisa da capa */
   @media (max-width: 760px) and (orientation: portrait) {
-    #tela[data-modo="menu"] .cartao, #tela[data-modo="jogar"] .cartao, #tela[data-modo="dificuldade"] .cartao { justify-content: flex-end; }
+    #tela[data-modo="menu"] .cartao, #tela[data-modo="jogar"] .cartao, #tela[data-modo="dificuldade"] .cartao { justify-content: safe flex-end; }
   }
   @media (max-height: 520px) and (min-width: 600px) {
-    #tela[data-modo="menu"] .cartao, #tela[data-modo="jogar"] .cartao, #tela[data-modo="dificuldade"] .cartao { flex-direction: column; align-items: flex-start; justify-content: center; gap: 12px; width: min(440px, 100%); }
+    #tela[data-modo="menu"] .cartao, #tela[data-modo="jogar"] .cartao, #tela[data-modo="dificuldade"] .cartao { flex-direction: column; align-items: flex-start; justify-content: safe center; gap: 12px; width: min(440px, 100%); }
     #tela[data-modo="menu"] .lado-acoes, #tela[data-modo="jogar"] .lado-acoes, #tela[data-modo="dificuldade"] .lado-acoes { flex: none; padding-top: 0; }
     #tela[data-modo="menu"] .lado-texto, #tela[data-modo="jogar"] .lado-texto, #tela[data-modo="dificuldade"] .lado-texto { flex: none; }
   }
@@ -430,7 +636,7 @@
   .barra-aa { position: absolute; left: 13.5%; right: 13.5%; top: calc(62.9% - 1.5px); height: 3px; background: var(--ouro); transform-origin: 0 50%;
     transform: scaleX(0); animation: barra-aa .5s cubic-bezier(.65, 0, .35, 1) .95s forwards; will-change: transform; }
   @keyframes barra-aa { to { transform: scaleX(1); } }
-  .apresenta { margin: 34px 0 0; padding-left: 8px; font: 600 11px var(--fonte); letter-spacing: 8px; text-transform: uppercase; color: rgba(246, 242, 234, 0.55);
+  .apresenta { margin: 34px 0 0; padding-left: 8px; font: 600 14px var(--fonte); letter-spacing: 8px; text-transform: uppercase; color: rgba(246, 242, 234, 0.55);
     opacity: 0; animation: aparecer-texto .6s ease-out 1.35s forwards; will-change: opacity; }
   @keyframes aparecer-texto { to { opacity: 1; } }
   @media (max-width: 520px) { .marca-aa { width: 134px; height: 99px; } }
@@ -443,84 +649,616 @@
   .progresso { height: 1px; background: rgba(246, 242, 234, 0.14); overflow: hidden; }
   .progresso i { display: block; height: 100%; background: var(--ouro); transform-origin: 0 50%; transform: scaleX(var(--progresso, 0.02));
     transition: transform .6s cubic-bezier(.4, 0, .2, 1); will-change: transform; }
-  .conteudo-carga p { display: flex; justify-content: space-between; margin: -8px 0 0; font: 600 10px var(--fonte); letter-spacing: 2px; text-transform: uppercase; color: rgba(246, 242, 234, 0.45); }
+  .conteudo-carga p { display: flex; justify-content: space-between; margin: -8px 0 0; font: 600 14px var(--fonte); letter-spacing: 2px; text-transform: uppercase; color: rgba(246, 242, 234, 0.45); }
   #porcentoCarga { font-variant-numeric: tabular-nums; color: rgba(246, 242, 234, 0.7); }
-  /* fôlego do sprint: barra fina embaixo dos carretéis; some quando cheia, fica vermelha cansada */
-  #energia { width: 74px; height: 4px; border-radius: 2px; background: rgba(255, 255, 255, 0.2); overflow: hidden; box-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
-    transition: opacity .35s; }
-  #energia.cheia { opacity: 0; }
-  /* Explosão de Fios: barra dourada embaixo do fôlego; cheia, brilha */
-  #poder { width: 74px; height: 3px; border-radius: 2px; background: rgba(255, 255, 255, 0.16); overflow: hidden; margin-top: 4px; box-shadow: 0 1px 2px rgba(0, 0, 0, 0.5); }
-  #poder i { display: block; height: 100%; background: linear-gradient(90deg, #ffd27a, #fff3c4); transform-origin: 0 50%; transform: scaleX(0); transition: transform .2s; }
-  #poder.cheio { box-shadow: 0 0 8px rgba(255, 220, 140, 0.9); animation: pulsoPoder 1s ease-in-out infinite alternate; }
-  @keyframes pulsoPoder { to { box-shadow: 0 0 14px rgba(255, 230, 160, 1); } }
-  #tPoder { bottom: 238px; right: 63px; width: 46px; height: 46px; opacity: .35; border-color: rgba(255, 220, 140, 0.6); }
-  #tPoder.pronto { opacity: 1; box-shadow: 0 0 12px rgba(255, 220, 140, 0.9); }
-
-  #energia i { display: block; height: 100%; background: linear-gradient(90deg, #8fe3ff, #e6f7ff); transform-origin: 0 50%; transform: scaleX(1); will-change: transform; }
-  #energia.cansada i { background: var(--vermelho); }
-  @media (max-width: 760px), (pointer: coarse) { #energia { width: 56px; height: 3px; } }
-  /* ⚡ corrida super rápida (celular): à esquerda do chute */
-  /* vida do vilão (luta do Cap. 1): no alto, no meio */
-  #chefe { position: fixed; top: 18px; left: 50%; transform: translateX(-50%); width: min(360px, 70vw); text-align: center; pointer-events: none;
-    opacity: 0; transition: opacity .4s; z-index: 6; color: #fff; font: 600 13px/1.2 inherit; letter-spacing: .14em; text-transform: uppercase; text-shadow: 0 1px 3px rgba(0,0,0,.7); }
-  #chefe div { margin-top: 6px; height: 5px; border-radius: 3px; background: rgba(255, 255, 255, 0.18); overflow: hidden; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.5); }
-  #chefe i { display: block; height: 100%; background: linear-gradient(90deg, #c4453a, #ff8a6a); transform-origin: 0 50%; transition: transform .25s; }
-  /* vento na arena (3ª fase do Ravi): seta do sentido e três pontos que se apagam até a troca;
-     é o aviso visual (o som não basta: no celular muita gente joga sem som) */
   /* Chamar o Nuvem (pausa): apagado quando não dá, com o motivo ao lado */
-  #pausaNuvem:disabled { opacity: .45; cursor: default; }
-  #pausaNuvem small { font-size: .7em; opacity: .8; font-weight: 500; }
-  #ventoArena { position: fixed; top: 64px; left: 50%; transform: translateX(-50%); pointer-events: none; z-index: 6;
-    display: flex; align-items: center; gap: 10px; padding: 6px 14px; border-radius: 999px; background: rgba(10, 20, 30, .55);
-    color: #fff; font: 700 15px/1 inherit; text-shadow: 0 1px 2px rgba(0,0,0,.8); opacity: 0; transition: opacity .3s; }
-  #ventoArena.ativo { opacity: 1; }
-  #ventoArena b { font-size: 26px; line-height: 1; }
-  #ventoArena span { letter-spacing: 4px; }
-  #ventoArena.troca b { animation: piscaVento .25s steps(2) infinite; }
-  @keyframes piscaVento { 50% { opacity: .25; } }
+  /* desativado: rótulo em --texto-2 (sem opacidade extra) + cadeado (forma); motivo 14 px legível */
+  #pausaNuvem:disabled { color: var(--texto-2); cursor: default; }
+  #pausaNuvem small { font: 600 14px var(--fonte); color: var(--texto-2); }
+  #pausaNuvem .cadeado { display: none; width: 18px; height: 18px; }
+  #pausaNuvem:disabled .cadeado { display: block; }
   /* escolha da dificuldade (depois de Novo jogo): uma opção por nível, nome grande e a descrição embaixo */
   #tituloDificuldade, #escolhaDificuldade { display: none; }
   #tela[data-modo="dificuldade"] :is(#msg, #barra, #continuarJogo, #botao, #continuar, #confirmarNovo) { display: none !important; }
-  #tela[data-modo="dificuldade"] #tituloDificuldade { display: block; margin: 0 0 6px; font: 700 12px var(--fonte); letter-spacing: 2px; text-transform: uppercase; color: var(--ouro); }
+  #tela[data-modo="dificuldade"] #tituloDificuldade { display: block; margin: 0 0 6px; font: 700 14px var(--fonte); letter-spacing: 2px; text-transform: uppercase; color: var(--ouro); }
   #tela[data-modo="dificuldade"] #escolhaDificuldade { display: flex; flex-direction: column; gap: 4px; width: min(420px, 100%); }
   .opcao-dificuldade { flex-wrap: wrap; row-gap: 0; column-gap: 10px; font-size: 21px !important; min-height: 0 !important; padding: 6px 4px 6px 0 !important; }
   .opcao-dificuldade b { font-weight: 700; color: #fff; }
-  .opcao-dificuldade small { font: 600 11px var(--fonte); letter-spacing: 1px; text-transform: uppercase; color: var(--ouro); }
-  .opcao-dificuldade span { flex-basis: 100%; padding-left: 34px; font: 500 12px/1.35 var(--fonte); color: var(--texto-2); text-align: left; } /* (34 px: o traço da opção marcada, 22 px, e o espaço depois dele) */
-  @media (max-width: 760px), (pointer: coarse) { .opcao-dificuldade { font-size: 18px !important; } .opcao-dificuldade span { font-size: 11px; } }
+  .opcao-dificuldade small { font: 600 14px var(--fonte); letter-spacing: 1px; text-transform: uppercase; color: var(--ouro); }
+  .opcao-dificuldade span { flex-basis: 100%; padding-left: 34px; font: 500 14px/1.35 var(--fonte); color: var(--texto-2); text-align: left; } /* (34 px: o traço da opção marcada, 22 px, e o espaço depois dele) */
+  @media (max-width: 760px), (pointer: coarse) { .opcao-dificuldade { font-size: 18px !important; } .opcao-dificuldade span { font-size: 14px; } }
   /* cena (fuga do fim do capítulo) e mapa das ilhas: sem HUD, falas nem botões de toque */
   body.cinema :is(#hud, #objetivo, #fala, #interagir, #golpe, #dicaTutorial, #dica, .toque, #tutorial, #chefe, #aviso, #memoria) { opacity: 0 !important; visibility: hidden !important; }
   /* mapa das ilhas: nome da ilha no alto, setas e "Embarcar" embaixo */
   #mapaMundi { position: fixed; inset: 0; display: none; flex-direction: column; justify-content: space-between; align-items: center; pointer-events: none; z-index: 30; opacity: 0; transition: opacity .25s; padding: 22px 16px; box-sizing: border-box; }
   #mapaMundi > * { pointer-events: auto; }
   .mm-topo { text-align: center; color: #fff; text-shadow: 0 2px 8px rgba(0, 0, 0, 0.5); background: rgba(16, 10, 26, 0.45); padding: 10px 22px; border-radius: 12px; }
-  .mm-topo small { display: block; font: 700 11px var(--fonte); letter-spacing: 2px; text-transform: uppercase; color: var(--ouro); }
+  .mm-topo small { display: block; font: 700 14px var(--fonte); letter-spacing: 2px; text-transform: uppercase; color: var(--ouro); }
   .mm-topo b { display: block; font: 700 26px var(--titulo); margin: 2px 0; }
-  .mm-topo span { display: block; font-size: 13px; color: #f2e6d0; }
-  .mm-topo em { display: block; margin-top: 4px; font: 700 12px var(--fonte); font-style: normal; color: #bfe8b0; }
+  .mm-topo span { display: block; font-size: 14px; color: #f2e6d0; }
+  .mm-topo em { display: block; margin-top: 4px; font: 700 14px var(--fonte); font-style: normal; color: #bfe8b0; }
   .mm-baixo { display: flex; gap: 14px; align-items: center; }
   .mm-baixo .mm-esq, .mm-baixo .mm-dir { width: 52px; height: 52px; border-radius: 50%; border: 2px solid rgba(255, 255, 255, 0.7); background: rgba(16, 10, 26, 0.45); color: #fff; font-size: 20px; cursor: pointer; }
   .mm-embarcar { width: auto !important; padding: 8px 22px !important; background: rgba(16, 10, 26, 0.55) !important; border-radius: 10px; font-size: 20px !important; color: #fff; }
   .mm-embarcar:disabled { opacity: .5; }
   .mm-voltar { position: absolute; left: 16px; bottom: 22px; width: auto; color: #fff; }
   /* mini tutorial: um passo por vez, embaixo, no meio */
-  #tutorial { position: fixed; left: 50%; bottom: 96px; transform: translateX(-50%); width: min(420px, 86vw); padding: 12px 16px 10px; border-radius: 10px; text-align: center;
-    background: rgba(10, 8, 14, 0.62); color: #fff; pointer-events: none; opacity: 0; transition: opacity .3s, box-shadow .2s; z-index: 6; zoom: var(--escala-texto); }
-  #tutorial b { display: block; font: 700 12px var(--fonte); letter-spacing: 2px; text-transform: uppercase; color: var(--ouro); margin: 6px 0 3px; }
+  #tutorial { position: fixed; left: 50%; bottom: 96px; transform: translateX(-50%); width: calc(min(420px, 86vw) * var(--ez)); padding: 12px 16px 10px; border-radius: 10px; text-align: center;
+    background: var(--hud-fundo-forte); color: #fff; pointer-events: none; opacity: 0; transition: opacity .3s, box-shadow .2s; z-index: 6; zoom: var(--escala-texto); }
+  #tutorial b { display: block; font: 700 14px var(--fonte); letter-spacing: 2px; text-transform: uppercase; color: var(--ouro); margin: 6px 0 3px; }
   #tutorial span { display: block; font-size: 15px; line-height: 1.35; }
   #tutorial .pontos { display: flex; gap: 6px; justify-content: center; }
   #tutorial .pontos i { width: 18px; height: 3px; border-radius: 2px; background: rgba(255, 255, 255, 0.22); }
   #tutorial .pontos i.atual { background: #fff; } #tutorial .pontos i.feito { background: var(--ouro); }
   #tutorial.certo { box-shadow: 0 0 0 2px rgba(255, 214, 140, 0.8); }
-  #tutorial button { pointer-events: auto; margin: 8px auto 0; font-size: 12px; min-height: 26px; width: auto; justify-content: center; color: var(--texto-2); }
+  #tutorial button { pointer-events: auto; margin: 8px auto 0; font-size: 14px; min-height: 48px; width: auto; justify-content: center; color: var(--texto-2); }
   @media (pointer: coarse) { #tutorial { bottom: auto; top: 64px; } }
-  #tSuper { bottom: 30px; right: 172px; width: 44px; height: 44px; border-color: rgba(143, 227, 255, 0.7); }
+  /* ==================== PELE NOVA DO HUD (etapa c) ====================
+     production/ui/nova-ui/visual-design.md §1.8 e §2 + restyle-hud-menus.md §2. Só a pele muda: posições,
+     tamanhos, estados e regras (fila, luta, chefe, área segura, P/M/G, inverter) continuam os mesmos.
+     "Painel de cena": branco 92% com borda 2 px azul-vivo e sombra suave; texto sempre tinta. Os tokens
+     antigos do HUD são redefinidos aqui, então as regras de estado antigas já saem nas cores novas. */
+  #hud, #objetivo, #dica, #dicaTutorial, #aviso, #interagir, #fala, #memoria, #fps, #golpe, #tutorial, .toque {
+    --hud-fundo: rgba(255, 255, 255, 0.92); --hud-fundo-forte: rgba(255, 255, 255, 0.92); --hud-fundo-toque: rgba(255, 255, 255, 0.85);
+    --hud-trilho: var(--slot); --texto: var(--tinta); --texto-2: var(--tinta-2); --texto-3: var(--tinta-2);
+    --ouro: var(--azul-vivo); --ouro-claro: var(--limao); --ouro-fio: var(--azul-vivo); --lilas: var(--azul-vivo); --vermelho: var(--erro);
+    --sombra-texto: none; --sombra-retalho: var(--sombra-suave); --titulo: var(--fonte-ui); --fonte: var(--fonte-ui);
+    --contorno-tinta: 0 2px 0 var(--tinta), 0 -2px 0 var(--tinta), 2px 0 0 var(--tinta), -2px 0 0 var(--tinta), 1.5px 1.5px 0 var(--tinta), -1.5px 1.5px 0 var(--tinta), 1.5px -1.5px 0 var(--tinta), -1.5px -1.5px 0 var(--tinta);
+  }
+  /* painel de cena (antes: retalho escuro com pesponto dourado) */
+  .retalho { background: var(--hud-fundo); color: var(--tinta); text-shadow: none; outline: none; border: 2px solid var(--azul-vivo); box-shadow: var(--sombra-suave); }
+  #memoria::before { border-color: rgba(11, 92, 173, 0.35); }
+  :is(#hud, #objetivo, #aviso, #interagir, #fala, #memoria, #tutorial, #dica, #dicaTutorial) kbd { background: var(--branco); color: var(--tinta); border: 2px solid var(--tinta); box-shadow: 0 2px 0 var(--ceu-2); opacity: 1; font-family: var(--fonte-ui); }
+  /* fôlego: carretéis azul-vivo (cheio) / contorno tinta (vazio); último: vermelho de erro + "!" */
+  #vida .carretel { color: var(--azul-vivo); filter: none; }
+  #vida .carretel.vazio { color: var(--tinta-2); }
+  #vida.baixo .carretel:not(.vazio), #vida .alerta { color: var(--erro); filter: none; }
+  #vida .num { color: var(--tinta); font: 800 18px var(--fonte-ui); }
+  /* corrida: disco branco com borda azul; barra azul; cansada = listras laranja + ícone de cansaço */
+  #energia .mini { background: var(--branco); border: 2px solid var(--azul-vivo); color: var(--azul-vivo); }
+  #energia .trilho { background: var(--slot); box-shadow: 0 0 0 2px var(--azul-vivo); }
+  #energia .trilho i { background: var(--azul-vivo); }
+  #energia.cansada .trilho i { background: repeating-linear-gradient(45deg, var(--laranja) 0 3px, var(--branco) 3px 6px); }
+  #energia.cansada .mini { color: var(--laranja); border-color: var(--laranja); }
+  /* poder (PC): barra azul; pronto = limão + "Pronto!" tinta sobre limão */
+  #poder .i { color: var(--azul-vivo); filter: none; }
+  #poder .trilho { background: var(--slot); }
+  #poder .trilho i { background: var(--azul-vivo); }
+  #poder.cheio { outline: none; border-color: var(--tinta); }
+  #poder.cheio .trilho i { background: var(--limao); }
+  #poder.cheio .i { color: var(--tinta); }
+  #poder .pronto { background: var(--limao); color: var(--tinta); border: 2px solid var(--tinta); font: 800 14px var(--fonte-ui); text-transform: uppercase; }
+  /* fragmentos e Fuxicos: pílulas de moeda (IP 2.2): azul-fundo-pilula opaco, número branco, borda branca (separa da noite) */
+  #moedas, #hudFuxicos { background: var(--azul-fundo-pilula); color: var(--branco); border: 2px solid rgba(255, 255, 255, 0.8); box-shadow: var(--sombra-suave); font: 800 18px var(--fonte-ui); }
+  #moedas .i { color: var(--start-b); filter: none; }
+  #moedas b, #moedas .total { color: var(--branco); }
+  #hudFuxicos { display: flex; align-items: center; gap: 6px; padding: 4px 12px 4px 6px; border-radius: 999px; font-variant-numeric: tabular-nums; transition: opacity var(--t-ui) var(--ease-ui); }
+  #hudFuxicos[hidden] { display: none; }
+  #hudFuxicos .i { width: 24px; height: 24px; color: var(--start-b); }
+  body.no-chefe #hudFuxicos { display: none; }
+  /* arma */
+  #arma { color: var(--tinta); }
+  #arma .i { color: var(--tinta); }
+  #arma .racha { color: var(--erro); filter: none; }
+  #arma.baixo { border-color: var(--erro); }
+  /* pausa e mochila: discos brancos 85% com borda azul-vivo, ícone tinta */
+  #hud .dir { gap: 8px; }
+  .icone-botao { background: var(--hud-fundo-toque, rgba(255, 255, 255, 0.85)); border: 2px solid var(--azul-vivo); outline: none; color: var(--tinta); filter: none; box-shadow: var(--sombra-suave); position: relative; }
+  .icone-botao:hover { background: var(--branco); }
+  .icone-botao:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--tinta), 0 0 0 5px var(--branco); }
+  .icone-botao .i { width: 24px; height: 24px; }
+  #abrir-mochila[aria-disabled="true"] { cursor: default; }
+  .ponto-novo { position: absolute; top: -6px; right: -10px; padding: 0 6px; border-radius: 999px; background: var(--laranja); color: var(--branco); border: 2px solid var(--branco); font: 800 14px/18px var(--fonte-ui); }
+  .ponto-novo[hidden] { display: none; }
+  /* fps */
+  #fps { color: var(--tinta); }
+  /* chefe: nome em faixa azul com corte, barra laranja sobre trilho slot, número tinta, marcas tinta (acesa = laranja + ponto) */
+  #chefe { color: var(--tinta); }
+  #chefe .nome { display: inline-block; margin: -2px 0 2px -4px; padding: 2px 18px 2px 8px; color: var(--branco); background: var(--azul-vivo); font: 800 14px var(--fonte-ui);
+    clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 0 100%); justify-self: start; }
+  #chefe .num { color: var(--tinta); font: 800 16px var(--fonte-ui); }
+  #chefe .barra { background: var(--slot); box-shadow: 0 0 0 1.5px var(--tinta); }
+  #chefe .barra > i { background: var(--laranja); }
+  #chefe .barra > s { background: var(--start-b); }
+  #chefe .marca { background: var(--tinta); }
+  #chefe .marca.acesa, #chefe .marca.acesa::before { background: var(--laranja); }
+  #chefe .marca.acesa::before { box-shadow: 0 0 0 1.5px var(--tinta); }
+  /* vento */
+  #ventoArena { color: var(--tinta); }
+  #ventoArena .seta { color: var(--tinta); }
+  #ventoArena .folhas .i { color: var(--laranja); }
+  #ventoArena .muda { color: var(--tinta); }
+  #ventoArena.troca .seta { outline-color: var(--laranja); }
+  /* objetivo: mudou = borda laranja 3 px; concluído = selo check limão */
+  #objetivo { color: var(--tinta); }
+  #objetivo.mudou { outline: none; border: 2px solid var(--laranja); box-shadow: 0 0 0 1px var(--laranja), var(--sombra-suave); background: var(--branco); }
+  #objetivo .ok { background: var(--limao); color: var(--tinta); box-shadow: 0 0 0 1.5px var(--tinta); }
+  /* aviso = toast (IP 2.10 / VD 1.12): branco, borda azul, faixa limão à esquerda + selo */
+  #aviso { color: var(--tinta); font-family: var(--fonte-ui); box-shadow: inset 6px 0 0 var(--limao), var(--sombra-suave); padding-left: 20px; }
+  #aviso .i.ok { color: var(--tinta); background: var(--limao); border-radius: 50%; padding: 2px; box-sizing: border-box; box-shadow: 0 0 0 1.5px var(--tinta); }
+  #aviso .i.alerta { color: var(--erro); filter: none; }
+  #aviso:has(.i.alerta) { box-shadow: inset 6px 0 0 var(--laranja), var(--sombra-suave); }
+  /* fala, memória, dicas */
+  #fala { color: var(--tinta); }
+  #fala b { color: var(--azul-vivo); font-family: var(--fonte-ui); }
+  #memoria { color: var(--tinta); }
+  #memoria h3 { color: var(--azul-vivo); }
+  #memoria h3 .i { color: var(--laranja); }
+  #memoria p { color: var(--tinta); font-family: var(--fonte-ui); }
+  #dicaTutorial, #dica { color: var(--tinta); }
+  #tutorial { background: rgba(255, 255, 255, 0.92); color: var(--tinta); border: 2px solid var(--azul-vivo); box-shadow: var(--sombra-suave); }
+  #tutorial b { color: var(--azul-vivo); }
+  #tutorial span { color: var(--tinta); }
+  #tutorial .pontos i { background: var(--slot); } #tutorial .pontos i.atual { background: var(--tinta); } #tutorial .pontos i.feito { background: var(--azul-vivo); }
+  #tutorial.certo { box-shadow: 0 0 0 3px var(--limao), var(--sombra-suave); }
+  #tutorial .voltar { color: var(--tinta); text-shadow: none; }
+  /* interagir */
+  #interagir { color: var(--tinta); }
+  #interagir kbd { border-color: var(--azul-vivo); color: var(--azul-vivo); background: var(--branco); }
+  #interagir.apertado kbd { background: var(--limao); color: var(--tinta); }
+  /* texto solto sobre a cena (nome do que pegou, golpes): branco com contorno tinta */
+  #golpe { color: var(--branco); text-shadow: var(--contorno-tinta); font-family: var(--fonte-ui); font-weight: 800; }
+  /* botões de toque: discos brancos 85%, borda azul-vivo, ícone tinta; apertado = limão e desce 2 px */
+  .toque { background: rgba(255, 255, 255, 0.85); border: 2px solid var(--azul-vivo); outline: none; color: var(--tinta); filter: none; box-shadow: var(--sombra-suave); }
+  .toque svg { filter: none; }
+  .toque:active { background: var(--limao); color: var(--tinta); transform: translateY(2px); box-shadow: none; }
+  .toque.indisponivel { border: 2px dashed var(--tinta-2); background: rgba(255, 255, 255, 0.85); }
+  #tPoder.pronto { border: 3px solid var(--tinta); background: var(--limao); }
+  #tPoder.pronto::after { background: var(--limao); color: var(--tinta); border: 2px solid var(--tinta); text-shadow: none; text-transform: uppercase; font-family: var(--fonte-ui); }
+  @keyframes brilhoPoder { from { box-shadow: 0 0 0 0 rgba(181, 230, 29, .6); } to { box-shadow: 0 0 0 6px rgba(181, 230, 29, .9); } }
+  #tPoder::before { background: conic-gradient(var(--azul-vivo) calc(var(--carga, 0) * 1turn), rgba(15, 42, 71, .2) 0); }
+  #tPoder.pronto::before { background: var(--limao); }
+  #bastao { border: 2px solid var(--azul-vivo); background: rgba(255, 255, 255, 0.25); }
+  body.sem-flashes .toque:active { transform: none; }
+  /* ==================== PELE NOVA DOS MENUS ("Céu de Retalho Claro", etapa b) ====================
+     design/ux/interaction-patterns.md + production/ui/nova-ui/visual-design.md §1.1–1.7. Vem por último no CSS
+     e vale só dentro das telas de menu (o HUD muda na etapa c). Os tokens antigos são redefinidos dentro de cada
+     tela (texto escuro sobre claro), então as regras antigas que usam var(--texto) etc. já saem certas. */
+  #tela, .fundo-modal, #gameover, #mapaMundi, #bilhete {
+    --titulo: var(--fonte-ui); --fonte: var(--fonte-ui);
+    --texto: var(--tinta); --texto-2: var(--tinta-2); --texto-3: var(--tinta-2); --linha: rgba(15, 42, 71, 0.16);
+    --ouro: var(--azul-vivo); --sombra-texto: none;
+    --losangos: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='170' height='170'%3E%3Crect x='25' y='25' width='120' height='120' transform='rotate(45 85 85)' fill='%23ffffff' fill-opacity='.08' stroke='%23ffffff' stroke-opacity='.35' stroke-width='2'/%3E%3C/svg%3E");
+    --anel-foco: 0 0 0 3px var(--tinta), 0 0 0 5px var(--branco);
+    --contorno-texto-btn: 0 2px 0 var(--contorno-btn), 0 -2px 0 var(--contorno-btn), 2px 0 0 var(--contorno-btn), -2px 0 0 var(--contorno-btn),
+      1.5px 1.5px 0 var(--contorno-btn), -1.5px 1.5px 0 var(--contorno-btn), 1.5px -1.5px 0 var(--contorno-btn), -1.5px -1.5px 0 var(--contorno-btn), 0 3px 0 var(--contorno-btn);
+    font-family: var(--fonte-ui); color: var(--tinta);
+  }
+  /* ---- fundos: céu com losangos (telas cheias); véu tinta sobre o jogo (pausa, game over, carta) ---- */
+  #paineis, #graficos { background: var(--losangos) center / 170px, var(--fundo-ceu); justify-content: center; }
+  #pausa, #bilhete { background: rgba(15, 42, 71, 0.4); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); justify-content: center; align-items: center; }
+  #gameover { background: rgba(15, 42, 71, 0.55); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); }
+  /* véu claro: forte onde há texto (até ~48% da largura), some depois; em telas estreitas cobre tudo */
+  #tela::before { background: linear-gradient(90deg, rgba(244, 251, 255, 0.95) 0%, rgba(244, 251, 255, 0.9) 48%, rgba(205, 235, 251, 0) 74%); }
+  @media (max-width: 900px) { #tela::before { background: linear-gradient(90deg, rgba(244, 251, 255, 0.95), rgba(244, 251, 255, 0.9) 70%, rgba(244, 251, 255, 0.55)); } }
+  /* ---- tipos: títulos inclinados, caixa alta ---- */
+  :is(#paineis, #graficos, #pausa, #gameover) h2, #gameover h1 { font: 800 28px/1.1 var(--fonte-ui); text-transform: uppercase; letter-spacing: .5px; }
+  /* ---- tecla "de pano" ---- */
+  :is(#tela, .fundo-modal, #gameover, #mapaMundi, #bilhete) kbd { background: var(--branco); color: var(--tinta); border: 2px solid var(--tinta); box-shadow: 0 3px 0 var(--ceu-2); opacity: 1; font-family: var(--fonte-ui); min-height: 24px; }
+  /* ---- foco universal: anel duplo + elevação 2 px ---- */
+  :is(#tela, .fundo-modal, #gameover, #mapaMundi, #bilhete) :is(button, select, input, a):focus { outline: none; box-shadow: var(--anel-foco); }
+  /* ---- item de lista de menu (IP 2.14): linha branca 56 dp, ícone, seta › ---- */
+  :is(#tela, .fundo-modal, #mapaMundi) .item-menu { min-height: 56px; padding: 0 16px; gap: 12px; border-radius: 14px; background: var(--branco); color: var(--tinta);
+    font: 700 18px var(--fonte-ui); text-shadow: none; box-shadow: var(--sombra-suave); transform: none; transition: transform var(--t-ui) var(--ease-ui), box-shadow var(--t-ui); }
+  :is(#tela, .fundo-modal, #mapaMundi) .item-menu::before { display: none; }
+  :is(#tela, .fundo-modal, #mapaMundi) .item-menu:focus { color: var(--tinta); transform: translateY(-2px); box-shadow: var(--anel-foco), var(--sombra-suave); }
+  :is(#tela, .fundo-modal, #mapaMundi) .item-menu:active { transform: translateY(2px); }
+  .fundo-modal .item-menu::after { content: '›'; margin-left: auto; font: 800 24px var(--fonte-ui); color: var(--azul-vivo); }
+  .fundo-modal .item-menu .i { width: 24px; height: 24px; color: var(--azul-vivo); stroke-width: 2.5; }
+  .fundo-modal .item-menu small { font: 700 14px var(--fonte-ui); color: var(--tinta-2); }
+  .fundo-modal .item-menu:disabled { background: var(--desab-fundo); color: var(--tinta-2); box-shadow: none; cursor: not-allowed; }
+  .fundo-modal .item-menu:disabled::after { content: none; }
+  .fundo-modal .item-menu:disabled .i { color: var(--tinta-2); }
+  :is(.fundo-modal, #tela) .corpo > * + *, #tela .menu-links > * + * { margin-top: 8px; }
+  /* ---- botão de ação inclinado (IP 2.7): fundo em paralelogramo (::before), texto reto com contorno escuro ---- */
+  :is(#tela, .fundo-modal, #gameover, #mapaMundi, #bilhete) :is(.botao.principal, #jogar, #pausaContinuar, #tentarDeNovo, .mm-embarcar, .fechar-carta) {
+    position: relative; isolation: isolate; display: inline-flex; align-items: center; justify-content: center; gap: 10px; width: auto; min-width: 160px; min-height: 64px; padding: 0 32px;
+    border: 0; border-radius: 0; background: none !important; box-shadow: none; outline: none; color: var(--branco); font: 800 20px var(--fonte-ui); text-transform: uppercase; letter-spacing: .5px;
+    text-shadow: var(--contorno-texto-btn); transform: skewX(var(--incl-texto-botao)); transition: transform 60ms linear; }
+  :is(#tela, .fundo-modal, #gameover, #mapaMundi, #bilhete) :is(.botao.principal, #jogar, #pausaContinuar, #tentarDeNovo, .mm-embarcar, .fechar-carta)::before {
+    content: ''; display: block; position: absolute; inset: 0; z-index: -1; width: auto; height: auto; border-radius: 12px; transform: skewX(-8deg) scaleX(1);
+    background: linear-gradient(90deg, var(--start-a), var(--start-b)); box-shadow: var(--sombra-botao); outline: var(--pesponto-claro); outline-offset: -6px; }
+  :is(#tela, .fundo-modal, #gameover, #mapaMundi, #bilhete) :is(.botao.principal, #jogar, #pausaContinuar, #tentarDeNovo, .mm-embarcar, .fechar-carta):focus { box-shadow: none; transform: skewX(var(--incl-texto-botao)) translateY(-2px); }
+  :is(#tela, .fundo-modal, #gameover, #mapaMundi, #bilhete) :is(.botao.principal, #jogar, #pausaContinuar, #tentarDeNovo, .mm-embarcar, .fechar-carta):focus::before { box-shadow: var(--anel-foco), var(--sombra-botao); }
+  :is(#tela, .fundo-modal, #gameover, #mapaMundi, #bilhete) :is(.botao.principal, #jogar, #pausaContinuar, #tentarDeNovo, .mm-embarcar, .fechar-carta):active { transform: skewX(var(--incl-texto-botao)) translateY(2px); }
+  :is(#tela, .fundo-modal, #gameover, #mapaMundi, #bilhete) :is(.botao.principal, #jogar, #pausaContinuar, #tentarDeNovo, .mm-embarcar, .fechar-carta):active::before { box-shadow: none; filter: brightness(.92); }
+  :is(#tela, .fundo-modal, #gameover, #mapaMundi) :is(.botao.principal, #jogar, #pausaContinuar, #tentarDeNovo, .mm-embarcar):disabled { color: var(--tinta-2); text-shadow: none; }
+  :is(#tela, .fundo-modal, #gameover, #mapaMundi) :is(.botao.principal, #jogar, #pausaContinuar, #tentarDeNovo, .mm-embarcar):disabled::before { background: var(--desab-fundo); box-shadow: none; }
+  /* ---- botão secundário (IP 2.8): pílula branca, borda azul-vivo ---- */
+  :is(#tela, .fundo-modal, #gameover, #mapaMundi) :is(.botao.secundario, #recomecar, .capitulos .botao, .opcao-dificuldade) {
+    min-height: 48px; padding: 0 20px; border: 2px solid var(--azul-vivo); border-radius: 999px; background: var(--branco); color: var(--tinta); font: 800 16px var(--fonte-ui);
+    text-transform: uppercase; text-shadow: none; transform: none; }
+  :is(#tela, .fundo-modal, #gameover, #mapaMundi) :is(.botao.secundario, #recomecar, .capitulos .botao)::before { display: none; }
+  #tela .menu-links .item-menu { justify-content: center; border: 2px solid var(--azul-vivo); border-radius: 999px; min-height: 52px; text-transform: uppercase; font-size: 18px; }
+  #tela .menu-links #jogar { min-height: 64px; font-size: 22px; margin-bottom: 6px; }
+  #tela .menu-links { display: flex; flex-direction: column; align-items: stretch; gap: 0; }
+  /* ---- Voltar (barra de topo IP 2.1): azul-vivo, seta dupla, texto branco ---- */
+  :is(.fundo-modal, #tela, #mapaMundi) .voltar { min-height: 56px; padding: 0 18px; gap: 8px; border-radius: 14px; background: var(--azul-vivo); color: var(--branco); font: 800 16px var(--fonte-ui); text-transform: uppercase; text-shadow: none; }
+  :is(.fundo-modal, #tela, #mapaMundi) .voltar::before { display: inline; content: '«'; font-size: 24px; line-height: 1; margin-right: 2px; }
+  :is(.fundo-modal, #tela, #mapaMundi) .voltar kbd { background: transparent; color: var(--branco); border-color: var(--branco); box-shadow: none; }
+  :is(.fundo-modal, #tela, #mapaMundi) .voltar:focus { color: var(--branco); }
+  /* ---- telas cheias (Configurações, Créditos, Capítulos, Sinopse, Gráficos): barra de topo + painel de lista ---- */
+  :is(#paineis, #graficos) .janela { position: relative; width: min(860px, 100%); padding: max(16px, env(safe-area-inset-top)) max(24px, env(safe-area-inset-right)) 16px max(24px, env(safe-area-inset-left)); color: var(--tinta); }
+  :is(#paineis, #graficos) .janela header { min-height: 56px; padding: 0 0 0 calc(var(--voltar-largura, 150px) + 16px); border: 0; align-items: center; }
+  :is(#paineis, #graficos) .janela h2 { flex: none; padding: 10px 40px 10px 20px; color: var(--branco); background: var(--azul-vivo);
+    clip-path: polygon(0 0, calc(100% - var(--corte)) 0, 100% var(--corte), 100% 100%, 0 100%); transform: skewX(var(--incl-titulo)); font-size: 28px; }
+  :is(#paineis, #graficos) .janela footer { position: absolute; top: max(16px, env(safe-area-inset-top)); left: max(24px, env(safe-area-inset-left)); border: 0; padding: 0; }
+  :is(#paineis, #graficos) .janela .corpo { margin-top: 16px; padding: 16px; border-radius: var(--r-painel); background: rgba(244, 251, 255, 0.92); box-shadow: var(--sombra-suave); }
+  :is(#paineis, #graficos) .janela .corpo > p, :is(#paineis, #graficos) .janela .texto, #graficos p { color: var(--tinta-2); font: 600 16px/1.5 var(--fonte-ui); }
+  /* abas pílula (IP 2.4) */
+  #paineis .abas { display: flex; gap: 8px; margin-top: 12px; border: 0; }
+  #paineis .aba { min-height: 48px; padding: 0 22px; border: 2px solid var(--ceu-2); border-radius: 999px; background: var(--branco); color: var(--tinta); font: 800 16px var(--fonte-ui); }
+  #paineis .aba.ativa { background: var(--azul-vivo); border-color: var(--azul-vivo); color: var(--branco); }
+  #paineis .aba.ativa::before { content: '✓ '; }
+  #paineis .aba.ativa::after { display: none; }
+  /* linhas de opção (IP 2.14) com interruptor (2.15), slider (2.16) e seleção (2.17) */
+  .fundo-modal .opcao { grid-template-columns: 1fr minmax(150px, 46%) auto; min-height: 56px; margin: 0; padding: 4px 16px; border-radius: 14px; background: var(--branco); color: var(--tinta);
+    font: 700 16px var(--fonte-ui); box-shadow: none; }
+  .fundo-modal .opcao:hover { background: var(--branco); }
+  .fundo-modal .opcao + .opcao { margin-top: 8px; }
+  .fundo-modal .opcao:focus-within { background: var(--branco); color: var(--tinta); box-shadow: var(--anel-foco); }
+  .fundo-modal .opcao > span { color: var(--tinta); font: 800 16px var(--fonte-ui); min-width: 44px; }
+  .fundo-modal .opcao input[type=range] { -webkit-appearance: none; appearance: none; height: 48px; background: transparent; accent-color: var(--azul-vivo); }
+  .fundo-modal .opcao input[type=range]::-webkit-slider-runnable-track { height: 12px; border-radius: 999px; background: var(--slot); border: 1px solid var(--ceu-2); }
+  .fundo-modal .opcao input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 32px; height: 32px; margin-top: -11px; border-radius: 50%; background: var(--branco); border: 3px solid var(--tinta); }
+  :is(#paineis, #graficos) .opcao input[type=range]:focus { box-shadow: none; } /* (o anel fica no botão do slider) */
+  .fundo-modal .opcao input[type=range]:focus::-webkit-slider-thumb { box-shadow: var(--anel-foco); }
+  .fundo-modal .opcao select { height: 48px; padding: 0 40px 0 18px; border: 2px solid var(--ceu-2); border-radius: 999px; color: var(--tinta); font: 800 16px var(--fonte-ui);
+    background: var(--branco) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%230B5CAD' stroke-width='3' stroke-linecap='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") right 12px center / 18px no-repeat; }
+  .fundo-modal .opcao select option { background: var(--branco); color: var(--tinta); }
+  .fundo-modal .opcao.marcar { grid-template-columns: 1fr auto auto; column-gap: 12px; }
+  .fundo-modal .opcao.marcar input { grid-column: auto; width: 64px; height: 36px; border: 2px solid var(--tinta); background: var(--slot); }
+  .fundo-modal .opcao.marcar input::after { top: 4px; left: 4px; width: 24px; height: 24px; background: var(--branco); box-shadow: 0 0 0 2px var(--tinta); }
+  .fundo-modal .opcao.marcar input:checked { background: var(--azul-vivo); border-color: var(--azul-vivo); }
+  .fundo-modal .opcao.marcar input:checked::after { transform: translateX(28px); }
+  .fundo-modal .opcao.marcar::after { content: 'DESLIGADO'; order: 3; min-width: 92px; font: 800 14px var(--fonte-ui); color: var(--tinta-2); text-align: right; }
+  .fundo-modal .opcao.marcar:has(input:checked)::after { content: 'LIGADO ✓'; color: var(--azul-vivo); }
+  /* controles: grade de teclas de pano */
+  #paineis .grade { color: var(--tinta); font: 700 16px var(--fonte-ui); }
+  #paineis .grade span, #paineis .controle-pad { color: var(--tinta-2); font: 700 16px/1.5 var(--fonte-ui); }
+  /* gráficos: predefinições como lista de escolha única (selecionada = limão + check + borda 3 px) */
+  #graficos button[data-nivel] { margin: 0; padding: 12px 16px; border: 2px solid var(--ceu-2); border-radius: 14px; background: var(--branco); color: var(--tinta); font: 800 18px var(--fonte-ui); }
+  #graficos button[data-nivel] + button[data-nivel] { margin-top: 8px; }
+  #graficos button[data-nivel] small { color: var(--tinta-2); font: 600 14px/1.4 var(--fonte-ui); }
+  #graficos button[data-nivel]::before { border: 2px solid var(--tinta); width: 14px; height: 14px; }
+  #graficos button[data-nivel]:focus { background: var(--branco); color: var(--tinta); }
+  #graficos button.ativo { background: var(--limao); border: 3px solid var(--tinta); color: var(--tinta); }
+  #graficos button.ativo small { color: var(--tinta); }
+  #graficos button.ativo::before { content: '✓'; display: grid; place-items: center; background: var(--tinta); border-color: var(--tinta); box-shadow: none; color: var(--limao); font: 800 12px/1 var(--fonte-ui); }
+  #graficos #versao, #aviso-aa { color: var(--tinta-2); }
+  /* capítulos e créditos */
+  #paineis .capitulos li { padding: 12px 16px; margin-bottom: 8px; border: 0; border-radius: 14px; background: var(--branco); }
+  #paineis .capitulos b { color: var(--tinta); font: 800 18px var(--fonte-ui); }
+  #paineis .capitulos span { color: var(--tinta-2); }
+  #paineis .capitulos .trancado { opacity: 1; background: var(--desab-fundo); }
+  #paineis .sinopse { color: var(--tinta); } #paineis .sinopse .chamada { color: var(--azul-vivo); }
+  #paineis .autor, #paineis .feito, #paineis .instagram { color: var(--tinta); }
+  /* ---- pausa: modal branco (IP 2.9) com faixa azul de corte diagonal ---- */
+  #pausa .janela { width: min(440px, calc(100% - 32px)); height: auto; max-height: calc(100% - 24px); padding: 0 0 16px; border-radius: var(--r-modal); background: var(--branco); box-shadow: var(--sombra-suave); overflow: hidden; }
+  #pausa header { padding: 0; border: 0; }
+  #pausa h2 { flex: 1; margin: 0; padding: 14px 24px; color: var(--branco); background: var(--azul-vivo); font-size: 28px; clip-path: polygon(0 0, 100% 0, 100% calc(100% - var(--corte)), calc(100% - var(--corte)) 100%, 0 100%); }
+  #pausa .corpo { padding: 12px 20px 4px; overflow: auto; }
+  #pausa .corpo .item-menu { box-shadow: none; border: 2px solid var(--ceu-1); }
+  #pausa #pausaContinuar { align-self: stretch; margin: 4px 8px 8px; }
+  #pausa #pausaContinuar::after, #pausa #pausaMenu::after { content: none; }
+  #pausa #pausaMenu { justify-content: center; margin-top: 16px; border: 2px solid var(--azul-vivo); border-radius: 999px; min-height: 48px; text-transform: uppercase; font-size: 16px; }
+  #pausa .pausa-hora { color: var(--tinta-2); font: 700 16px var(--fonte-ui); margin: 0 0 4px; }
+  #pausa footer { padding: 0 20px; } #pausa footer .voltar { background: var(--branco); color: var(--tinta); border: 2px solid var(--ceu-2); }
+  #pausa footer .voltar kbd { color: var(--tinta); border-color: var(--tinta); }
+  #pausa #pausaNuvem:disabled, #pausa #pausaNuvem small { color: var(--tinta-2); }
+  /* ---- menu inicial e dificuldade ---- */
+  #tela .selo { color: var(--azul-vivo); text-shadow: none; font: 800 16px var(--fonte-ui); }
+  #tela h1 { font: 800 clamp(56px, 8vw, 96px)/1 var(--fonte-ui); color: var(--branco); letter-spacing: 1px; transform: skewX(var(--incl-titulo));
+    text-shadow: 0 3px 0 var(--azul-vivo), 0 -3px 0 var(--azul-vivo), 3px 0 0 var(--azul-vivo), -3px 0 0 var(--azul-vivo), 2px 2px 0 var(--azul-vivo), -2px 2px 0 var(--azul-vivo), 2px -2px 0 var(--azul-vivo), -2px -2px 0 var(--azul-vivo), 0 8px 0 var(--azul-fundo-pilula); }
+  #tela .faixa::after { border-top-color: var(--azul-vivo); }
+  #tela .sub { color: var(--tinta); font: 700 18px var(--fonte-ui); }
+  #tela #historia, #tela #msg { color: var(--tinta); font: 600 16px/1.5 var(--fonte-ui); }
+  #tela #msg em { color: var(--laranja); }
+  #tela #barra { height: 12px; width: 220px; border-radius: 999px; background: var(--slot); overflow: hidden; }
+  #tela #barra div { background: var(--azul-vivo); }
+  #tela .prompts { padding: 6px 14px; border-radius: 999px; background: rgba(255, 255, 255, 0.85); color: var(--tinta-2); }
+  #tela[data-modo="dificuldade"] #tituloDificuldade { color: var(--azul-vivo); font: 800 18px var(--fonte-ui); }
+  #tela .opcao-dificuldade { display: flex; flex-wrap: wrap; align-items: center; min-height: 72px !important; padding: 10px 18px !important; border-radius: 18px; text-transform: none; font-size: 20px !important; color: var(--tinta); }
+  #tela .opcao-dificuldade::before { display: none; }
+  #tela[data-modo="dificuldade"] #escolhaDificuldade { gap: 8px; }
+  #tela .opcao-dificuldade b { color: var(--tinta); }
+  #tela .opcao-dificuldade small { color: var(--laranja); font: 800 14px var(--fonte-ui); }
+  #tela .opcao-dificuldade span { padding-left: 0; color: var(--tinta-2); font: 600 14px/1.35 var(--fonte-ui); }
+  #tela .opcao-dificuldade:focus { transform: translateY(-2px); }
+  #tela #confirmarNovo { color: var(--tinta); font: 700 16px var(--fonte-ui); padding: 8px 14px; border-radius: 14px; background: var(--branco); }
+  #tela #confirmarNovo b { color: var(--laranja); }
+  /* ---- game over: modal branco com faixa azul ---- */
+  #gameover { color: var(--tinta); }
+  #gameover > * { position: relative; }
+  #gameover::before { content: ''; position: absolute; left: 50%; top: 50%; width: min(520px, calc(100% - 32px)); height: min(440px, calc(100% - 32px)); transform: translate(-50%, -50%); border-radius: var(--r-modal); background: var(--branco); box-shadow: var(--sombra-suave); }
+  #gameover h1 { padding: 12px 32px; color: var(--branco); background: var(--azul-vivo); text-shadow: none; letter-spacing: 2px; font-size: clamp(32px, 6vw, 44px);
+    clip-path: polygon(0 0, calc(100% - var(--corte)) 0, 100% var(--corte), 100% 100%, 0 100%); }
+  #gameover p, #gameover .estat { color: var(--tinta); opacity: 1; font: 700 16px/1.45 var(--fonte-ui); }
+  #gameover .estat { color: var(--tinta-2); }
+  #gameover small { color: var(--tinta-2); opacity: 1; }
+  #gameover .botoes { gap: 12px; }
+  /* ---- mapa das ilhas (parte HTML) ---- */
+  #mapaMundi .mm-topo { padding: 0 0 12px; border-radius: var(--r-painel); background: var(--branco); color: var(--tinta); text-shadow: none; box-shadow: var(--sombra-suave); overflow: hidden; }
+  #mapaMundi .mm-topo small { display: block; padding: 8px 24px; background: var(--azul-vivo); color: var(--branco); font: 800 16px var(--fonte-ui); clip-path: polygon(0 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%); }
+  #mapaMundi .mm-topo b { color: var(--tinta); font: 800 26px var(--fonte-ui); padding: 4px 22px 0; }
+  #mapaMundi .mm-topo span { color: var(--tinta-2); font: 600 16px var(--fonte-ui); padding: 0 22px; }
+  #mapaMundi .mm-topo em { color: var(--ok); font: 800 16px var(--fonte-ui); padding: 0 22px; }
+  #mapaMundi :is(.mm-esq, .mm-dir) { width: 56px; height: 56px; border: 2px solid var(--azul-vivo); background: var(--branco); color: var(--azul-vivo); box-shadow: var(--sombra-suave); font-size: 22px; }
+  #mapaMundi .mm-embarcar { width: auto !important; padding: 0 32px !important; font-size: 20px !important; color: var(--branco); }
+  #mapaMundi .mm-embarcar:disabled { opacity: 1; }
+  /* ---- carta / bilhete: papel claro, faixa azul com alfinete, FECHAR inclinado ---- */
+  #bilhete .papel { position: relative; padding: 0 0 18px; border-radius: 6px; background: var(--papel); color: var(--tinta); box-shadow: var(--sombra-suave);
+    background-image: repeating-linear-gradient(transparent 0 31px, rgba(205, 235, 251, 0.4) 31px 32px); font: 600 17px/1.75 var(--fonte-ui); }
+  #bilhete .faixa-carta { display: flex; align-items: center; gap: 8px; margin: 0 0 6px; padding: 8px 24px 8px 40px; width: fit-content; color: var(--branco); background: var(--azul-vivo);
+    font: 800 18px var(--fonte-ui); text-transform: uppercase; clip-path: polygon(0 0, calc(100% - var(--corte)) 0, 100% var(--corte), 100% 100%, 0 100%); }
+  #bilhete .alfinete { position: absolute; left: 10px; top: 6px; width: 26px; height: 26px; color: var(--laranja); z-index: 1; }
+  #bilhete .papel p { margin: 0; padding: 4px 26px 0; }
+  #bilhete small { color: var(--tinta-2); padding: 0 26px; }
+  #bilhete .fechar-carta { margin: 12px 26px 0 auto; display: flex; }
+  #bilhete .fechar-carta .i { width: 20px; height: 20px; filter: drop-shadow(0 0 1px var(--contorno-btn)); }
+  /* Reduzir flashes: sem elevação no foco nem deslocamento ao apertar */
+  body.sem-flashes :is(#tela, .fundo-modal, #gameover, #mapaMundi, #bilhete) :is(button, .item-menu):is(:focus, :active) { transform: none; }
+  body.sem-flashes :is(#tela, .fundo-modal, #gameover, #mapaMundi, #bilhete) :is(.botao.principal, #jogar, #pausaContinuar, #tentarDeNovo, .mm-embarcar, .fechar-carta):is(:focus, :active) { transform: skewX(var(--incl-texto-botao)); }
+  /* celular deitado: telas cheias mais compactas, alvos continuam ≥ 48 */
+  @media (max-height: 520px) {
+    :is(#paineis, #graficos) .janela { padding-top: max(8px, env(safe-area-inset-top)); }
+    :is(#paineis, #graficos) .janela footer { top: max(8px, env(safe-area-inset-top)); }
+    :is(#paineis, #graficos) .janela h2 { font-size: 22px; padding: 8px 32px 8px 16px; }
+    :is(#paineis, #graficos) .janela .corpo { margin-top: 8px; padding: 8px; }
+    #paineis .abas { margin-top: 8px; }
+    #pausa h2 { padding: 8px 20px; font-size: 22px; }
+    #pausa .corpo { padding: 8px 16px 4px; }
+    #tela h1 { font-size: 52px; }
+  }
+  /* ==================== MOCHILA (etapa e; mochila.js) ====================
+     design/ux/mochila-loja-popups.md §3 (wireframes) + interaction-patterns.md 2.1–2.7, 2.11–2.12 + visual-design §1.9.
+     Tela cheia sobre o jogo pausado: céu com losangos, barra de topo, categorias (losango / card ativo laranja),
+     retrato da Brisa, grade de slots, detalhe e botão de ação inclinado. A escala de texto vale para tudo. */
+  #mochila { --anel-foco: 0 0 0 3px var(--tinta), 0 0 0 5px var(--branco);
+    position: fixed; inset: 0; z-index: 12; box-sizing: border-box; overflow: auto; color: var(--tinta); font-family: var(--fonte-ui);
+    background: var(--losangos-mb) center / 170px, var(--fundo-ceu);
+    --losangos-mb: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='170' height='170'%3E%3Crect x='25' y='25' width='120' height='120' transform='rotate(45 85 85)' fill='%23ffffff' fill-opacity='.08' stroke='%23ffffff' stroke-opacity='.35' stroke-width='2'/%3E%3C/svg%3E");
+    display: grid; grid-template-columns: 220px minmax(0, 0.9fr) minmax(0, 1.3fr); grid-template-rows: auto minmax(0, 1fr); gap: 16px 24px;
+    padding: max(16px, env(safe-area-inset-top)) max(24px, env(safe-area-inset-right)) max(16px, env(safe-area-inset-bottom)) max(24px, env(safe-area-inset-left));
+    animation: abrirMochila .18s var(--ease-ui); }
+  #mochila[hidden] { display: none; }
+  @keyframes abrirMochila { from { opacity: 0; transform: scale(.97); } }
+  body.sem-flashes #mochila { animation: abrirMochilaFade .1s linear; }
+  @keyframes abrirMochilaFade { from { opacity: 0; } }
+  #mochila > * { zoom: var(--escala-texto); }
+  #mochila :is(button):focus { outline: none; box-shadow: var(--anel-foco); }
+  /* barra de topo (IP 2.1) */
+  #mochila .mb-topo { grid-column: 1 / -1; display: flex; align-items: center; gap: 16px; min-width: 0; }
+  #mochila .mb-voltar { display: flex; align-items: center; gap: 6px; min-width: 56px; min-height: 56px; padding: 0 14px; border: 0; border-radius: 14px; background: var(--azul-vivo); color: var(--branco); font: 800 16px var(--fonte-ui); text-transform: uppercase; cursor: pointer; }
+  #mochila .mb-voltar .i { width: 24px; height: 24px; }
+  #mochila .mb-titulo { margin: 0; padding: 8px 40px 8px 20px; background: var(--azul-vivo); color: var(--branco); font: 800 28px var(--fonte-ui); text-transform: uppercase;
+    transform: skewX(var(--incl-titulo)); clip-path: polygon(0 0, calc(100% - var(--corte)) 0, 100% var(--corte), 100% 100%, 0 100%); }
+  #mochila .mb-moedas { margin-left: auto; display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+  .pilula-moeda { display: inline-flex; align-items: center; gap: 6px; min-height: 40px; padding: 2px 14px 2px 6px; box-sizing: border-box; border-radius: 999px;
+    background: var(--azul-fundo-pilula); color: var(--branco); font: 800 18px var(--fonte-ui); font-variant-numeric: tabular-nums; outline: var(--pesponto-claro); outline-offset: -5px; }
+  .pilula-moeda .i { width: 28px; height: 28px; color: var(--start-b); }
+  /* categorias (IP 2.3): losango inativo, card largo laranja ativo com canto cortado */
+  #mochila .mb-categorias { display: flex; flex-direction: column; gap: 12px; min-height: 0; }
+  #mochila .mb-cat { position: relative; display: grid; grid-template-columns: 64px 1fr; grid-template-rows: auto auto; align-items: center; column-gap: 10px; min-height: 64px; padding: 4px 8px 4px 0;
+    border: 0; background: none; color: var(--tinta); font: 800 16px var(--fonte-ui); text-align: left; text-transform: uppercase; cursor: pointer; border-radius: 12px; }
+  #mochila .mb-losango { grid-row: 1 / 3; display: grid; place-items: center; width: 52px; height: 52px; margin: 6px; transform: rotate(45deg); border-radius: 10px; background: var(--branco); border: 2px solid var(--ceu-2); box-shadow: var(--sombra-suave); }
+  #mochila .mb-cat-icone { width: 40px; height: 40px; transform: rotate(-45deg); }
+  #mochila .mb-cat-nome { align-self: end; }
+  #mochila .mb-cat-conta { align-self: start; font: 800 14px var(--fonte-ui); color: var(--tinta-2); }
+  #mochila .mb-cat.ativa { background: var(--laranja); color: var(--branco); padding-right: 16px; clip-path: polygon(0 0, 100% 0, 100% calc(100% - var(--corte)), calc(100% - var(--corte)) 100%, 0 100%); }
+  #mochila .mb-cat.ativa .mb-cat-conta { color: var(--branco); }
+  #mochila .mb-cat.ativa .mb-losango { transform: none; border-radius: 50%; border-color: var(--branco); }
+  #mochila .mb-cat.ativa .mb-cat-icone { transform: none; }
+  .mb-novo { position: absolute; top: 2px; right: 2px; padding: 0 6px; border-radius: 999px; background: var(--laranja); color: var(--branco); border: 2px solid var(--branco); font: 800 14px/18px var(--fonte-ui); text-transform: uppercase; animation: pulsoNovo 1s ease-in-out infinite alternate; }
+  .mb-novo[hidden] { display: none; }
+  #mochila .mb-cat.ativa .mb-novo { background: var(--branco); color: var(--laranja); }
+  @keyframes pulsoNovo { to { transform: scale(1.08); } }
+  body.sem-flashes .mb-novo { animation: none; }
+  /* retrato da Brisa sobre pedestal de losango */
+  #mochila .mb-centro { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 0; }
+  #mochila .mb-retrato { position: relative; z-index: 1; display: grid; place-items: center; width: min(100%, 300px); aspect-ratio: 3 / 4; }
+  #mochila .mb-retrato img { width: 100%; height: 100%; object-fit: cover; border-radius: var(--r-painel); border: 4px solid var(--branco); box-shadow: var(--sombra-suave); }
+  #mochila .mb-retrato-falta { width: 60%; height: 60%; color: var(--azul-vivo); }
+  #mochila .mb-pedestal { width: min(80%, 260px); height: 36px; margin-top: -18px; border-radius: 50%; background: rgba(255, 255, 255, 0.6); box-shadow: 0 6px 0 var(--ceu-2); }
+  /* painel: abas, grade (IP 2.5/2.6), detalhe (2.11), ação (2.7) */
+  #mochila .mb-painel { display: grid; grid-template-rows: auto auto auto 1fr auto; gap: 12px; min-height: 0; min-width: 0; }
+  #mochila .mb-abas { display: flex; gap: 8px; }
+  #mochila .mb-abas[hidden] { display: none; }
+  #mochila .mb-aba { min-height: 48px; padding: 0 22px; border: 2px solid var(--ceu-2); border-radius: 999px; background: var(--branco); color: var(--tinta); font: 800 16px var(--fonte-ui); text-transform: uppercase; cursor: pointer; }
+  #mochila .mb-aba.ativa { background: var(--azul-vivo); border-color: var(--azul-vivo); color: var(--branco); }
+  #mochila .mb-aba.ativa::before { content: '✓ '; }
+  #mochila .mb-grade { display: grid; grid-template-columns: repeat(4, 88px); gap: 12px; padding: 16px; border-radius: var(--r-painel); background: rgba(244, 251, 255, 0.92); box-shadow: var(--sombra-suave); align-content: start; justify-content: start; }
+  #mochila .mb-slot { position: relative; display: grid; place-items: center; width: 88px; height: 88px; padding: 0; border: 2px solid transparent; border-radius: var(--r-slot); background: var(--slot); color: var(--tinta); cursor: pointer; }
+  #mochila .mb-slot-icone { width: 64px; height: 64px; }
+  #mochila .mb-slot.trancado { background: rgba(207, 233, 250, 0.6); }
+  #mochila .mb-slot.trancado .mb-cadeado { width: 28px; height: 28px; color: var(--cadeado); }
+  #mochila .mb-slot-nome { position: absolute; bottom: 4px; font: 800 14px var(--fonte-ui); color: var(--tinta-2); }
+  #mochila .mb-slot.selecionado { background: var(--limao); border: 3px solid var(--tinta); }
+  #mochila .mb-slot.selecionado::after { content: '✓'; position: absolute; top: -8px; left: -8px; display: grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; background: var(--limao); border: 2px solid var(--tinta); font: 800 14px/1 var(--fonte-ui); color: var(--tinta); }
+  #mochila .mb-slot .mb-novo { top: -8px; right: -8px; }
+  #mochila .mb-nivel { position: absolute; right: 4px; bottom: 4px; padding: 0 6px; border-radius: 999px; background: var(--branco); border: 2px solid var(--ceu-2); font: 800 14px/18px var(--fonte-ui); }
+  #mochila .mb-vazio { display: flex; align-items: center; gap: 12px; margin: 0; padding: 16px; border-radius: var(--r-painel); background: var(--branco); font: 700 16px var(--fonte-ui); }
+  #mochila .mb-vazio[hidden] { display: none; }
+  #mochila .mb-vazio-icone { width: 48px; height: 48px; color: var(--azul-vivo); }
+  #mochila .mb-detalhe { min-height: 0; overflow: auto; padding: 16px; border-radius: var(--r-painel); background: var(--branco); box-shadow: var(--sombra-suave); font: 600 16px/1.45 var(--fonte-ui); }
+  #mochila .mb-detalhe p { margin: 6px 0 0; }
+  #mochila .mb-det-cab { display: flex; align-items: center; gap: 12px; }
+  #mochila .mb-det-cab h3 { margin: 0; font: 800 20px var(--fonte-ui); }
+  #mochila .mb-det-icone { width: 72px; height: 72px; flex: none; }
+  #mochila .mb-det-icone.trancado { width: 40px; height: 40px; color: var(--cadeado); }
+  #mochila .mb-etiqueta { display: inline-block; margin-top: 2px; padding: 0 10px; border-radius: 999px; background: var(--azul-vivo); color: var(--branco); font: 800 14px var(--fonte-ui); }
+  #mochila .mb-stat { display: grid; grid-template-columns: 110px 1fr 44px; align-items: center; gap: 8px; margin-top: 6px; }
+  #mochila .mb-barra { height: 12px; border-radius: 999px; background: var(--slot); overflow: hidden; }
+  #mochila .mb-barra i { display: block; height: 100%; background: var(--azul-vivo); }
+  #mochila .mb-niveis { display: flex; align-items: center; gap: 6px; margin-top: 8px; }
+  #mochila .mb-niveis i { width: 40px; height: 12px; border-radius: 999px; background: var(--slot); box-shadow: inset 0 0 0 1.5px var(--tinta-2); }
+  #mochila .mb-niveis i.cheio { background: var(--laranja); box-shadow: inset 0 0 0 1.5px var(--tinta); }
+  #mochila .mb-niveis b { margin-left: 6px; }
+  #mochila .mb-preco { display: flex; align-items: center; gap: 8px; }
+  /* botão de ação inclinado (IP 2.7), sem borda: texto branco com contorno escuro */
+  #mochila .mb-acao { position: relative; isolation: isolate; justify-self: end; min-width: 160px; min-height: 64px; padding: 0 28px; border: 0; background: none; cursor: pointer; color: var(--branco);
+    font: 800 20px var(--fonte-ui); text-transform: uppercase; transform: skewX(var(--incl-texto-botao));
+    text-shadow: 0 2px 0 var(--contorno-btn), 0 -2px 0 var(--contorno-btn), 2px 0 0 var(--contorno-btn), -2px 0 0 var(--contorno-btn), 1.5px 1.5px 0 var(--contorno-btn), -1.5px 1.5px 0 var(--contorno-btn), 1.5px -1.5px 0 var(--contorno-btn), -1.5px -1.5px 0 var(--contorno-btn), 0 3px 0 var(--contorno-btn); }
+  #mochila .mb-acao::before { content: ''; position: absolute; inset: 0; z-index: -1; border-radius: 12px; transform: skewX(-8deg); background: linear-gradient(90deg, var(--start-a), var(--start-b)); box-shadow: var(--sombra-botao); outline: var(--pesponto-claro); outline-offset: -6px; }
+  #mochila .mb-acao:focus { box-shadow: none; } #mochila .mb-acao:focus::before { box-shadow: var(--anel-foco), var(--sombra-botao); }
+  #mochila .mb-acao:active { transform: skewX(var(--incl-texto-botao)) translateY(2px); }
+  #mochila .mb-acao[hidden] { display: none; }
+  #mochila .mb-acao:disabled { color: var(--tinta-2); text-shadow: none; cursor: not-allowed; font-size: 16px; }
+  #mochila .mb-acao:disabled::before { background: var(--desab-fundo); box-shadow: none; outline-color: rgba(74, 94, 115, .4); }
+  #mochila .mb-sec { display: inline-flex; align-items: center; gap: 6px; min-height: 48px; padding: 0 18px; border: 2px solid var(--azul-vivo); border-radius: 999px; background: var(--branco); color: var(--tinta); font: 800 16px var(--fonte-ui); text-transform: uppercase; cursor: pointer; }
+  #mochila .mb-sec[hidden] { display: none; } #mochila .mb-sec:disabled { opacity: .6; cursor: not-allowed; }
+  #mochila .mb-sec .i { width: 20px; height: 20px; }
+  /* leitor de carta / lembrança e erro: modal (IP 2.9) */
+  #mochila :is(.mb-leitor, .mb-erro) { position: fixed; inset: 0; z-index: 2; display: grid; place-items: center; padding: 16px; background: rgba(15, 42, 71, 0.4); zoom: 1; }
+  #mochila :is(.mb-leitor, .mb-erro)[hidden] { display: none; }
+  #mochila .mb-papel { width: min(520px, 100%); max-height: 100%; overflow: auto; box-sizing: border-box; padding: 0 0 16px; border-radius: 12px; background: var(--papel); box-shadow: var(--sombra-suave); zoom: var(--escala-texto);
+    background-image: repeating-linear-gradient(transparent 0 31px, rgba(205, 235, 251, 0.4) 31px 32px); }
+  #mochila .mb-faixa { margin: 0 0 8px; padding: 10px 28px 10px 20px; width: fit-content; background: var(--azul-vivo); color: var(--branco); font: 800 20px var(--fonte-ui); text-transform: uppercase; clip-path: polygon(0 0, calc(100% - var(--corte)) 0, 100% var(--corte), 100% 100%, 0 100%); }
+  #mochila .mb-texto { margin: 0; padding: 4px 22px 0; font: 600 17px/1.75 var(--fonte-ui); color: var(--tinta); white-space: pre-line; }
+  #mochila .mb-leitor-botoes { display: flex; flex-wrap: wrap; gap: 8px; justify-content: flex-end; align-items: center; padding: 16px 22px 0; }
+  /* carregando: esqueleto de slots (1 Hz; parado com Reduzir flashes) */
+  #mochila.carregando .mb-slot { background: var(--desab-fundo); animation: esqueleto 1s ease-in-out infinite alternate; }
+  #mochila.carregando .mb-slot > * { visibility: hidden; }
+  @keyframes esqueleto { to { opacity: .55; } }
+  body.sem-flashes #mochila.carregando .mb-slot { animation: none; }
+  /* com a Mochila aberta, o HUD e os botões de toque somem (ela cobre a tela) */
+  body:has(#mochila:not([hidden])) :is(#hud, #objetivo, #dica, #dicaTutorial, #fala, #interagir, #golpe, #aviso, #memoria, .toque, #tutorial) { visibility: hidden; }
+  /* celular deitado: sem o retrato grande (vira miniatura no topo), categorias só losangos, 3 colunas */
+  @media (max-height: 520px) and (orientation: landscape) {
+    #mochila { grid-template-columns: auto minmax(0, 1fr) minmax(0, 1fr); gap: 8px 12px; }
+    #mochila .mb-centro { display: none; }
+    #mochila .mb-titulo { font-size: 22px; padding: 6px 32px 6px 16px; }
+    #mochila .mb-cat { grid-template-columns: 64px; padding: 0; min-width: 64px; }
+    #mochila .mb-cat :is(.mb-cat-nome, .mb-cat-conta) { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+    #mochila .mb-cat.ativa { padding: 0; clip-path: none; border-radius: 50%; width: 64px; }
+    #mochila .mb-categorias { gap: 8px; }
+    #mochila .mb-painel { grid-column: 2 / 4; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-template-rows: auto 1fr auto; column-gap: 12px; }
+    #mochila .mb-abas { grid-column: 1 / -1; }
+    #mochila .mb-grade { grid-template-columns: repeat(3, 64px); gap: 8px; padding: 8px; grid-row: 2 / 4; }
+    #mochila .mb-vazio { grid-row: 2; }
+    #mochila .mb-slot { width: 64px; height: 64px; } #mochila .mb-slot-icone { width: 48px; height: 48px; }
+    #mochila .mb-detalhe { grid-column: 2; grid-row: 2; padding: 10px; }
+    #mochila .mb-det-icone { width: 48px; height: 48px; }
+    #mochila .mb-acao { grid-column: 2; grid-row: 3; min-height: 56px; }
+    #mochila .pilula-moeda { min-height: 40px; font-size: 16px; }
+  }
+  /* celular em pé: uma coluna; categorias em faixa horizontal que rola; retrato some */
+  @media (max-width: 600px) and (orientation: portrait) {
+    #mochila { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto auto minmax(0, 1fr); gap: 12px; padding-left: max(12px, env(safe-area-inset-left)); padding-right: max(12px, env(safe-area-inset-right)); }
+    #mochila .mb-topo { flex-wrap: wrap; gap: 8px; }
+    #mochila .mb-titulo { font-size: 22px; padding: 6px 30px 6px 14px; }
+    #mochila .mb-centro { display: none; }
+    #mochila .mb-categorias { flex-direction: row; overflow-x: auto; gap: 8px; padding: 4px 2px 6px; }
+    #mochila .mb-cat { flex: none; grid-template-columns: 64px; min-width: 64px; padding: 0; }
+    #mochila .mb-cat :is(.mb-cat-nome, .mb-cat-conta) { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+    #mochila .mb-cat.ativa { padding: 0 12px 0 0; grid-template-columns: 64px auto; }
+    #mochila .mb-cat.ativa :is(.mb-cat-nome, .mb-cat-conta) { position: static; width: auto; height: auto; clip-path: none; }
+    #mochila .mb-grade { grid-template-columns: repeat(3, 72px); gap: 8px; padding: 10px; justify-content: center; }
+    #mochila .mb-slot { width: 72px; height: 72px; } #mochila .mb-slot-icone { width: 52px; height: 52px; }
+    #mochila .mb-painel { grid-template-rows: auto auto auto auto auto; }
+  }
+  /* Maior: a grade perde colunas em vez de cortar */
+  :root[data-texto-grande="sim"] #mochila .mb-grade { grid-template-columns: repeat(3, 88px); }
+  @media (max-height: 520px) and (orientation: landscape) { :root[data-texto-grande="sim"] #mochila .mb-grade { grid-template-columns: repeat(2, 64px); } }
+  @media (max-width: 600px) and (orientation: portrait) { :root[data-texto-grande="sim"] #mochila .mb-grade { grid-template-columns: repeat(2, 72px); } }
 </style>
 <!-- bibliotecas na própria pasta (vendor/): three 0.165.0, three-mesh-bvh 0.7.6, meshoptimizer 0.21.0. O jogo roda sem internet (e dentro do APK) -->
-<script type="importmap">{"imports":{"three":"./vendor/three/build/three.module.js","three/addons/":"./vendor/three/examples/jsm/","three-mesh-bvh":"./vendor/three-mesh-bvh/build/index.module.js","meshoptimizer/simplifier":"./vendor/meshoptimizer/meshopt_simplifier.module.js","./src/agua.js":"./src/agua.js?v=e2a2da6b9b","./src/altos.js":"./src/altos.js?v=ac761e4342","./src/animLuta.js":"./src/animLuta.js?v=ba5d6f9de7","./src/animais.js":"./src/animais.js?v=5a63b0bc33","./src/boneca.js":"./src/boneca.js?v=0eef2507c2","./src/bonecaNova.js":"./src/bonecaNova.js?v=7ea290af16","./src/cachoeira.js":"./src/cachoeira.js?v=f700bc46b9","./src/cambalhota.js":"./src/cambalhota.js?v=aff8debf26","./src/campanha.js":"./src/campanha.js?v=983babcac9","./src/canvasTextura.js":"./src/canvasTextura.js?v=8ddd89e18a","./src/capitulo.js":"./src/capitulo.js?v=5631f04f86","./src/casas.js":"./src/casas.js?v=f3dfa565ca","./src/ceu.js":"./src/ceu.js?v=8ffb931fd1","./src/chuva.js":"./src/chuva.js?v=6cf0295986","./src/colisao.js":"./src/colisao.js?v=ac6260ec0b","./src/combate.js":"./src/combate.js?v=6ad26f3497","./src/dia.js":"./src/dia.js?v=e05b6cc395","./src/dificuldade.js":"./src/dificuldade.js?v=cfdf2ff62e","./src/distancia.js":"./src/distancia.js?v=9a5844420e","./src/estilo.js":"./src/estilo.js?v=0c453af42f","./src/fisica.js":"./src/fisica.js?v=7949a2cbcf","./src/folhas.js":"./src/folhas.js?v=0703e7d0dd","./src/graficos.js":"./src/graficos.js?v=66a6779bf1","./src/historia.js":"./src/historia.js?v=7aff3796aa","./src/ilha.js":"./src/ilha.js?v=670fb485d3","./src/inimigos.js":"./src/inimigos.js?v=39857a4c33","./src/jogo.js":"./src/jogo.js?v=d77fae37b3","./src/lotes.js":"./src/lotes.js?v=f3831174bf","./src/mapa.js":"./src/mapa.js?v=eb1d8bbcc0","./src/mapaMundi.js":"./src/mapaMundi.js?v=3eb13da7fc","./src/mundo.js":"./src/mundo.js?v=262a267749","./src/nevoa.js":"./src/nevoa.js?v=9bccad8ac5","./src/objetos.js":"./src/objetos.js?v=a78546e0b2","./src/oclusao.js":"./src/oclusao.js?v=a1ec74f05f","./src/particulas.js":"./src/particulas.js?v=efad11a94e","./src/pegaso.js":"./src/pegaso.js?v=08c8aa3a88","./src/pes.js":"./src/pes.js?v=9f8ed5d180","./src/praia.js":"./src/praia.js?v=700cd3c717","./src/praiaForma.js":"./src/praiaForma.js?v=79c406a618","./src/reparos.js":"./src/reparos.js?v=e805cead1a","./src/resolucao.js":"./src/resolucao.js?v=0d1e50cb15","./src/salvar.js":"./src/salvar.js?v=0d75e7e284","./src/simplificar.js":"./src/simplificar.js?v=a439e6c6ca","./src/som.js":"./src/som.js?v=b03701df1b","./src/sombraBoneca.js":"./src/sombraBoneca.js?v=02b8ff3403","./src/suavizar.js":"./src/suavizar.js?v=042d8dcf4b","./src/terreno.js":"./src/terreno.js?v=30a71b0a42","./src/texturas.js":"./src/texturas.js?v=5b74c7049c","./src/tutorial.js":"./src/tutorial.js?v=1f1fb0bc8d","./src/vilao.js":"./src/vilao.js?v=371b1a1e1f"}}</script>
+<script type="importmap">{"imports":{"three":"./vendor/three/build/three.module.js","three/addons/":"./vendor/three/examples/jsm/","three-mesh-bvh":"./vendor/three-mesh-bvh/build/index.module.js","meshoptimizer/simplifier":"./vendor/meshoptimizer/meshopt_simplifier.module.js","./src/agua.js":"./src/agua.js?v=e2a2da6b9b","./src/altos.js":"./src/altos.js?v=ac761e4342","./src/animLuta.js":"./src/animLuta.js?v=ba5d6f9de7","./src/animais.js":"./src/animais.js?v=5a63b0bc33","./src/boneca.js":"./src/boneca.js?v=0eef2507c2","./src/bonecaNova.js":"./src/bonecaNova.js?v=7ea290af16","./src/cachoeira.js":"./src/cachoeira.js?v=f700bc46b9","./src/cambalhota.js":"./src/cambalhota.js?v=aff8debf26","./src/campanha.js":"./src/campanha.js?v=47fb9ee53d","./src/canvasTextura.js":"./src/canvasTextura.js?v=8ddd89e18a","./src/capitulo.js":"./src/capitulo.js?v=5631f04f86","./src/casas.js":"./src/casas.js?v=f3dfa565ca","./src/ceu.js":"./src/ceu.js?v=8ffb931fd1","./src/chuva.js":"./src/chuva.js?v=6cf0295986","./src/colisao.js":"./src/colisao.js?v=ac6260ec0b","./src/combate.js":"./src/combate.js?v=9715b4a5a7","./src/dia.js":"./src/dia.js?v=e05b6cc395","./src/dificuldade.js":"./src/dificuldade.js?v=cfdf2ff62e","./src/distancia.js":"./src/distancia.js?v=9a5844420e","./src/estilo.js":"./src/estilo.js?v=0c453af42f","./src/fisica.js":"./src/fisica.js?v=7949a2cbcf","./src/folhas.js":"./src/folhas.js?v=0703e7d0dd","./src/graficos.js":"./src/graficos.js?v=66a6779bf1","./src/historia.js":"./src/historia.js?v=7aff3796aa","./src/ilha.js":"./src/ilha.js?v=670fb485d3","./src/inimigos.js":"./src/inimigos.js?v=39857a4c33","./src/inventario.js":"./src/inventario.js?v=d297dc14e0","./src/itens.js":"./src/itens.js?v=18789ccafe","./src/jogo.js":"./src/jogo.js?v=66590d2f4f","./src/lotes.js":"./src/lotes.js?v=f3831174bf","./src/mapa.js":"./src/mapa.js?v=eb1d8bbcc0","./src/mapaMundi.js":"./src/mapaMundi.js?v=3eb13da7fc","./src/mochila.js":"./src/mochila.js?v=1786c811e0","./src/mundo.js":"./src/mundo.js?v=262a267749","./src/nevoa.js":"./src/nevoa.js?v=9bccad8ac5","./src/objetos.js":"./src/objetos.js?v=a78546e0b2","./src/oclusao.js":"./src/oclusao.js?v=a1ec74f05f","./src/particulas.js":"./src/particulas.js?v=efad11a94e","./src/pegaso.js":"./src/pegaso.js?v=08c8aa3a88","./src/pes.js":"./src/pes.js?v=9f8ed5d180","./src/praia.js":"./src/praia.js?v=700cd3c717","./src/praiaForma.js":"./src/praiaForma.js?v=79c406a618","./src/reparos.js":"./src/reparos.js?v=e805cead1a","./src/resolucao.js":"./src/resolucao.js?v=0d1e50cb15","./src/salvar.js":"./src/salvar.js?v=9149d1a3c4","./src/simplificar.js":"./src/simplificar.js?v=a439e6c6ca","./src/som.js":"./src/som.js?v=d812dac563","./src/sombraBoneca.js":"./src/sombraBoneca.js?v=02b8ff3403","./src/suavizar.js":"./src/suavizar.js?v=042d8dcf4b","./src/terreno.js":"./src/terreno.js?v=30a71b0a42","./src/texturas.js":"./src/texturas.js?v=5b74c7049c","./src/tutorial.js":"./src/tutorial.js?v=1f1fb0bc8d","./src/vilao.js":"./src/vilao.js?v=5742a89aa1"}}</script>
 </head>
 <body>
+<!-- ícones da nova UI (production/ui/nova-ui/visual-design.md §4; gerado por um script, um símbolo por linha):
+     it-* e i-cat-* são ilustrados 48x48 (corpo em degradê, sombra interna, contorno tinta, brilho e pesponto);
+     i-* são de interface, 24x24, traço 2,5. Cores por variáveis (--tinta, --il-*...) definidas no :root. -->
+<svg id="sprite-icones" width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <defs><linearGradient id="g-madeira" x1="0" y1="0" x2="0" y2="1"><stop offset="0" style="stop-color:var(--il-madeira)"/><stop offset="1" style="stop-color:var(--il-madeira-esc)"/></linearGradient><linearGradient id="g-prata" x1="0" y1="0" x2="0" y2="1"><stop offset="0" style="stop-color:var(--il-prata)"/><stop offset="1" style="stop-color:var(--il-prata-esc)"/></linearGradient><linearGradient id="g-ouro" x1="0" y1="0" x2="0" y2="1"><stop offset="0" style="stop-color:var(--il-ouro)"/><stop offset="1" style="stop-color:var(--il-ouro-esc)"/></linearGradient><linearGradient id="g-vidro" x1="0" y1="0" x2="0" y2="1"><stop offset="0" style="stop-color:var(--il-vidro)"/><stop offset="1" style="stop-color:var(--il-vidro-esc)"/></linearGradient><linearGradient id="g-chita" x1="0" y1="0" x2="0" y2="1"><stop offset="0" style="stop-color:var(--il-chita)"/><stop offset="1" style="stop-color:var(--il-chita-esc)"/></linearGradient><linearGradient id="g-laranja" x1="0" y1="0" x2="0" y2="1"><stop offset="0" style="stop-color:var(--start-a)"/><stop offset="1" style="stop-color:var(--laranja)"/></linearGradient><linearGradient id="g-limao" x1="0" y1="0" x2="0" y2="1"><stop offset="0" style="stop-color:var(--mais)"/><stop offset="1" style="stop-color:var(--limao)"/></linearGradient><linearGradient id="g-azul" x1="0" y1="0" x2="0" y2="1"><stop offset="0" style="stop-color:var(--ceu-2)"/><stop offset="1" style="stop-color:var(--azul-vivo)"/></linearGradient><linearGradient id="g-papel" x1="0" y1="0" x2="0" y2="1"><stop offset="0" style="stop-color:var(--papel)"/><stop offset="1" style="stop-color:var(--il-papel-esc)"/></linearGradient><linearGradient id="g-rosa" x1="0" y1="0" x2="0" y2="1"><stop offset="0" style="stop-color:var(--il-rosa-pano)"/><stop offset="1" style="stop-color:var(--il-rosa-esc)"/></linearGradient><linearGradient id="g-folha" x1="0" y1="0" x2="0" y2="1"><stop offset="0" style="stop-color:var(--il-folha)"/><stop offset="1" style="stop-color:var(--il-folha-esc)"/></linearGradient><linearGradient id="g-lilas" x1="0" y1="0" x2="0" y2="1"><stop offset="0" style="stop-color:var(--il-lilas-luz)"/><stop offset="1" style="stop-color:var(--il-lilas-esc)"/></linearGradient><linearGradient id="g-fuxico" x1="0" y1="0" x2="0" y2="1"><stop offset="0" style="stop-color:var(--start-b)"/><stop offset="1" style="stop-color:var(--start-a)"/></linearGradient><linearGradient id="g-estrela" x1="0" y1="0" x2="0" y2="1"><stop offset="0" style="stop-color:var(--branco)"/><stop offset="1" style="stop-color:var(--start-b)"/></linearGradient></defs>
+  <symbol id="it-carta" viewBox="0 0 48 48"><clipPath id="c-it-carta"><path d="M6 13a3 3 0 0 1 3-3h30a3 3 0 0 1 3 3v22a3 3 0 0 1-3 3H9a3 3 0 0 1-3-3z"/></clipPath><path d="M6 13a3 3 0 0 1 3-3h30a3 3 0 0 1 3 3v22a3 3 0 0 1-3 3H9a3 3 0 0 1-3-3z" style="fill:var(--il-papel-esc)"/><path d="M6 13a3 3 0 0 1 3-3h30a3 3 0 0 1 3 3v22a3 3 0 0 1-3 3H9a3 3 0 0 1-3-3z" transform="translate(-2 -2)" fill="url(#g-papel)" clip-path="url(#c-it-carta)"/><ellipse cx="17" cy="15" rx="6" ry="3.5" fill="#fff" opacity=".6" clip-path="url(#c-it-carta)"/><path d="M6 13a3 3 0 0 1 3-3h30a3 3 0 0 1 3 3v22a3 3 0 0 1-3 3H9a3 3 0 0 1-3-3z" fill="none" stroke="#fff" stroke-opacity=".7" stroke-width="1.2" stroke-dasharray="3 2.5" transform="translate(24 24) scale(.82) translate(-24 -24)"/><path d="M6 13a3 3 0 0 1 3-3h30a3 3 0 0 1 3 3v22a3 3 0 0 1-3 3H9a3 3 0 0 1-3-3z" fill="none" style="stroke:var(--tinta)" stroke-width="2.5" stroke-linejoin="round"/><path d="M7 12 24 26 41 12" fill="none" style="stroke:var(--tinta)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/><circle cx="24" cy="26" r="4" style="fill:var(--laranja);stroke:var(--tinta)" stroke-width="2"/></symbol>
+  <symbol id="it-lembranca" viewBox="0 0 48 48"><clipPath id="c-it-lembranca"><path d="M14 41 16 19q8-7 16 0l2 22z"/></clipPath><path d="M14 41 16 19q8-7 16 0l2 22z" style="fill:var(--il-prata-esc)"/><path d="M14 41 16 19q8-7 16 0l2 22z" transform="translate(-2 -2)" fill="url(#g-prata)" clip-path="url(#c-it-lembranca)"/><ellipse cx="17" cy="15" rx="6" ry="3.5" fill="#fff" opacity=".6" clip-path="url(#c-it-lembranca)"/><path d="M14 41 16 19q8-7 16 0l2 22z" fill="none" stroke="#fff" stroke-opacity=".7" stroke-width="1.2" stroke-dasharray="3 2.5" transform="translate(24 24) scale(.82) translate(-24 -24)"/><path d="M14 41 16 19q8-7 16 0l2 22z" fill="none" style="stroke:var(--tinta)" stroke-width="2.5" stroke-linejoin="round"/><circle cx="19" cy="26" r="1.6" style="fill:var(--il-prata-esc)"/><circle cx="24" cy="26" r="1.6" style="fill:var(--il-prata-esc)"/><circle cx="29" cy="26" r="1.6" style="fill:var(--il-prata-esc)"/><circle cx="19" cy="32" r="1.6" style="fill:var(--il-prata-esc)"/><circle cx="24" cy="32" r="1.6" style="fill:var(--il-prata-esc)"/><circle cx="29" cy="32" r="1.6" style="fill:var(--il-prata-esc)"/><path d="M24 4v6M15 7l3 5M33 7l-3 5" fill="none" style="stroke:var(--il-lilas-luz)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="it-garrafa" viewBox="0 0 48 48"><clipPath id="c-it-garrafa"><path d="M6 24a7 7 0 0 1 7-7h17l5 4h4v6h-4l-5 4H13a7 7 0 0 1-7-7z"/></clipPath><path d="M6 24a7 7 0 0 1 7-7h17l5 4h4v6h-4l-5 4H13a7 7 0 0 1-7-7z" style="fill:var(--il-vidro-esc)"/><path d="M6 24a7 7 0 0 1 7-7h17l5 4h4v6h-4l-5 4H13a7 7 0 0 1-7-7z" transform="translate(-2 -2)" fill="url(#g-vidro)" clip-path="url(#c-it-garrafa)"/><ellipse cx="14" cy="20" rx="6" ry="2" fill="#fff" opacity=".6" clip-path="url(#c-it-garrafa)"/><path d="M6 24a7 7 0 0 1 7-7h17l5 4h4v6h-4l-5 4H13a7 7 0 0 1-7-7z" fill="none" stroke="#fff" stroke-opacity=".7" stroke-width="1.2" stroke-dasharray="3 2.5" transform="translate(24 24) scale(.82) translate(-24 -24)"/><path d="M6 24a7 7 0 0 1 7-7h17l5 4h4v6h-4l-5 4H13a7 7 0 0 1-7-7z" fill="none" style="stroke:var(--tinta)" stroke-width="2.5" stroke-linejoin="round"/><rect x="11" y="21" width="15" height="6" rx="3" style="fill:var(--papel);stroke:var(--tinta)" stroke-width="1.5"/><rect x="38" y="20.5" width="5" height="7" rx="1.5" style="fill:var(--il-madeira);stroke:var(--tinta)" stroke-width="2"/></symbol>
+  <symbol id="it-renda" viewBox="0 0 48 48"><clipPath id="c-it-renda"><path d="M24 41 5 22A26 26 0 0 1 33 8l-3 9 9-1a26 26 0 0 1 4 6z"/></clipPath><path d="M24 41 5 22A26 26 0 0 1 33 8l-3 9 9-1a26 26 0 0 1 4 6z" style="fill:var(--il-papel-esc)"/><path d="M24 41 5 22A26 26 0 0 1 33 8l-3 9 9-1a26 26 0 0 1 4 6z" transform="translate(-2 -2)" fill="url(#g-papel)" clip-path="url(#c-it-renda)"/><ellipse cx="16" cy="16" rx="6" ry="3" fill="#fff" opacity=".6" clip-path="url(#c-it-renda)"/><path d="M24 41 5 22A26 26 0 0 1 33 8l-3 9 9-1a26 26 0 0 1 4 6z" fill="none" stroke="#fff" stroke-opacity=".7" stroke-width="1.2" stroke-dasharray="3 2.5" transform="translate(24 24) scale(.82) translate(-24 -24)"/><path d="M24 41 5 22A26 26 0 0 1 33 8l-3 9 9-1a26 26 0 0 1 4 6z" fill="none" style="stroke:var(--tinta)" stroke-width="2.5" stroke-linejoin="round"/><circle cx="14" cy="20" r="1.6" fill="none" style="stroke:var(--tinta)" stroke-width="1.2"/><circle cx="20" cy="15" r="1.6" fill="none" style="stroke:var(--tinta)" stroke-width="1.2"/><circle cx="27" cy="14" r="1.6" fill="none" style="stroke:var(--tinta)" stroke-width="1.2"/><circle cx="19" cy="25" r="1.6" fill="none" style="stroke:var(--tinta)" stroke-width="1.2"/><circle cx="26" cy="22" r="1.6" fill="none" style="stroke:var(--tinta)" stroke-width="1.2"/><circle cx="31" cy="24" r="1.6" fill="none" style="stroke:var(--tinta)" stroke-width="1.2"/><circle cx="24" cy="31" r="1.6" fill="none" style="stroke:var(--tinta)" stroke-width="1.2"/></symbol>
+  <symbol id="it-badalo" viewBox="0 0 48 48"><clipPath id="c-it-badalo"><path d="M24 11c9 8 11 20 0 30-11-10-9-22 0-30z"/></clipPath><path d="M24 11c9 8 11 20 0 30-11-10-9-22 0-30z" style="fill:var(--il-prata-esc)"/><path d="M24 11c9 8 11 20 0 30-11-10-9-22 0-30z" transform="translate(-2 -2)" fill="url(#g-prata)" clip-path="url(#c-it-badalo)"/><ellipse cx="17" cy="15" rx="6" ry="3.5" fill="#fff" opacity=".6" clip-path="url(#c-it-badalo)"/><path d="M24 11c9 8 11 20 0 30-11-10-9-22 0-30z" fill="none" stroke="#fff" stroke-opacity=".7" stroke-width="1.2" stroke-dasharray="3 2.5" transform="translate(24 24) scale(.82) translate(-24 -24)"/><path d="M24 11c9 8 11 20 0 30-11-10-9-22 0-30z" fill="none" style="stroke:var(--tinta)" stroke-width="2.5" stroke-linejoin="round"/><circle cx="24" cy="7.5" r="3" fill="none" style="stroke:var(--tinta)" stroke-width="2.5"/><path d="M35 19q4 6 0 12M39 16q6 9 0 18" fill="none" style="stroke:var(--azul-vivo)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="it-carretel" viewBox="0 0 48 48"><rect x="9" y="6" width="30" height="7" rx="2" style="fill:var(--il-madeira);stroke:var(--tinta)" stroke-width="2.5"/><rect x="9" y="35" width="30" height="7" rx="2" style="fill:var(--il-madeira);stroke:var(--tinta)" stroke-width="2.5"/><clipPath id="c-it-carretel"><path d="M14 12h20v24H14z"/></clipPath><path d="M14 12h20v24H14z" style="fill:var(--laranja)"/><path d="M14 12h20v24H14z" transform="translate(-2 -2)" fill="url(#g-laranja)" clip-path="url(#c-it-carretel)"/><ellipse cx="17" cy="15" rx="6" ry="3.5" fill="#fff" opacity=".6" clip-path="url(#c-it-carretel)"/><path d="M14 12h20v24H14z" fill="none" stroke="#fff" stroke-opacity=".7" stroke-width="1.2" stroke-dasharray="3 2.5" transform="translate(24 24) scale(.82) translate(-24 -24)"/><path d="M14 12h20v24H14z" fill="none" style="stroke:var(--tinta)" stroke-width="2.5" stroke-linejoin="round"/><path d="M14 20 34 15M14 27l20-5M14 34l20-5" fill="none" style="stroke:var(--il-chita-esc)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M34 30q9 2 8 11" fill="none" style="stroke:var(--laranja)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="it-lanterna" viewBox="0 0 48 48"><path d="M17 16q7-12 14 0" fill="none" style="stroke:var(--tinta)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/><clipPath id="c-it-lanterna"><path d="M14 16h20v22a3 3 0 0 1-3 3H17a3 3 0 0 1-3-3z"/></clipPath><path d="M14 16h20v22a3 3 0 0 1-3 3H17a3 3 0 0 1-3-3z" style="fill:var(--il-ouro-esc)"/><path d="M14 16h20v22a3 3 0 0 1-3 3H17a3 3 0 0 1-3-3z" transform="translate(-2 -2)" fill="url(#g-ouro)" clip-path="url(#c-it-lanterna)"/><ellipse cx="17" cy="15" rx="6" ry="3.5" fill="#fff" opacity=".6" clip-path="url(#c-it-lanterna)"/><path d="M14 16h20v22a3 3 0 0 1-3 3H17a3 3 0 0 1-3-3z" fill="none" stroke="#fff" stroke-opacity=".7" stroke-width="1.2" stroke-dasharray="3 2.5" transform="translate(24 24) scale(.82) translate(-24 -24)"/><path d="M14 16h20v22a3 3 0 0 1-3 3H17a3 3 0 0 1-3-3z" fill="none" style="stroke:var(--tinta)" stroke-width="2.5" stroke-linejoin="round"/><rect x="18.5" y="20" width="11" height="15" rx="2" fill="#FFF1B8" style="stroke:var(--tinta)" stroke-width="1.5"/></symbol>
+  <symbol id="it-ponteiro-horas" viewBox="0 0 48 48"><clipPath id="c-it-ponteiro-horas"><path d="M24 5l8 19-8 7-8-7z"/></clipPath><path d="M24 5l8 19-8 7-8-7z" style="fill:var(--il-ouro-esc)"/><path d="M24 5l8 19-8 7-8-7z" transform="translate(-2 -2)" fill="url(#g-ouro)" clip-path="url(#c-it-ponteiro-horas)"/><ellipse cx="21" cy="14" rx="3" ry="4" fill="#fff" opacity=".6" clip-path="url(#c-it-ponteiro-horas)"/><path d="M24 5l8 19-8 7-8-7z" fill="none" stroke="#fff" stroke-opacity=".7" stroke-width="1.2" stroke-dasharray="3 2.5" transform="translate(24 24) scale(.82) translate(-24 -24)"/><path d="M24 5l8 19-8 7-8-7z" fill="none" style="stroke:var(--tinta)" stroke-width="2.5" stroke-linejoin="round"/><path d="M24 31v6" fill="none" style="stroke:var(--tinta)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/><circle cx="24" cy="39" r="4.5" style="fill:var(--il-prata);stroke:var(--tinta)" stroke-width="2"/></symbol>
+  <symbol id="it-ponteiro-minutos" viewBox="0 0 48 48"><clipPath id="c-it-ponteiro-minutos"><path d="M24 3l3 32-3 3-3-3z"/></clipPath><path d="M24 3l3 32-3 3-3-3z" style="fill:var(--il-prata-esc)"/><path d="M24 3l3 32-3 3-3-3z" transform="translate(-2 -2)" fill="url(#g-prata)" clip-path="url(#c-it-ponteiro-minutos)"/><ellipse cx="23" cy="12" rx="1.5" ry="6" fill="#fff" opacity=".6" clip-path="url(#c-it-ponteiro-minutos)"/><path d="M24 3l3 32-3 3-3-3z" fill="none" style="stroke:var(--tinta)" stroke-width="2.5" stroke-linejoin="round"/><circle cx="24" cy="41" r="4" style="fill:var(--il-ouro);stroke:var(--tinta)" stroke-width="2"/></symbol>
+  <symbol id="it-fita" viewBox="0 0 48 48"><path d="M9 12c12-9 23 6 15 14s2 17 15 11" fill="none" style="stroke:var(--tinta)" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/><path d="M9 12c12-9 23 6 15 14s2 17 15 11" fill="none" style="stroke:var(--azul-vivo)" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/><circle cx="16" cy="10" r="2.2" style="fill:var(--branco)"/><circle cx="24" cy="26" r="2.2" style="fill:var(--branco)"/><circle cx="33" cy="37" r="2.2" style="fill:var(--branco)"/><path d="M12 15h3M28 33h3" fill="none" style="stroke:var(--branco)" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="it-bilro" viewBox="0 0 48 48"><path d="M30 9q12 6 9 26" fill="none" style="stroke:var(--branco)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><clipPath id="c-it-bilro"><path d="M21 15h6q3 6 0 10 5 8 1 17l-4 4-4-4q-4-9 1-17-3-4 0-10z"/></clipPath><path d="M21 15h6q3 6 0 10 5 8 1 17l-4 4-4-4q-4-9 1-17-3-4 0-10z" style="fill:var(--il-madeira-esc)"/><path d="M21 15h6q3 6 0 10 5 8 1 17l-4 4-4-4q-4-9 1-17-3-4 0-10z" transform="translate(-2 -2)" fill="url(#g-madeira)" clip-path="url(#c-it-bilro)"/><ellipse cx="21" cy="22" rx="2" ry="5" fill="#fff" opacity=".6" clip-path="url(#c-it-bilro)"/><path d="M21 15h6q3 6 0 10 5 8 1 17l-4 4-4-4q-4-9 1-17-3-4 0-10z" fill="none" stroke="#fff" stroke-opacity=".7" stroke-width="1.2" stroke-dasharray="3 2.5" transform="translate(24 24) scale(.82) translate(-24 -24)"/><path d="M21 15h6q3 6 0 10 5 8 1 17l-4 4-4-4q-4-9 1-17-3-4 0-10z" fill="none" style="stroke:var(--tinta)" stroke-width="2.5" stroke-linejoin="round"/><circle cx="24" cy="9" r="6" style="fill:var(--il-madeira);stroke:var(--tinta)" stroke-width="2"/></symbol>
+  <symbol id="it-no" viewBox="0 0 48 48"><path d="M7 32c5-17 29-17 19-4-8 11-16-4-2-10 12-5 18 8 17 18" fill="none" style="stroke:var(--tinta)" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/><path d="M7 32c5-17 29-17 19-4-8 11-16-4-2-10 12-5 18 8 17 18" fill="none" style="stroke:var(--laranja)" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="it-ponta-fio" viewBox="0 0 48 48"><clipPath id="c-it-ponta-fio"><path d="M8 30a13 13 0 1 0 26 0 13 13 0 0 0-26 0z"/></clipPath><path d="M8 30a13 13 0 1 0 26 0 13 13 0 0 0-26 0z" style="fill:var(--il-rosa-esc)"/><path d="M8 30a13 13 0 1 0 26 0 13 13 0 0 0-26 0z" transform="translate(-2 -2)" fill="url(#g-rosa)" clip-path="url(#c-it-ponta-fio)"/><ellipse cx="15" cy="23" rx="5" ry="3" fill="#fff" opacity=".6" clip-path="url(#c-it-ponta-fio)"/><path d="M8 30a13 13 0 1 0 26 0 13 13 0 0 0-26 0z" fill="none" stroke="#fff" stroke-opacity=".7" stroke-width="1.2" stroke-dasharray="3 2.5" transform="translate(24 24) scale(.82) translate(-24 -24)"/><path d="M8 30a13 13 0 1 0 26 0 13 13 0 0 0-26 0z" fill="none" style="stroke:var(--tinta)" stroke-width="2.5" stroke-linejoin="round"/><path d="M11 24q10 4 20-2M10 32q11 5 23-1M15 40q8-14 17-19" fill="none" style="stroke:var(--il-rosa-esc)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M33 20c8-2 11-11 5-13-5-1-7 4-3 6" fill="none" style="stroke:var(--il-ouro)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="it-galho" viewBox="0 0 48 48"><path d="M8 41 40 8M22 27l-8-4M30 19l2-9" fill="none" style="stroke:var(--tinta)" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/><path d="M8 41 40 8M22 27l-8-4M30 19l2-9" fill="none" style="stroke:var(--il-madeira)" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/><ellipse cx="13" cy="20" rx="6" ry="3.5" transform="rotate(25 13 20)" style="fill:var(--il-folha);stroke:var(--tinta)" stroke-width="2"/><ellipse cx="35" cy="9" rx="3.5" ry="6" transform="rotate(30 35 9)" style="fill:var(--il-folha);stroke:var(--tinta)" stroke-width="2"/></symbol>
+  <symbol id="it-agulha" viewBox="0 0 48 48"><clipPath id="c-it-agulha"><path d="M8 42 35 11q4-4 6-2t-2 6L12 42z"/></clipPath><path d="M8 42 35 11q4-4 6-2t-2 6L12 42z" style="fill:var(--il-prata-esc)"/><path d="M8 42 35 11q4-4 6-2t-2 6L12 42z" transform="translate(-2 -2)" fill="url(#g-prata)" clip-path="url(#c-it-agulha)"/><ellipse cx="30" cy="16" rx="2" ry="6" fill="#fff" opacity=".6" clip-path="url(#c-it-agulha)"/><path d="M8 42 35 11q4-4 6-2t-2 6L12 42z" fill="none" style="stroke:var(--tinta)" stroke-width="2.5" stroke-linejoin="round"/><ellipse cx="37.5" cy="12.5" rx="1.4" ry="3" transform="rotate(45 37.5 12.5)" style="fill:var(--branco);stroke:var(--tinta)" stroke-width="1"/><path d="M38 12q6 10-6 14-10 4-15 14" fill="none" style="stroke:var(--laranja)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="it-tesoura" viewBox="0 0 48 48"><clipPath id="c-it-tesoura"><path d="M14 34 35 6q4-1 3 4L19 38z"/></clipPath><path d="M14 34 35 6q4-1 3 4L19 38z" style="fill:var(--il-prata-esc)"/><path d="M14 34 35 6q4-1 3 4L19 38z" transform="translate(-2 -2)" fill="url(#g-prata)" clip-path="url(#c-it-tesoura)"/><ellipse cx="30" cy="14" rx="2" ry="6" fill="#fff" opacity=".6" clip-path="url(#c-it-tesoura)"/><path d="M14 34 35 6q4-1 3 4L19 38z" fill="none" style="stroke:var(--tinta)" stroke-width="2.5" stroke-linejoin="round"/><circle cx="13" cy="39" r="6" fill="none" style="stroke:var(--tinta)" stroke-width="6.5"/><circle cx="13" cy="39" r="6" fill="none" style="stroke:var(--azul-vivo)" stroke-width="3.5"/></symbol>
+  <symbol id="it-up-folego" viewBox="0 0 48 48"><clipPath id="c-it-up-folego"><path d="M24 41C8 31 3 21 9 13c5-6 12-4 15 2 3-6 10-8 15-2 6 8 1 18-15 28z"/></clipPath><path d="M24 41C8 31 3 21 9 13c5-6 12-4 15 2 3-6 10-8 15-2 6 8 1 18-15 28z" style="fill:var(--il-chita-esc)"/><path d="M24 41C8 31 3 21 9 13c5-6 12-4 15 2 3-6 10-8 15-2 6 8 1 18-15 28z" transform="translate(-2 -2)" fill="url(#g-chita)" clip-path="url(#c-it-up-folego)"/><ellipse cx="17" cy="15" rx="6" ry="3.5" fill="#fff" opacity=".6" clip-path="url(#c-it-up-folego)"/><path d="M24 41C8 31 3 21 9 13c5-6 12-4 15 2 3-6 10-8 15-2 6 8 1 18-15 28z" fill="none" stroke="#fff" stroke-opacity=".7" stroke-width="1.2" stroke-dasharray="3 2.5" transform="translate(24 24) scale(.82) translate(-24 -24)"/><path d="M24 41C8 31 3 21 9 13c5-6 12-4 15 2 3-6 10-8 15-2 6 8 1 18-15 28z" fill="none" style="stroke:var(--tinta)" stroke-width="2.5" stroke-linejoin="round"/><path d="M24 19v12M18 25h12" fill="none" style="stroke:var(--branco)" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="it-up-explosao" viewBox="0 0 48 48"><path d="M24 3v7M24 38v7M3 24h7M38 24h7M9 9l5 5M34 34l5 5" fill="none" style="stroke:var(--laranja)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/><clipPath id="c-it-up-explosao"><path d="M13 24a11 11 0 1 0 22 0 11 11 0 0 0-22 0z"/></clipPath><path d="M13 24a11 11 0 1 0 22 0 11 11 0 0 0-22 0z" style="fill:var(--laranja)"/><path d="M13 24a11 11 0 1 0 22 0 11 11 0 0 0-22 0z" transform="translate(-2 -2)" fill="url(#g-laranja)" clip-path="url(#c-it-up-explosao)"/><ellipse cx="20" cy="19" rx="4" ry="2.5" fill="#fff" opacity=".6" clip-path="url(#c-it-up-explosao)"/><path d="M13 24a11 11 0 1 0 22 0 11 11 0 0 0-22 0z" fill="none" stroke="#fff" stroke-opacity=".7" stroke-width="1.2" stroke-dasharray="3 2.5" transform="translate(24 24) scale(.82) translate(-24 -24)"/><path d="M13 24a11 11 0 1 0 22 0 11 11 0 0 0-22 0z" fill="none" style="stroke:var(--tinta)" stroke-width="2.5" stroke-linejoin="round"/><path d="M15 21q9 4 18 0M15 28q9-4 18 0" fill="none" style="stroke:var(--il-chita-esc)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="it-up-agulha" viewBox="0 0 48 48"><rect x="6" y="38" width="30" height="7" rx="2" style="fill:var(--il-prata-esc);stroke:var(--tinta)" stroke-width="2.5"/><clipPath id="c-it-up-agulha"><path d="M8 36 33 9q4-4 6-2t-2 6L12 36z"/></clipPath><path d="M8 36 33 9q4-4 6-2t-2 6L12 36z" style="fill:var(--il-prata-esc)"/><path d="M8 36 33 9q4-4 6-2t-2 6L12 36z" transform="translate(-2 -2)" fill="url(#g-prata)" clip-path="url(#c-it-up-agulha)"/><ellipse cx="28" cy="15" rx="2" ry="5" fill="#fff" opacity=".6" clip-path="url(#c-it-up-agulha)"/><path d="M8 36 33 9q4-4 6-2t-2 6L12 36z" fill="none" style="stroke:var(--tinta)" stroke-width="2.5" stroke-linejoin="round"/><path d="M39 3v6M36 6h6" fill="none" style="stroke:var(--il-ouro-esc)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="it-up-tesoura" viewBox="0 0 48 48"><clipPath id="c-it-up-tesoura"><path d="M14 34 35 6q4-1 3 4L19 38z"/></clipPath><path d="M14 34 35 6q4-1 3 4L19 38z" style="fill:var(--il-prata-esc)"/><path d="M14 34 35 6q4-1 3 4L19 38z" transform="translate(-2 -2)" fill="url(#g-prata)" clip-path="url(#c-it-up-tesoura)"/><ellipse cx="30" cy="14" rx="2" ry="6" fill="#fff" opacity=".6" clip-path="url(#c-it-up-tesoura)"/><path d="M14 34 35 6q4-1 3 4L19 38z" fill="none" style="stroke:var(--tinta)" stroke-width="2.5" stroke-linejoin="round"/><circle cx="13" cy="39" r="6" fill="none" style="stroke:var(--tinta)" stroke-width="6.5"/><circle cx="13" cy="39" r="6" fill="none" style="stroke:var(--azul-vivo)" stroke-width="3.5"/><path d="M40 14v6M37 17h6" fill="none" style="stroke:var(--il-ouro-esc)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="it-up-ima" viewBox="0 0 48 48"><clipPath id="c-it-up-ima"><path d="M10 10h9v15a5 5 0 0 0 10 0V10h9v15a14 14 0 0 1-28 0z"/></clipPath><path d="M10 10h9v15a5 5 0 0 0 10 0V10h9v15a14 14 0 0 1-28 0z" style="fill:var(--il-chita-esc)"/><path d="M10 10h9v15a5 5 0 0 0 10 0V10h9v15a14 14 0 0 1-28 0z" transform="translate(-2 -2)" fill="url(#g-chita)" clip-path="url(#c-it-up-ima)"/><ellipse cx="14" cy="22" rx="2" ry="5" fill="#fff" opacity=".6" clip-path="url(#c-it-up-ima)"/><path d="M10 10h9v15a5 5 0 0 0 10 0V10h9v15a14 14 0 0 1-28 0z" fill="none" stroke="#fff" stroke-opacity=".7" stroke-width="1.2" stroke-dasharray="3 2.5" transform="translate(24 24) scale(.82) translate(-24 -24)"/><path d="M10 10h9v15a5 5 0 0 0 10 0V10h9v15a14 14 0 0 1-28 0z" fill="none" style="stroke:var(--tinta)" stroke-width="2.5" stroke-linejoin="round"/><rect x="10" y="8" width="9" height="6" style="fill:var(--il-prata);stroke:var(--tinta)" stroke-width="2"/><rect x="29" y="8" width="9" height="6" style="fill:var(--il-prata);stroke:var(--tinta)" stroke-width="2"/><rect x="3" y="2" width="5" height="5" style="fill:var(--il-rosa-pano);stroke:var(--tinta)" stroke-width="1.5"/><rect x="40" y="2" width="5" height="5" style="fill:var(--il-folha);stroke:var(--tinta)" stroke-width="1.5"/></symbol>
+  <symbol id="it-remendo" viewBox="0 0 48 48"><clipPath id="c-it-remendo"><path d="M8 11a3 3 0 0 1 3-3h26a3 3 0 0 1 3 3v26a3 3 0 0 1-3 3H11a3 3 0 0 1-3-3z"/></clipPath><path d="M8 11a3 3 0 0 1 3-3h26a3 3 0 0 1 3 3v26a3 3 0 0 1-3 3H11a3 3 0 0 1-3-3z" style="fill:var(--il-chita-esc)"/><path d="M8 11a3 3 0 0 1 3-3h26a3 3 0 0 1 3 3v26a3 3 0 0 1-3 3H11a3 3 0 0 1-3-3z" transform="translate(-2 -2)" fill="url(#g-chita)" clip-path="url(#c-it-remendo)"/><ellipse cx="16" cy="14" rx="6" ry="3" fill="#fff" opacity=".6" clip-path="url(#c-it-remendo)"/><path d="M8 11a3 3 0 0 1 3-3h26a3 3 0 0 1 3 3v26a3 3 0 0 1-3 3H11a3 3 0 0 1-3-3z" fill="none" stroke="#fff" stroke-opacity=".7" stroke-width="1.2" stroke-dasharray="3 2.5" transform="translate(24 24) scale(.82) translate(-24 -24)"/><path d="M8 11a3 3 0 0 1 3-3h26a3 3 0 0 1 3 3v26a3 3 0 0 1-3 3H11a3 3 0 0 1-3-3z" fill="none" style="stroke:var(--tinta)" stroke-width="2.5" stroke-linejoin="round"/><circle cx="15" cy="19" r="2" style="fill:var(--branco)"/><circle cx="25" cy="15" r="2" style="fill:var(--branco)"/><circle cx="33" cy="22" r="2" style="fill:var(--branco)"/><circle cx="17" cy="31" r="2" style="fill:var(--branco)"/><circle cx="29" cy="33" r="2" style="fill:var(--branco)"/><circle cx="36" cy="35" r="2" style="fill:var(--branco)"/><path d="M24 10v28M10 24h28" fill="none" stroke="#fff" stroke-opacity=".8" stroke-width="1.4" stroke-dasharray="3 2.5"/></symbol>
+  <symbol id="it-fitinha" viewBox="0 0 48 48"><path d="M10 34C5 16 30 6 34 20c3 12-15 16-12 2" fill="none" style="stroke:var(--tinta)" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/><path d="M10 34C5 16 30 6 34 20c3 12-15 16-12 2" fill="none" style="stroke:var(--limao)" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/><path d="M34 20 42 41M22 22l-8 20" fill="none" style="stroke:var(--tinta)" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/><path d="M34 20 42 41M22 22l-8 20" fill="none" style="stroke:var(--limao)" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="it-mapa-bordado" viewBox="0 0 48 48"><clipPath id="c-it-mapa-bordado"><path d="M8 11a3 3 0 0 1 3-3h26a3 3 0 0 1 3 3v26a3 3 0 0 1-3 3H11a3 3 0 0 1-3-3z"/></clipPath><path d="M8 11a3 3 0 0 1 3-3h26a3 3 0 0 1 3 3v26a3 3 0 0 1-3 3H11a3 3 0 0 1-3-3z" style="fill:var(--il-papel-esc)"/><path d="M8 11a3 3 0 0 1 3-3h26a3 3 0 0 1 3 3v26a3 3 0 0 1-3 3H11a3 3 0 0 1-3-3z" transform="translate(-2 -2)" fill="url(#g-papel)" clip-path="url(#c-it-mapa-bordado)"/><ellipse cx="16" cy="14" rx="6" ry="3" fill="#fff" opacity=".6" clip-path="url(#c-it-mapa-bordado)"/><path d="M8 11a3 3 0 0 1 3-3h26a3 3 0 0 1 3 3v26a3 3 0 0 1-3 3H11a3 3 0 0 1-3-3z" fill="none" stroke="#fff" stroke-opacity=".7" stroke-width="1.2" stroke-dasharray="3 2.5" transform="translate(24 24) scale(.82) translate(-24 -24)"/><path d="M8 11a3 3 0 0 1 3-3h26a3 3 0 0 1 3 3v26a3 3 0 0 1-3 3H11a3 3 0 0 1-3-3z" fill="none" style="stroke:var(--tinta)" stroke-width="2.5" stroke-linejoin="round"/><path d="M12 33q8-14 14-6t11-15" fill="none" style="stroke:var(--azul-vivo)" stroke-width="2.5" stroke-dasharray="3 3" stroke-linecap="round"/><path d="M32 9l6 6M38 9l-6 6" fill="none" style="stroke:var(--laranja)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="it-lacinho" viewBox="0 0 48 48"><clipPath id="c-it-lacinho"><path d="M24 24 7 13v22zM24 24l17-11v22z"/></clipPath><path d="M24 24 7 13v22zM24 24l17-11v22z" style="fill:var(--il-chita-esc)"/><path d="M24 24 7 13v22zM24 24l17-11v22z" transform="translate(-2 -2)" fill="url(#g-chita)" clip-path="url(#c-it-lacinho)"/><ellipse cx="12" cy="18" rx="3" ry="2.5" fill="#fff" opacity=".6" clip-path="url(#c-it-lacinho)"/><path d="M24 24 7 13v22zM24 24l17-11v22z" fill="none" stroke="#fff" stroke-opacity=".7" stroke-width="1.2" stroke-dasharray="3 2.5" transform="translate(24 24) scale(.82) translate(-24 -24)"/><path d="M24 24 7 13v22zM24 24l17-11v22z" fill="none" style="stroke:var(--tinta)" stroke-width="2.5" stroke-linejoin="round"/><circle cx="11" cy="20" r="1.8" style="fill:var(--branco)"/><circle cx="13" cy="29" r="1.8" style="fill:var(--branco)"/><circle cx="37" cy="20" r="1.8" style="fill:var(--branco)"/><circle cx="35" cy="29" r="1.8" style="fill:var(--branco)"/><circle cx="24" cy="24" r="4.5" style="fill:var(--il-chita);stroke:var(--tinta)" stroke-width="2"/></symbol>
+  <symbol id="it-vestido" viewBox="0 0 48 48"><clipPath id="c-it-vestido"><path d="M18 7h12l2 8 9 26H7l9-26z"/></clipPath><path d="M18 7h12l2 8 9 26H7l9-26z" style="fill:var(--il-rosa-esc)"/><path d="M18 7h12l2 8 9 26H7l9-26z" transform="translate(-2 -2)" fill="url(#g-rosa)" clip-path="url(#c-it-vestido)"/><ellipse cx="20" cy="20" rx="3" ry="5" fill="#fff" opacity=".6" clip-path="url(#c-it-vestido)"/><path d="M18 7h12l2 8 9 26H7l9-26z" fill="none" stroke="#fff" stroke-opacity=".7" stroke-width="1.2" stroke-dasharray="3 2.5" transform="translate(24 24) scale(.82) translate(-24 -24)"/><path d="M18 7h12l2 8 9 26H7l9-26z" fill="none" style="stroke:var(--tinta)" stroke-width="2.5" stroke-linejoin="round"/><path d="M18 8q6 7 12 0" fill="none" style="stroke:var(--branco)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/><circle cx="17" cy="30" r="2.2" style="fill:var(--laranja)"/><circle cx="25" cy="26" r="2.2" style="fill:var(--laranja)"/><circle cx="31" cy="34" r="2.2" style="fill:var(--laranja)"/><circle cx="21" cy="37" r="2.2" style="fill:var(--laranja)"/></symbol>
+  <symbol id="it-fuxico" viewBox="0 0 48 48"><clipPath id="c-it-fuxico"><path d="M24 7l4 4 5-2 2 5 5 1-1 5 4 4-4 4 1 5-5 1-2 5-5-2-4 4-4-4-5 2-2-5-5-1 1-5-4-4 4-4-1-5 5-1 2-5 5 2z"/></clipPath><path d="M24 7l4 4 5-2 2 5 5 1-1 5 4 4-4 4 1 5-5 1-2 5-5-2-4 4-4-4-5 2-2-5-5-1 1-5-4-4 4-4-1-5 5-1 2-5 5 2z" style="fill:var(--laranja)"/><path d="M24 7l4 4 5-2 2 5 5 1-1 5 4 4-4 4 1 5-5 1-2 5-5-2-4 4-4-4-5 2-2-5-5-1 1-5-4-4 4-4-1-5 5-1 2-5 5 2z" transform="translate(-2 -2)" fill="url(#g-laranja)" clip-path="url(#c-it-fuxico)"/><ellipse cx="17" cy="15" rx="5" ry="3" fill="#fff" opacity=".6" clip-path="url(#c-it-fuxico)"/><path d="M24 7l4 4 5-2 2 5 5 1-1 5 4 4-4 4 1 5-5 1-2 5-5-2-4 4-4-4-5 2-2-5-5-1 1-5-4-4 4-4-1-5 5-1 2-5 5 2z" fill="none" style="stroke:var(--tinta)" stroke-width="2.5" stroke-linejoin="round"/><path d="M24 12v6M24 30v6M12 24h6M30 24h6M16 16l4 4M28 28l4 4M32 16l-4 4M20 28l-4 4" fill="none" style="stroke:var(--il-chita-esc)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><circle cx="24" cy="24" r="5.5" style="fill:var(--start-b);stroke:var(--tinta)" stroke-width="2"/></symbol>
+  <symbol id="it-fragmento" viewBox="0 0 48 48"><clipPath id="c-it-fragmento"><path d="M24 3c1.4 10.5 9 18.6 21 21-12 2.4-19.6 10.5-21 21-1.4-10.5-9-18.6-21-21 12-2.4 19.6-10.5 21-21z"/></clipPath><path d="M24 3c1.4 10.5 9 18.6 21 21-12 2.4-19.6 10.5-21 21-1.4-10.5-9-18.6-21-21 12-2.4 19.6-10.5 21-21z" style="fill:var(--start-b)"/><path d="M24 3c1.4 10.5 9 18.6 21 21-12 2.4-19.6 10.5-21 21-1.4-10.5-9-18.6-21-21 12-2.4 19.6-10.5 21-21z" transform="translate(-2 -2)" fill="url(#g-estrela)" clip-path="url(#c-it-fragmento)"/><ellipse cx="20" cy="17" rx="3" ry="4" fill="#fff" opacity=".6" clip-path="url(#c-it-fragmento)"/><path d="M24 3c1.4 10.5 9 18.6 21 21-12 2.4-19.6 10.5-21 21-1.4-10.5-9-18.6-21-21 12-2.4 19.6-10.5 21-21z" fill="none" style="stroke:var(--tinta)" stroke-width="2.5" stroke-linejoin="round"/></symbol>
+  <symbol id="i-cat-historia" viewBox="0 0 48 48"><rect x="15" y="9" width="24" height="24" rx="2" transform="rotate(8 27 21)" style="fill:var(--papel);stroke:var(--tinta)" stroke-width="2.5"/><clipPath id="c-i-cat-historia"><path d="M10 14h24v24H10z"/></clipPath><path d="M10 14h24v24H10z" style="fill:var(--il-papel-esc)"/><path d="M10 14h24v24H10z" transform="translate(-2 -2)" fill="url(#g-papel)" clip-path="url(#c-i-cat-historia)"/><ellipse cx="15" cy="18" rx="4" ry="2.5" fill="#fff" opacity=".6" clip-path="url(#c-i-cat-historia)"/><path d="M10 14h24v24H10z" fill="none" stroke="#fff" stroke-opacity=".7" stroke-width="1.2" stroke-dasharray="3 2.5" transform="translate(24 24) scale(.82) translate(-24 -24)"/><path d="M10 14h24v24H10z" fill="none" style="stroke:var(--tinta)" stroke-width="2.5" stroke-linejoin="round"/><path d="M10 26h24" fill="none" style="stroke:var(--laranja)" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><path d="M10 14 22 24 34 14" fill="none" style="stroke:var(--tinta)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-cat-quebra" viewBox="0 0 48 48"><clipPath id="c-i-cat-quebra"><path d="M8 14h10a4 4 0 1 1 8 0h10v10a4 4 0 1 0 0 8v10H26a4 4 0 1 0-8 0H8V32a4 4 0 1 1 0-8z"/></clipPath><path d="M8 14h10a4 4 0 1 1 8 0h10v10a4 4 0 1 0 0 8v10H26a4 4 0 1 0-8 0H8V32a4 4 0 1 1 0-8z" style="fill:var(--azul-vivo)"/><path d="M8 14h10a4 4 0 1 1 8 0h10v10a4 4 0 1 0 0 8v10H26a4 4 0 1 0-8 0H8V32a4 4 0 1 1 0-8z" transform="translate(-2 -2)" fill="url(#g-azul)" clip-path="url(#c-i-cat-quebra)"/><ellipse cx="14" cy="19" rx="4" ry="2.5" fill="#fff" opacity=".6" clip-path="url(#c-i-cat-quebra)"/><path d="M8 14h10a4 4 0 1 1 8 0h10v10a4 4 0 1 0 0 8v10H26a4 4 0 1 0-8 0H8V32a4 4 0 1 1 0-8z" fill="none" stroke="#fff" stroke-opacity=".7" stroke-width="1.2" stroke-dasharray="3 2.5" transform="translate(24 24) scale(.82) translate(-24 -24)"/><path d="M8 14h10a4 4 0 1 1 8 0h10v10a4 4 0 1 0 0 8v10H26a4 4 0 1 0-8 0H8V32a4 4 0 1 1 0-8z" fill="none" style="stroke:var(--tinta)" stroke-width="2.5" stroke-linejoin="round"/></symbol>
+  <symbol id="i-cat-armas" viewBox="0 0 48 48"><path d="M9 39 39 9" fill="none" style="stroke:var(--tinta)" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/><path d="M9 39 39 9" fill="none" style="stroke:var(--il-prata)" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/><path d="M39 39 13 13" fill="none" style="stroke:var(--tinta)" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/><path d="M39 39 13 13" fill="none" style="stroke:var(--il-prata)" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="12" r="5" fill="none" style="stroke:var(--azul-vivo)" stroke-width="3"/><path d="M36 6l6 6" fill="none" style="stroke:var(--laranja)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-cat-melhorias" viewBox="0 0 48 48"><clipPath id="c-i-cat-melhorias"><path d="M24 5 39 22h-9v20H18V22H9z"/></clipPath><path d="M24 5 39 22h-9v20H18V22H9z" style="fill:var(--laranja)"/><path d="M24 5 39 22h-9v20H18V22H9z" transform="translate(-2 -2)" fill="url(#g-laranja)" clip-path="url(#c-i-cat-melhorias)"/><ellipse cx="21" cy="16" rx="3" ry="5" fill="#fff" opacity=".6" clip-path="url(#c-i-cat-melhorias)"/><path d="M24 5 39 22h-9v20H18V22H9z" fill="none" stroke="#fff" stroke-opacity=".7" stroke-width="1.2" stroke-dasharray="3 2.5" transform="translate(24 24) scale(.82) translate(-24 -24)"/><path d="M24 5 39 22h-9v20H18V22H9z" fill="none" style="stroke:var(--tinta)" stroke-width="2.5" stroke-linejoin="round"/><path d="M24 3c1.4 10.5 9 18.6 21 21-12 2.4-19.6 10.5-21 21-1.4-10.5-9-18.6-21-21 12-2.4 19.6-10.5 21-21z" transform="translate(30 2) scale(.32)" style="fill:var(--start-b);stroke:var(--tinta)" stroke-width="4"/></symbol>
+  <symbol id="i-cat-consumivel" viewBox="0 0 48 48"><clipPath id="c-i-cat-consumivel"><path d="M8 11a3 3 0 0 1 3-3h26a3 3 0 0 1 3 3v26a3 3 0 0 1-3 3H11a3 3 0 0 1-3-3z"/></clipPath><path d="M8 11a3 3 0 0 1 3-3h26a3 3 0 0 1 3 3v26a3 3 0 0 1-3 3H11a3 3 0 0 1-3-3z" style="fill:var(--il-chita-esc)"/><path d="M8 11a3 3 0 0 1 3-3h26a3 3 0 0 1 3 3v26a3 3 0 0 1-3 3H11a3 3 0 0 1-3-3z" transform="translate(-2 -2)" fill="url(#g-chita)" clip-path="url(#c-i-cat-consumivel)"/><ellipse cx="16" cy="14" rx="6" ry="3" fill="#fff" opacity=".6" clip-path="url(#c-i-cat-consumivel)"/><path d="M8 11a3 3 0 0 1 3-3h26a3 3 0 0 1 3 3v26a3 3 0 0 1-3 3H11a3 3 0 0 1-3-3z" fill="none" stroke="#fff" stroke-opacity=".7" stroke-width="1.2" stroke-dasharray="3 2.5" transform="translate(24 24) scale(.82) translate(-24 -24)"/><path d="M8 11a3 3 0 0 1 3-3h26a3 3 0 0 1 3 3v26a3 3 0 0 1-3 3H11a3 3 0 0 1-3-3z" fill="none" style="stroke:var(--tinta)" stroke-width="2.5" stroke-linejoin="round"/><circle cx="16" cy="18" r="2.2" style="fill:var(--branco)"/><circle cx="30" cy="16" r="2.2" style="fill:var(--branco)"/><circle cx="22" cy="30" r="2.2" style="fill:var(--branco)"/><circle cx="34" cy="32" r="2.2" style="fill:var(--branco)"/></symbol>
+  <symbol id="i-cat-ajuda" viewBox="0 0 48 48"><path d="M8 36C4 18 26 10 30 22c3 10-13 13-10 2" fill="none" style="stroke:var(--tinta)" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/><path d="M8 36C4 18 26 10 30 22c3 10-13 13-10 2" fill="none" style="stroke:var(--limao)" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/><path d="M24 3c1.4 10.5 9 18.6 21 21-12 2.4-19.6 10.5-21 21-1.4-10.5-9-18.6-21-21 12-2.4 19.6-10.5 21-21z" transform="translate(26 18) scale(.45)" style="fill:var(--start-b);stroke:var(--tinta)" stroke-width="4"/></symbol>
+  <symbol id="i-cat-roupa" viewBox="0 0 48 48"><path d="M24 16v-5a3 3 0 1 1 3-3M8 18 24 11l16 7" fill="none" style="stroke:var(--tinta)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/><clipPath id="c-i-cat-roupa"><path d="M18 16h12l2 6 7 20H9l7-20z"/></clipPath><path d="M18 16h12l2 6 7 20H9l7-20z" style="fill:var(--il-rosa-esc)"/><path d="M18 16h12l2 6 7 20H9l7-20z" transform="translate(-2 -2)" fill="url(#g-rosa)" clip-path="url(#c-i-cat-roupa)"/><ellipse cx="20" cy="24" rx="3" ry="4" fill="#fff" opacity=".6" clip-path="url(#c-i-cat-roupa)"/><path d="M18 16h12l2 6 7 20H9l7-20z" fill="none" stroke="#fff" stroke-opacity=".7" stroke-width="1.2" stroke-dasharray="3 2.5" transform="translate(24 24) scale(.82) translate(-24 -24)"/><path d="M18 16h12l2 6 7 20H9l7-20z" fill="none" style="stroke:var(--tinta)" stroke-width="2.5" stroke-linejoin="round"/><circle cx="19" cy="31" r="2" style="fill:var(--laranja)"/><circle cx="28" cy="28" r="2" style="fill:var(--laranja)"/><circle cx="27" cy="37" r="2" style="fill:var(--laranja)"/></symbol>
+  <symbol id="i-alerta" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v6M12 16.5v.5"/></g></symbol>
+  <symbol id="i-raio" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M13 3 5 13h6l-1 8 8-10h-6z"/></g></symbol>
+  <symbol id="i-cansaco" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3c3 4 6 7 6 10a6 6 0 0 1-12 0c0-3 3-6 6-10z"/><path d="M9.5 14a2.5 2.5 0 0 0 2.5 2.5"/></g></symbol>
+  <symbol id="i-poder" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v6M12 16v6M2 12h6M16 12h6M5 5l4 4M15 15l4 4M19 5l-4 4M9 15l-4 4"/></g></symbol>
+  <symbol id="i-fragmento" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2c.6 5.4 4.6 9.4 10 10-5.4.6-9.4 4.6-10 10-.6-5.4-4.6-9.4-10-10 5.4-.6 9.4-4.6 10-10z" fill="currentColor" stroke="none"/></g></symbol>
+  <symbol id="i-arma" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 20 18 7M13 8l4-4M16 11l4-1"/></g></symbol>
+  <symbol id="i-rachadura" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 8 11l6 2-4 9"/></g></symbol>
+  <symbol id="i-ok" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12.5 4.5 4.5L19 7"/></g></symbol>
+  <symbol id="i-seta" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12h15M13 6l6 6-6 6"/></g></symbol>
+  <symbol id="i-folha" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 19C5 10 10 5 20 4c0 10-5 15-15 15zM5 19l8-8"/></g></symbol>
+  <symbol id="i-sol" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M19 5l-2 2M7 17l-2 2"/></g></symbol>
+  <symbol id="i-lua" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a6.8 6.8 0 0 0 10.5 10.5z"/></g></symbol>
+  <symbol id="i-cadeado" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3M12 15v2"/></g></symbol>
+  <symbol id="i-fechar" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6l12 12M18 6 6 18"/></g></symbol>
+  <symbol id="i-carta" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3.5 6.5 8.5 7 8.5-7"/></g></symbol>
+  <symbol id="i-usar" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11V5.5a1.5 1.5 0 0 1 3 0V11"/><path d="M12 10.5a1.5 1.5 0 0 1 3 0v1a1.5 1.5 0 0 1 3 0V15a6 6 0 0 1-6 6h-1a6 6 0 0 1-5-3l-2-3.5a1.5 1.5 0 0 1 2.5-1.5L9 14"/><path d="M5.5 4 4 2.5M4 8H2M14 3l1-2"/></g></symbol>
+  <symbol id="i-som" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9v6h4l5 4V5L8 9z"/><path d="M16 9a4 4 0 0 1 0 6M19 6a8 8 0 0 1 0 12"/></g></symbol>
+  <symbol id="i-controle" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M7 7h10a5 5 0 0 1 5 5v2a3 3 0 0 1-5.4 1.8L15 14H9l-1.6 1.8A3 3 0 0 1 2 14v-2a5 5 0 0 1 5-5z"/><path d="M7 10v3M5.5 11.5h3M16 11h.01M18 13h.01"/></g></symbol>
+  <symbol id="i-graficos" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="m3 17 6-6 4 4 3-3 5 5"/><circle cx="16" cy="8.5" r="1.5"/></g></symbol>
+  <symbol id="i-acess" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="7" r="1.5"/><path d="M7 10h10M12 10v4l-3 4M12 14l3 4"/></g></symbol>
+  <symbol id="i-dificuldade" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 20 17 4M14 5l3-1-1 3"/><path d="M8 12h3M10 9h3"/></g></symbol>
+  <symbol id="i-voltar" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m11 6-6 6 6 6M19 6l-6 6 6 6"/></g></symbol>
+  <symbol id="i-avancar" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></g></symbol>
+  <symbol id="i-mochila" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 10a6 6 0 0 1 12 0v9a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2z"/><path d="M9 4.5V4a3 3 0 0 1 6 0v.5"/><rect x="8.5" y="13" width="7" height="5" rx="1" stroke-dasharray="2 1.5"/></g></symbol>
+  <symbol id="i-armarinho" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9 5 4h14l2 5"/><path d="M3 9q1.5 2 3 0 1.5 2 3 0 1.5 2 3 0 1.5 2 3 0 1.5 2 3 0 1.5 2 3 0"/><path d="M5 11v9h14v-9M9 20v-5h6v5"/></g></symbol>
+  <symbol id="i-novo" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3c.5 4.5 3.5 7.5 8 8-4.5.5-7.5 3.5-8 8-.5-4.5-3.5-7.5-8-8 4.5-.5 7.5-3.5 8-8z" fill="currentColor" stroke="none"/></g></symbol>
+  <symbol id="i-mais" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14" stroke-width="3.5"/></g></symbol>
+  <symbol id="i-pausa" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6v12M15 6v12" stroke-width="3.5"/></g></symbol>
+  <symbol id="i-mapa" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m3 6 6-2 6 2 6-2v14l-6 2-6-2-6 2z"/><path d="M9 4v14M15 6v14"/><path d="m17 9 2 2m0-2-2 2"/></g></symbol>
+  <symbol id="i-engrenagem" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9 7 7M17 17l2.1 2.1M19.1 4.9 17 7M7 17l-2.1 2.1"/><circle cx="12" cy="12" r="7"/></g></symbol>
+  <symbol id="i-bateria" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="17" height="10" rx="2"/><path d="M22 10v4M6 10v4M10 10v4"/></g></symbol>
+  <symbol id="i-alfinete" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="16.5" cy="7.5" r="3.5" fill="currentColor"/><path d="M14 10 4 20"/></g></symbol>
+  <symbol id="i-selo" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m12 2 3 6.5 7 .8-5.2 4.8 1.5 7L12 17.5 5.7 21l1.5-7L2 9.3l7-.8z"/><path d="m12 6 1.8 4 4.2.4-3.1 2.9.9 4.1L12 15.4l-3.8 2 .9-4.1L6 10.4l4.2-.4z" stroke-width="1" stroke-dasharray="1.5 1.2"/></g></symbol>
+  <symbol id="i-varal" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 6q10 6 20 0"/><path d="m6 8 1 5 3-3.5M11 9.5l1.5 5 2.5-4.5M16 9l1.5 4.5 2-5"/></g></symbol>
+  <symbol id="i-fio-deco" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 14q3-6 6 0t6 0 4-4a2 2 0 1 1 2 2"/></g></symbol>
+  <symbol id="i-mapa-marca" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m7 7 10 10M17 7 7 17"/><circle cx="5" cy="12" r=".6"/><circle cx="19" cy="12" r=".6"/><circle cx="12" cy="5" r=".6"/><circle cx="12" cy="19" r=".6"/></g></symbol>
+  <symbol id="i-coracao" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20C4 15 2 10 5 6.5c2.5-3 6-2 7 1 1-3 4.5-4 7-1 3 3.5 1 8.5-7 13.5z"/><path d="M12 17c-5-3.4-6.4-6.6-4.8-8.6" stroke-width="1" stroke-dasharray="1.5 1.3"/></g></symbol>
+  <symbol id="i-no" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 16c2.5-8.5 14.5-8.5 9.5-2-4 5.5-8-2-1-5 6-2.5 9 4 8.5 9"/></g></symbol>
+  <symbol id="i-fuxico" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l2 2 2.5-1 1 2.5 2.5.5-.5 2.5 2 2-2 2 .5 2.5-2.5.5-1 2.5-2.5-1-2 2-2-2-2.5 1-1-2.5L4 15.5l.5-2.5-2-2 2-2L4 6.5 6.5 6l1-2.5L10 4.5z"/><circle cx="12" cy="11" r="2.5"/></g></symbol>
+  <symbol id="i-dif-1" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21V5" transform="rotate(0 12 21)"/><circle cx="12" cy="21" r="1"/></g></symbol>
+  <symbol id="i-dif-2" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21V5" transform="rotate(-30 12 21)"/><path d="M12 21V5" transform="rotate(30 12 21)"/><circle cx="12" cy="21" r="1"/></g></symbol>
+  <symbol id="i-dif-3" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21V5" transform="rotate(-30 12 21)"/><path d="M12 21V5" transform="rotate(0 12 21)"/><path d="M12 21V5" transform="rotate(30 12 21)"/><circle cx="12" cy="21" r="1"/></g></symbol>
+  <symbol id="i-dif-4" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21V5" transform="rotate(-30 12 21)"/><path d="M12 21V5" transform="rotate(-10 12 21)"/><path d="M12 21V5" transform="rotate(10 12 21)"/><path d="M12 21V5" transform="rotate(30 12 21)"/><circle cx="12" cy="21" r="1"/></g></symbol>
+  <symbol id="i-btn-a" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><text x="12" y="16.5" text-anchor="middle" font-size="12" font-weight="800" font-family="Baloo 2, sans-serif" fill="currentColor" stroke="none">A</text></g></symbol>
+  <symbol id="i-btn-b" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><text x="12" y="16.5" text-anchor="middle" font-size="12" font-weight="800" font-family="Baloo 2, sans-serif" fill="currentColor" stroke="none">B</text></g></symbol>
+  <symbol id="i-btn-x" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><text x="12" y="16.5" text-anchor="middle" font-size="12" font-weight="800" font-family="Baloo 2, sans-serif" fill="currentColor" stroke="none">X</text></g></symbol>
+  <symbol id="i-btn-y" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><text x="12" y="16.5" text-anchor="middle" font-size="12" font-weight="800" font-family="Baloo 2, sans-serif" fill="currentColor" stroke="none">Y</text></g></symbol>
+  <symbol id="i-btn-l1" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="1.5" y="5" width="21" height="14" rx="7"/><text x="12" y="16" text-anchor="middle" font-size="10" font-weight="800" font-family="Baloo 2, sans-serif" fill="currentColor" stroke="none">L1</text></g></symbol>
+  <symbol id="i-btn-r1" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="1.5" y="5" width="21" height="14" rx="7"/><text x="12" y="16" text-anchor="middle" font-size="10" font-weight="800" font-family="Baloo 2, sans-serif" fill="currentColor" stroke="none">R1</text></g></symbol>
+  <symbol id="i-btn-start" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="1.5" y="5" width="21" height="14" rx="7"/><text x="12" y="16" text-anchor="middle" font-size="10" font-weight="800" font-family="Baloo 2, sans-serif" fill="currentColor" stroke="none">☰</text></g></symbol>
+  <symbol id="i-carretel-cheio" viewBox="0 0 14 20"><rect x="0.75" y="0.75" width="12.5" height="3.5" rx="1" fill="currentColor" style="stroke:var(--tinta)" stroke-width="1"/><rect x="0.75" y="15.75" width="12.5" height="3.5" rx="1" fill="currentColor" style="stroke:var(--tinta)" stroke-width="1"/><rect x="2.5" y="4.25" width="9" height="11.5" fill="currentColor" style="stroke:var(--tinta)" stroke-width="1"/><path d="M2.5 8.5 11.5 5M2.5 12.5l9-3.5M2.5 16l9-3.5" style="stroke:var(--tinta)" stroke-width="1" opacity=".55" fill="none"/></symbol>
+  <symbol id="i-carretel-vazio" viewBox="0 0 14 20"><g fill="none" stroke="currentColor" stroke-width="1.6"><rect x="0.8" y="0.8" width="12.4" height="3.4" rx="1"/><rect x="0.8" y="15.8" width="12.4" height="3.4" rx="1"/><path d="M2.5 4.25v11.5M11.5 4.25v11.5"/></g></symbol>
+</svg>
 <!-- abertura: logo AA animada; depois, a tela de carregamento até o jogo ficar pronto (ver o script
      logo abaixo). Tudo animado só com transform e opacidade: o navegador anima isso fora da linha
      principal, então não trava enquanto o jogo carrega no fundo. -->
@@ -582,25 +1320,29 @@
   })();
 </script>
 <div id="hud">
-  <div id="chefe" aria-live="polite">Ravi<div><i></i></div></div>
-  <div id="ventoArena" aria-live="polite"><b>⟶</b><small>vento</small><span>●●●</span></div>
-  <div class="esq vidro">
-    <div id="vida" title="Fôlego"></div>
-    <div id="energia" class="cheia" title="Fôlego do sprint"><i></i></div>
-    <div id="poder" title="Explosão de Fios (V)"><i></i></div>
-    <span id="moedas"><span class="icone">✦</span><b>0</b>/ 0</span>
-    <div id="arma"></div>
+  <div id="topoCentro">
+    <div id="chefe" class="retalho"><div class="topo"><span class="nome">Ravi</span><span class="num"></span></div><div class="barra"><s></s><i></i><u class="marca" style="left:50%"></u><u class="marca" style="left:25%"></u></div></div>
+    <div id="ventoArena" class="retalho"><svg class="i seta" aria-hidden="true"><use href="#i-seta"/></svg><span>vento</span><span class="folhas" aria-hidden="true"><svg class="i folha"><use href="#i-folha"/></svg><svg class="i folha"><use href="#i-folha"/></svg><svg class="i folha"><use href="#i-folha"/></svg></span><span class="muda">muda!</span></div>
   </div>
-  <span class="dir"><span id="fps"></span><span id="hora" class="pilula vidro" title="Hora do dia (T avança)">☀ 10:00</span><button class="icone-botao" id="abrir-pausa" title="Pausa (P / Esc)" aria-label="Pausa"><svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg></button></span>
+  <div class="esq">
+    <div id="vida" class="retalho" role="img" aria-label="Fôlego" title="Fôlego"></div>
+    <div id="energia" class="cheia" title="Fôlego da corrida"><span class="mini"><svg class="i i-raio" aria-hidden="true"><use href="#i-raio"/></svg><svg class="i i-cansaco" aria-hidden="true"><use href="#i-cansaco"/></svg></span><div class="trilho"><i></i></div></div>
+    <div id="poder" class="retalho vazio" title="Explosão de Fios"><svg class="i" aria-hidden="true"><use href="#i-poder"/></svg><div class="trilho"><i></i></div><kbd>V</kbd><span class="pronto">Pronto!</span></div>
+    <span id="moedas" class="retalho" title="Fragmentos" hidden><svg class="i" aria-hidden="true"><use href="#i-fragmento"/></svg><b>0</b><span class="total">/ 0</span></span>
+    <div id="arma" class="retalho"></div>
+    <div id="hudFuxicos" role="status" aria-label="Fuxicos: 0" hidden><svg class="i" aria-hidden="true"><use href="#i-fuxico"/></svg><b>0</b></div>
+  </div>
+  <span class="dir"><button class="icone-botao" id="abrir-mochila" aria-label="Mochila (em breve)" aria-disabled="true" title="Mochila (em breve)"><svg class="i" aria-hidden="true"><use href="#i-mochila"/></svg><span class="ponto-novo" hidden>NOVO<span class="so-leitor"> — 1 item novo</span></span></button><button class="icone-botao" id="abrir-pausa" title="Pausa (P / Esc)" aria-label="Pausa"><svg class="i" aria-hidden="true"><use href="#i-pausa"/></svg></button></span>
 </div>
-<div id="objetivo" class="vidro"></div>
-<div id="dica" class="vidro">Clique na tela para girar a câmera · <b>E</b> interage · <b>J</b> soca · <b>K</b> chuta · <b>Q</b> defende · <b>P</b> pausa</div>
-<div id="dicaTutorial" class="vidro"></div>
-<div id="aviso"></div>
-<div id="interagir" class="vidro"></div>
-<div id="fala" class="vidro"><b></b><span></span></div>
-<div id="memoria" class="vidro"><h3>✦ Fragmento de memória</h3><p></p></div>
-<div id="bilhete"><div class="papel"><p></p><small>Enter ou E para fechar</small></div></div>
+<div id="fps" class="retalho" hidden aria-hidden="true"></div>
+<div id="objetivo" class="retalho" aria-live="polite"></div>
+<div id="dica" class="retalho">Clique na tela para girar a câmera · <b>E</b> interage · <b>J</b> soca · <b>K</b> chuta · <b>Q</b> defende · <b>P</b> pausa</div>
+<div id="dicaTutorial" class="retalho retalho-forte"></div>
+<div id="aviso" class="retalho" aria-live="polite"><svg class="i ok" aria-hidden="true"><use href="#i-ok"/></svg><span></span></div>
+<div id="interagir" class="retalho"></div>
+<div id="fala" class="retalho retalho-forte" aria-live="polite"><b></b><span></span></div>
+<div id="memoria" class="retalho retalho-forte" aria-live="polite"><h3><svg class="i" aria-hidden="true"><use href="#i-fragmento"/></svg><span>Fragmento de Lembrança</span></h3><p></p></div>
+<div id="bilhete" role="dialog" aria-modal="true" aria-label="Carta"><div class="papel"><svg class="alfinete" aria-hidden="true"><use href="#i-alfinete"/></svg><h3 class="faixa-carta">Bilhete</h3><p></p><small>Enter ou E para fechar</small><button type="button" class="fechar-carta"><svg class="i" aria-hidden="true"><use href="#i-fechar"/></svg>Fechar</button></div></div>
 <div id="tela" data-modo="menu">
   <div class="cartao">
    <div class="lado-texto">
@@ -652,11 +1394,17 @@
     </div>
     <div class="corpo">
       <div class="pagina ativa" data-pagina="geral">
-        <label class="opcao">Volume <span id="volumeValor"></span><input type="range" id="cfgVolume" min="0" max="1" step="0.05"></label>
+        <label class="opcao">Música <span id="musicaValor"></span><input type="range" id="cfgMusica" min="0" max="1" step="0.05"></label>
+        <label class="opcao">Efeitos <span id="efeitosValor"></span><input type="range" id="cfgEfeitos" min="0" max="1" step="0.05"></label>
         <label class="opcao">Sensibilidade da câmera <span id="sensValor"></span><input type="range" id="cfgSens" min="0.4" max="2" step="0.1"></label>
         <label class="opcao">Tamanho dos textos
-          <select id="cfgTexto"><option value="1">Normal</option><option value="1.15">Grande</option><option value="1.3">Maior</option></select></label>
+          <select id="cfgTexto"><option value="1">Normal</option><option value="1.2">Grande</option><option value="1.5">Maior</option></select></label>
         <label class="opcao marcar"><input type="checkbox" id="cfgTremor"> Tremor da tela (quedas e golpes)</label>
+        <label class="opcao marcar"><input type="checkbox" id="cfgFlashes"> Reduzir flashes (sem piscadas nem pulsos)</label>
+        <label class="opcao marcar"><input type="checkbox" id="cfgLento"> Câmera lenta nos golpes fortes</label>
+        <label class="opcao so-toque">Tamanho dos botões de toque
+          <select id="cfgToqueTam"><option value="P">Pequeno (48)</option><option value="M">Médio (56)</option><option value="G">Grande (64)</option></select></label>
+        <label class="opcao marcar so-toque"><input type="checkbox" id="cfgInverter"> Inverter lados (bastão à direita, botões à esquerda)</label>
       </div>
       <div class="pagina" data-pagina="controles">
         <div class="grade">
@@ -718,8 +1466,9 @@
         <button data-nivel="high">High<small>gráfico máximo: céu real, grama com vento, nuvens, sombras de contato</small></button>
       </div>
       <p id="perfil-pc"></p>
+      <label class="opcao marcar"><input type="checkbox" id="cfgFps"> Mostrar desempenho (fps)</label>
       <div id="aviso-aa">O antisserrilhado deste nível só muda ao abrir o jogo de novo.</div>
-      <p id="versao">versão 04/11/2026 02:45 · d77fae</p>
+      <p id="versao">versão 07/11/2026 00:04 · 66590d</p>
     </div>
     <footer><button id="fechar-graficos" class="voltar"><kbd>Esc</kbd>Voltar</button></footer>
   </div>
@@ -728,11 +1477,13 @@
   <div class="janela">
     <header><h2>Pausado</h2></header>
     <div class="corpo">
+      <p class="pausa-hora" id="pausaHora"><svg class="i" aria-hidden="true"><use id="pausaHoraIcone" href="#i-sol"/></svg><span id="pausaHoraTexto">10:00</span></p>
       <button id="pausaContinuar" class="item-menu">Continuar</button>
-      <button class="item-menu" id="pausaNuvem"><span>Chamar o Nuvem</span><small id="pausaNuvemMotivo"></small></button>
-      <button class="item-menu" data-painel="config"><span>Configurações</span></button>
-      <button class="item-menu" id="pausaGraficos"><span>Gráficos</span></button>
-      <button class="item-menu" id="pausaControles"><span>Controles</span></button>
+      <button class="item-menu" id="pausaMochila"><svg class="i" aria-hidden="true"><use href="#i-mochila"/></svg><span>Mochila</span><small>I</small></button>
+      <button class="item-menu" id="pausaNuvem"><svg class="i cadeado" aria-hidden="true"><use href="#i-cadeado"/></svg><span>Chamar o Nuvem</span><small id="pausaNuvemMotivo"></small></button>
+      <button class="item-menu" data-painel="config"><svg class="i" aria-hidden="true"><use href="#i-engrenagem"/></svg><span>Configurações</span></button>
+      <button class="item-menu" id="pausaGraficos"><svg class="i" aria-hidden="true"><use href="#i-graficos"/></svg><span>Gráficos</span></button>
+      <button class="item-menu" id="pausaControles"><svg class="i" aria-hidden="true"><use href="#i-controle"/></svg><span>Controles</span></button>
       <button class="item-menu" id="pausaMenu"><span>Menu principal</span></button>
     </div>
     <footer><button class="voltar" id="pausaVoltar"><kbd>Esc</kbd>Continuar</button></footer>
@@ -759,16 +1510,17 @@
   <small>Enter tenta de novo a partir do último ponto salvo</small>
 </div>
 <div id="bastao"></div>
-<div class="toque" id="tPulo"><svg viewBox="0 0 24 24"><path d="m6 14 6-6 6 6"/></svg></div>
-<div class="toque" id="tUsar">E</div>
-<div class="toque" id="tSoco"><svg viewBox="0 0 24 24"><path d="M7 11V8a1.5 1.5 0 0 1 3 0v2M10 10V7a1.5 1.5 0 0 1 3 0v3M13 10V8a1.5 1.5 0 0 1 3 0v3M16 11v-1a1.5 1.5 0 0 1 3 0v4a6 6 0 0 1-6 6h-1a6 6 0 0 1-5-3l-1.5-3a1.5 1.5 0 0 1 2.5-1.5L8 14"/></svg></div>
-<div class="toque" id="tChute"><svg viewBox="0 0 24 24"><path d="M9 3v8l-5 5a2.5 2.5 0 0 0 2 4h9l4-3h2"/><path d="M9 11h4"/></svg></div>
-<div class="toque" id="tDefesa"><svg viewBox="0 0 24 24"><path d="M12 3 5 6v5c0 4.5 3 8 7 10 4-2 7-5.5 7-10V6z"/></svg></div>
-<div class="toque" id="tPoder" title="Explosão de Fios"><svg viewBox="0 0 24 24"><path d="M12 2v6M12 16v6M2 12h6M16 12h6M5 5l4 4M15 15l4 4M19 5l-4 4M9 15l-4 4"/></svg></div>
-<div class="toque" id="tEsquiva" title="Esquivar"><svg viewBox="0 0 24 24"><path d="M4 16a8 8 0 1 0 3-9.5"/><path d="M4 4v5h5"/></svg></div>
-<div class="toque" id="tPegar"><svg viewBox="0 0 24 24"><path d="M8 13V6a1.5 1.5 0 0 1 3 0v5M11 11V4.5a1.5 1.5 0 0 1 3 0V11M14 11V6a1.5 1.5 0 0 1 3 0v6M17 12V9a1.5 1.5 0 0 1 3 0v4a8 8 0 0 1-8 8h-.5a7 7 0 0 1-5.6-2.8L3.5 15a1.5 1.5 0 0 1 2.4-1.8L8 15"/></svg></div>
-<div class="toque" id="tSuper" title="Corrida super rápida"><svg viewBox="0 0 24 24"><path d="M13 3 5 13h6l-1 8 8-10h-6z"/></svg></div>
+<div class="toque" id="tPulo" role="button" aria-label="Pular"><svg viewBox="0 0 24 24"><path d="m6 14 6-6 6 6"/></svg></div>
+<div class="toque" id="tUsar" role="button" aria-label="Usar"><svg viewBox="0 0 24 24"><use href="#i-usar"/></svg></div>
+<div class="toque" id="tSoco" role="button" aria-label="Socar"><svg viewBox="0 0 24 24"><path d="M7 11V8a1.5 1.5 0 0 1 3 0v2M10 10V7a1.5 1.5 0 0 1 3 0v3M13 10V8a1.5 1.5 0 0 1 3 0v3M16 11v-1a1.5 1.5 0 0 1 3 0v4a6 6 0 0 1-6 6h-1a6 6 0 0 1-5-3l-1.5-3a1.5 1.5 0 0 1 2.5-1.5L8 14"/></svg></div>
+<div class="toque" id="tChute" role="button" aria-label="Chutar"><svg viewBox="0 0 24 24"><path d="M9 3v8l-5 5a2.5 2.5 0 0 0 2 4h9l4-3h2"/><path d="M9 11h4"/></svg></div>
+<div class="toque" id="tDefesa" role="button" aria-label="Defender"><svg viewBox="0 0 24 24"><path d="M12 3 5 6v5c0 4.5 3 8 7 10 4-2 7-5.5 7-10V6z"/></svg></div>
+<div class="toque indisponivel" id="tPoder" role="button" aria-label="Explosão de Fios" title="Explosão de Fios"><svg viewBox="0 0 24 24"><use href="#i-poder"/></svg></div>
+<div class="toque" id="tEsquiva" role="button" aria-label="Esquivar" title="Esquivar"><svg viewBox="0 0 24 24"><path d="M4 16a8 8 0 1 0 3-9.5"/><path d="M4 4v5h5"/></svg></div>
+<div class="toque" id="tPegar" role="button" aria-label="Pegar"><svg viewBox="0 0 24 24"><path d="M8 13V6a1.5 1.5 0 0 1 3 0v5M11 11V4.5a1.5 1.5 0 0 1 3 0V11M14 11V6a1.5 1.5 0 0 1 3 0v6M17 12V9a1.5 1.5 0 0 1 3 0v4a8 8 0 0 1-8 8h-.5a7 7 0 0 1-5.6-2.8L3.5 15a1.5 1.5 0 0 1 2.4-1.8L8 15"/></svg></div>
+<div class="toque" id="tSuper" role="button" aria-label="Corrida super rápida" title="Corrida super rápida"><svg viewBox="0 0 24 24"><use href="#i-raio"/></svg></div>
 <div id="golpe"></div>
+<div id="mochila" role="dialog" aria-modal="true" aria-labelledby="mbTitulo" hidden></div>
 <script>
   // se o jogo não conseguir carregar (um arquivo que não veio, versões misturadas no cache), a tela
   // mostra o erro e um botão para recarregar, em vez de ficar parada em "Costurando a ilha…"
@@ -787,6 +1539,6 @@
     msg.appendChild(b);
   }, true);
 </script>
-<script type="module" src="src/jogo.js?v=d77fae37b3"></script>
+<script type="module" src="src/jogo.js?v=66590d2f4f"></script>
 </body>
 </html>

@@ -10,7 +10,8 @@ import { criarChuva } from './chuva.js';
 import { criarOclusao } from './oclusao.js';
 import { criarSombraBoneca } from './sombraBoneca.js';
 import { criarParticulas } from './particulas.js';
-import { lerProgresso, salvarProgresso, apagarProgresso, lerConfig, salvarConfig, lerConcluidos, ultimoCapitulo } from './salvar.js';
+import { lerProgresso, salvarProgresso, apagarProgresso, lerConfig, salvarConfig, lerConcluidos, ultimoCapitulo, lerInventario, salvarInventario } from './salvar.js';
+import { criarInventario, migrarDeProgressos } from './inventario.js';
 import { CAPITULO_ATUAL, TOTAL_CAPITULOS, CONFIG, urlCapitulo } from './capitulo.js';
 import { analisarTerreno, calcularLancamento } from './terreno.js';
 import { moverComColisao, RAIO, ALTURA } from './fisica.js';
@@ -32,12 +33,13 @@ import { criarFolhas } from './folhas.js';
 import { camadaGolpe, camadaReacao, LADO_GOLPE } from './animLuta.js';
 import { criarMapaMundi } from './mapaMundi.js';
 import { criarPegaso } from './pegaso.js';
-import { som, definirVolume, musicaLuta } from './som.js';
+import { som, definirVolumes, lerVolumes, musicaLuta } from './som.js';
 import { DIFICULDADES, dificuldade, definirDificuldade } from './dificuldade.js';
 import { criarCampanha } from './campanha.js';
 import { criarCombate, GOLPES } from './combate.js';
 import { criarAjusteResolucao, ajustarResolucao } from './resolucao.js';
-import { INTRO, CHAMADA, AVISOS, GAMEOVER, CAPITULO, FIM, NOMES_CAPITULOS, DESCRICOES_CAPITULOS } from './historia.js';
+import { INTRO, CHAMADA, AVISOS, GAMEOVER, CAPITULO, FIM, NOMES_CAPITULOS, DESCRICOES_CAPITULOS, CARTAS, MEMORIAS } from './historia.js';
+import { criarMochila } from './mochila.js';
 import { NIVEIS, nivelInicial, salvarNivel, detectarHardware, ajustarAoHardware } from './graficos.js';
 import { DIA } from './dia.js';
 import { criarDistancia } from './distancia.js';
@@ -361,8 +363,6 @@ function desenhar() {
 // a névoa, as nuvens baixas do High e a luz de ambiente. A direção da luz não muda (sombra fixa):
 // de dia é o sol, à noite o luar.
 const tintaHora = new THREE.Color(), tintaNuvens = new THREE.Color(), branco = new THREE.Color(1, 1, 1);
-const hudHora = $('hora');
-let horaMostrada = '';
 function aplicarHora() {
   const e = ceuJogo.estado;
   sol.color.copy(e.corLuz);
@@ -384,10 +384,14 @@ function aplicarHora() {
   }
   agua?.definirCeu(e);
   nevoa?.definirLuz(tintaHora);
-  // relógio no HUD: ☀ de dia, ☾ à noite
-  const h = Math.floor(e.hora), m = Math.floor((e.hora % 1) * 6) * 10;
-  const texto = `${h >= 6 && h < 18 ? '☀' : '☾'} ${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
-  if (hudHora && texto !== horaMostrada) { horaMostrada = texto; hudHora.textContent = texto; }
+}
+// a hora do dia fica na pausa (design/ux/hud.md: "ALWAYS HIDE" no jogo); sol de dia, lua à noite
+const INICIO_DIA = 6, FIM_DIA = 18;
+function mostrarHoraNaPausa() {
+  const hora = ceuJogo.estado.hora, h = Math.floor(hora), m = Math.floor((hora % 1) * 6) * 10;
+  $('pausaHoraTexto').textContent = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+  $('pausaHoraIcone').setAttribute('href', h >= INICIO_DIA && h < FIM_DIA ? '#i-sol' : '#i-lua');
+  $('pausaHora').setAttribute('aria-label', `Hora do dia: ${$('pausaHoraTexto').textContent}`);
 }
 
 function redimensionarPos() { altos?.redimensionar(); suavizacao.redimensionar(); }
@@ -416,6 +420,7 @@ addEventListener('keydown', e => {
   const emControle = document.activeElement?.matches?.('button, input, select, a');
   if (!emControle && (e.code.startsWith('Arrow') || e.code === 'Space')) e.preventDefault();
   if (e.code === 'KeyG' && !e.repeat) { abrirMenu(); return; }
+  if (e.code === 'KeyI' && !e.repeat && podeAbrirMochila()) { abrirMochila('teclado'); return; }
   if (menuAberto) { if (e.code === 'Escape') abrirMenu(false); return; }
   // com um painel aberto (capítulos, configurações) as teclas ficam com ele; Esc fecha (abaixo)
   if (paineis.classList.contains('aberto')) return;
@@ -491,8 +496,9 @@ const toques = new Map();
 const bastao = $('bastao');
 canvas.addEventListener('pointerdown', e => {
   if (e.pointerType !== 'touch') return;
-  toques.set(e.pointerId, { x: e.clientX, y: e.clientY, x0: e.clientX, y0: e.clientY, esquerda: e.clientX < innerWidth / 2 });
-  if (e.clientX < innerWidth / 2 && bastao) { bastao.style.display = 'block'; bastao.style.left = `${e.clientX - 50}px`; bastao.style.top = `${e.clientY - 50}px`; }
+  const ladoBastao = config.inverterLados ? e.clientX >= innerWidth / 2 : e.clientX < innerWidth / 2;
+  toques.set(e.pointerId, { x: e.clientX, y: e.clientY, x0: e.clientX, y0: e.clientY, esquerda: ladoBastao });
+  if (ladoBastao && bastao) { bastao.style.display = 'block'; bastao.style.left = `${e.clientX - 50}px`; bastao.style.top = `${e.clientY - 50}px`; }
 });
 canvas.addEventListener('pointermove', e => {
   const t = toques.get(e.pointerId);
@@ -530,10 +536,20 @@ for (const ev of ['pointerup', 'pointercancel', 'pointerleave']) botaoSuper.addE
 // controle (gamepad): analógico esquerdo anda, direito gira a câmera, A pula, B soca, Y chuta,
 // RB pega/solta, LT defende, X/RT correm, L3 (clicar o analógico) liga a corrida super rápida (até
 // parar), LB interage, Start pausa e Select abre os gráficos.
-let gpAntes = {}, gpEixoAntes = false, gpSuper = false;
+let gpAntes = {}, gpEixoAntes = false, gpEixoXAntes = false, gpSuper = false;
 function lerGamepad() {
   const gp = [...(navigator.getGamepads?.() || [])].find(Boolean);
   if (!gp) return;
+  // Mochila aberta: as bordas dos botões vão para ela (direcional/analógico, A, B, LB/RB, Select)
+  if (mochila.aberta) {
+    const ap = i => !!gp.buttons[i]?.pressed && !gpAntes[i];
+    const ex = gp.axes[0] || 0, ey = gp.axes[1] || 0, incl = Math.max(Math.abs(ex), Math.abs(ey)) > 0.6;
+    const novoEixo = incl && !gpEixoAntes; gpEixoAntes = incl;
+    mochila.controle({ cima: ap(12) || (novoEixo && ey < -0.6), baixo: ap(13) || (novoEixo && ey > 0.6), esq: ap(14) || (novoEixo && ex < -0.6), dir: ap(15) || (novoEixo && ex > 0.6),
+      a: ap(0), b: ap(1), lb: ap(4), rb: ap(5), select: ap(8) });
+    gpAntes = Object.fromEntries(gp.buttons.map((x, i) => [i, x.pressed]));
+    return;
+  }
   const ax = i => (Math.abs(gp.axes[i] || 0) > 0.15 ? gp.axes[i] : 0), b = i => !!gp.buttons[i]?.pressed;
   const borda = i => b(i) && !gpAntes[i];
   // com uma tela de menu por cima: direcional ou analógico passam pelas opções, A confirma, B volta
@@ -543,9 +559,15 @@ function lerGamepad() {
     const cima = borda(12) || (inclinado && eixo < 0 && !gpEixoAntes), baixo = borda(13) || (inclinado && eixo > 0 && !gpEixoAntes);
     gpEixoAntes = inclinado;
     if (cima || baixo) moverSelecao(camada, baixo ? 1 : -1);
+    const eixoX = gp.axes[0] || 0, inclinadoX = Math.abs(eixoX) > 0.6;
+    const esq = borda(14) || (inclinadoX && eixoX < 0 && !gpEixoXAntes), dir = borda(15) || (inclinadoX && eixoX > 0 && !gpEixoXAntes);
+    gpEixoXAntes = inclinadoX;
+    const focado = document.activeElement;
+    if ((esq || dir) && focado && camada.contains(focado) && focado.matches('select, input')) ajustarOpcao(focado, dir ? 1 : -1);
     if (borda(0)) {
       const foco = document.activeElement;
-      if (foco && foco !== document.body && camada.contains(foco)) foco.click();
+      if (foco instanceof HTMLSelectElement && camada.contains(foco)) { if (!ajustarOpcao(foco, 1)) { foco.selectedIndex = 0; foco.dispatchEvent(new Event('change', { bubbles: true })); } }
+      else if (foco && foco !== document.body && camada.contains(foco)) foco.click();
       else if (camada === tela && tela.dataset.modo === 'menu') abrirJogar();
     }
     if (borda(1)) dispatchEvent(new KeyboardEvent('keydown', { code: 'Escape', key: 'Escape' }));
@@ -572,7 +594,7 @@ function lerGamepad() {
   if (borda(4)) campanha?.interagir(); // LB: interagir
   b(0) ? teclas.add('GamepadPulo') : teclas.delete('GamepadPulo');
   if (borda(9)) alternarPausa();
-  if (borda(8)) abrirMenu();
+  if (borda(8) && podeAbrirMochila()) abrirMochila('controle'); // Select: Mochila (Gráficos fica na pausa)
   gpAntes = Object.fromEntries(gp.buttons.map((x, i) => [i, x.pressed]));
 }
 
@@ -757,8 +779,79 @@ function chamarNuvem() {
 }
 $('pausaNuvem').addEventListener('click', chamarNuvem);
 
+// ---------- pílula de Fuxicos no HUD: aparece por 3 s quando o saldo muda (IP 2.2) ----------
+// (o saldo vem do inventário na etapa d; até lá ninguém chama, e a pílula fica oculta)
+const MS_PILULA_MOEDA = 3000;
+const pilulaFuxicos = $('hudFuxicos'), numeroFuxicos = pilulaFuxicos.querySelector('b');
+let tempoPilula = null, saldoMostrado = null;
+function mostrarFuxicos(saldo) {
+  if (saldo === saldoMostrado) return;
+  saldoMostrado = saldo;
+  numeroFuxicos.textContent = saldo.toLocaleString('pt-BR');
+  pilulaFuxicos.setAttribute('aria-label', `Fuxicos: ${saldo}`);
+  pilulaFuxicos.hidden = false;
+  clearTimeout(tempoPilula); tempoPilula = setTimeout(() => { pilulaFuxicos.hidden = true; }, MS_PILULA_MOEDA);
+}
+
+// ---------- inventário (Mochila, Fuxicos, melhorias): um só para o jogo todo, salvo a cada mudança ----------
+const inventario = criarInventario({ estado: lerInventario(migrarDeProgressos), gravar: salvarInventario });
+inventario.visitarCapitulo(CAPITULO_ATUAL);
+salvarInventario(inventario.exportar()); // (o inventário migrado de um save antigo fica gravado desde já)
+saldoMostrado = inventario.saldo; // (ao abrir o jogo a pílula não aparece: só quando o saldo muda)
+inventario.eventos.addEventListener('moeda-mudou', ev => { if (ev.detail.delta !== 0) mostrarFuxicos(ev.detail.saldo); else saldoMostrado = ev.detail.saldo; });
+// ponto "NOVO" no botão da Mochila (sem número; o leitor de tela ouve quantos)
+const botaoMochila = $('abrir-mochila'), pontoNovo = botaoMochila.querySelector('.ponto-novo');
+function atualizarPontoNovo() {
+  const n = inventario.quantosNovos();
+  pontoNovo.hidden = n === 0;
+  pontoNovo.querySelector('.so-leitor').textContent = n === 1 ? ' — 1 item novo' : ` — ${n} itens novos`;
+}
+inventario.eventos.addEventListener('item-obtido', atualizarPontoNovo);
+atualizarPontoNovo();
+
+// ---------- Mochila (mochila.js): tela cheia, jogo pausado ----------
+// retrato da Brisa: a própria cena desenhada UMA vez por abertura numa textura pequena (câmera de frente
+// para ela), lida para uma imagem. Sem jogo carregado ou se falhar, a Mochila mostra o ícone no lugar.
+const RETRATO = { largura: 192, altura: 256, distancia: 3.2, alturaCam: 0.95, alturaOlhar: 0.75, fov: 30 };
+const camRetrato = new THREE.PerspectiveCamera(RETRATO.fov, RETRATO.largura / RETRATO.altura, 0.1, 60);
+let alvoRetrato = null;
+function retratoDaBrisa() {
+  if (!campanha) return null;
+  const { largura: w, altura: h } = RETRATO;
+  if (!alvoRetrato) { alvoRetrato = new THREE.WebGLRenderTarget(w, h); alvoRetrato.texture.colorSpace = THREE.SRGBColorSpace; }
+  const P = jogador.pos, a = jogador.angulo;
+  camRetrato.position.set(P.x + Math.sin(a) * RETRATO.distancia, P.y + RETRATO.alturaCam, P.z + Math.cos(a) * RETRATO.distancia);
+  camRetrato.lookAt(P.x, P.y + RETRATO.alturaOlhar, P.z); camRetrato.updateMatrixWorld();
+  const antes = renderer.getRenderTarget();
+  renderer.setRenderTarget(alvoRetrato); renderer.clear(); renderer.render(cena, camRetrato);
+  const px = new Uint8Array(w * h * 4); renderer.readRenderTargetPixels(alvoRetrato, 0, 0, w, h, px);
+  renderer.setRenderTarget(antes);
+  const tela2d = document.createElement('canvas'); tela2d.width = w; tela2d.height = h;
+  const g = tela2d.getContext('2d'), img = g.createImageData(w, h);
+  for (let y = 0; y < h; y++) img.data.set(px.subarray((h - 1 - y) * w * 4, (h - y) * w * 4), y * w * 4); // (a textura vem de cabeça para baixo)
+  g.putImageData(img, 0, 0);
+  return tela2d.toDataURL('image/png');
+}
+const mochila = criarMochila({
+  raiz: $('mochila'), inventario, capitulo: CAPITULO_ATUAL, textos: { cartas: CARTAS, lembrancas: MEMORIAS }, som,
+  fragmentos: () => ({ pegos: campanha?.estado.pegos ?? 0, total: campanha?.fragmentos.length ?? 0 }),
+  retrato: retratoDaBrisa,
+  aoFechar: origem => { quadrosParado = Math.max(quadrosParado, 2); teclas.clear(); if (origem === 'pausa') alternarPausa(); },
+});
+// abre no jogo (não em cena, cinema, carta, menu ou game over)
+function podeAbrirMochila() {
+  return estado === 'jogando' && !pausado && !menuAberto && !mochila.aberta && !document.body.classList.contains('cinema') && !campanha?.lendo && !jogador.morta;
+}
+function abrirMochila(origem) {
+  teclas.clear(); document.exitPointerLock?.();
+  mochila.abrir(origem);
+}
+botaoMochila.removeAttribute('aria-disabled'); botaoMochila.setAttribute('aria-label', 'Mochila (I)'); botaoMochila.title = 'Mochila (I)';
+botaoMochila.addEventListener('click', () => { if (podeAbrirMochila()) abrirMochila('hud'); });
+
 // ---------- vento na arena (3ª fase do Ravi) ----------
 const hudVento = $('ventoArena'), _direitaCam = new THREE.Vector3();
+const setaVento = hudVento.querySelector('.seta'), folhasVento = hudVento.querySelectorAll('.folha'), FOLHAS_VENTO = 3;
 function atualizarVentoArena(dt) {
   const ligado = !!vilao?.terceiraFase && estado === 'jogando' && !jogador.morta;
   if (!ligado) { if (ventoArena) { ventoArena = null; hudVento.classList.remove('ativo', 'troca'); } return; }
@@ -767,7 +860,7 @@ function atualizarVentoArena(dt) {
     const d = new THREE.Vector3(jogador.pos.x - vilao.v.pos.x, 0, jogador.pos.z - vilao.v.pos.z);
     if (d.lengthSq() < 1e-4) d.set(1, 0, 0);
     d.normalize();
-    ventoArena = { dir: new THREE.Vector3(-d.z, 0, d.x), sentido: 1, t: 0, folhas: 0, ultimo: '' };
+    ventoArena = { dir: new THREE.Vector3(-d.z, 0, d.x), sentido: 1, t: 0, folhas: 0, ultimo: -1 };
     hudVento.classList.add('ativo');
   }
   const v = ventoArena;
@@ -782,10 +875,15 @@ function atualizarVentoArena(dt) {
   // seta na tela: o sentido do vento visto pela câmera, e três pontos que se apagam até a troca
   _direitaCam.set(Math.cos(camera3p.yaw), 0, -Math.sin(camera3p.yaw));
   const lado = v.dir.dot(_direitaCam) * v.sentido, frente = -(v.dir.x * -Math.sin(camera3p.yaw) + v.dir.z * -Math.cos(camera3p.yaw)) * v.sentido;
-  const seta = Math.abs(lado) >= Math.abs(frente) ? (lado > 0 ? '⟶' : '⟵') : (frente > 0 ? '↓' : '↑');
-  const resta = VENTO_ARENA.periodo - v.t, pontos = '●'.repeat(Math.ceil(resta / VENTO_ARENA.periodo * 3)).padEnd(3, '○');
-  const txt = seta + pontos;
-  if (txt !== v.ultimo) { v.ultimo = txt; hudVento.querySelector('b').textContent = seta; hudVento.querySelector('span').textContent = pontos; }
+  // seta: ângulo (0 = direita, 90 = para baixo...); folhas cheias = quanto resta até a troca
+  const giro = Math.abs(lado) >= Math.abs(frente) ? (lado > 0 ? 0 : 180) : (frente > 0 ? 90 : -90);
+  const resta = VENTO_ARENA.periodo - v.t, cheias = Math.ceil(resta / VENTO_ARENA.periodo * FOLHAS_VENTO);
+  const chave = giro * 10 + cheias;
+  if (chave !== v.ultimo) {
+    v.ultimo = chave;
+    setaVento.style.transform = `rotate(${giro}deg)`;
+    for (let i = 0; i < FOLHAS_VENTO; i++) { folhasVento[i].classList.toggle('cheia', i < cheias); folhasVento[i].classList.toggle('vazia', i >= cheias); }
+  }
   hudVento.classList.toggle('troca', resta < VENTO_ARENA.aviso);
 }
 
@@ -969,19 +1067,35 @@ for (const a of paineis.querySelectorAll('.aba')) a.addEventListener('click', ()
 // configurações: aplicadas na hora e guardadas
 const config = lerConfig();
 function aplicarConfig() {
-  chuva.definirVolume(config.volume);
-  definirVolume(config.volume);
+  chuva.definirVolume(config.efeitos); // a chuva é efeito
+  definirVolumes(config.musica, config.efeitos);
   CAMERA.sensibilidade = 0.0025 * config.sensibilidade;
+  // HUD (design/ux/hud.md, Acessibilidade): escala de texto, flashes, botões de toque, fps
   document.documentElement.style.setProperty('--escala-texto', config.texto);
-  $('volumeValor').textContent = Math.round(config.volume * 100) + '%';
+  document.documentElement.dataset.toqueTam = config.toqueTam;
+  document.body.classList.toggle('sem-flashes', config.reduzirFlashes);
+  document.body.classList.toggle('inverter', config.inverterLados);
+  hudFps.hidden = !config.mostrarFps;
+  $('musicaValor').textContent = Math.round(config.musica * 100) + '%';
+  $('efeitosValor').textContent = Math.round(config.efeitos * 100) + '%';
+  document.documentElement.dataset.textoGrande = config.texto > 1 ? 'sim' : 'nao';
   $('sensValor').textContent = config.sensibilidade.toFixed(1) + '×';
   salvarConfig(config);
 }
-$('cfgVolume').value = config.volume; $('cfgSens').value = config.sensibilidade; $('cfgTexto').value = String(config.texto); $('cfgTremor').checked = config.tremor;
-$('cfgVolume').addEventListener('input', e => { config.volume = +e.target.value; aplicarConfig(); });
+$('cfgSens').value = config.sensibilidade; $('cfgTexto').value = String(config.texto); $('cfgTremor').checked = config.tremor;
+$('cfgMusica').value = config.musica; $('cfgEfeitos').value = config.efeitos;
+$('cfgMusica').addEventListener('input', e => { config.musica = +e.target.value; aplicarConfig(); });
+$('cfgEfeitos').addEventListener('input', e => { config.efeitos = +e.target.value; aplicarConfig(); });
 $('cfgSens').addEventListener('input', e => { config.sensibilidade = +e.target.value; aplicarConfig(); });
 $('cfgTexto').addEventListener('change', e => { config.texto = +e.target.value; aplicarConfig(); });
 $('cfgTremor').addEventListener('change', e => { config.tremor = e.target.checked; aplicarConfig(); });
+$('cfgFlashes').checked = config.reduzirFlashes; $('cfgLento').checked = config.cameraLenta; $('cfgToqueTam').value = config.toqueTam;
+$('cfgInverter').checked = config.inverterLados; $('cfgFps').checked = config.mostrarFps;
+$('cfgFlashes').addEventListener('change', e => { config.reduzirFlashes = e.target.checked; aplicarConfig(); });
+$('cfgLento').addEventListener('change', e => { config.cameraLenta = e.target.checked; aplicarConfig(); });
+$('cfgToqueTam').addEventListener('change', e => { config.toqueTam = e.target.value; aplicarConfig(); });
+$('cfgInverter').addEventListener('change', e => { config.inverterLados = e.target.checked; aplicarConfig(); });
+$('cfgFps').addEventListener('change', e => { config.mostrarFps = e.target.checked; aplicarConfig(); });
 aplicarConfig();
 $('continuar').addEventListener('click', () => { sumir(tela, () => { tela.style.display = 'none'; }, 150); estado = 'jogando'; $('continuar').style.display = 'none'; $('continuar').blur(); teclas.clear(); });
 
@@ -1022,7 +1136,7 @@ function alternarPausa() {
   pausado = !pausado;
   if (pausado) mostrar(telaPausa, () => { telaPausa.style.display = 'flex'; });
   else sumir(telaPausa, () => { telaPausa.style.display = 'none'; });
-  if (pausado) { atualizarBotaoNuvem(); $('pausaContinuar').focus({ preventScroll: true, focusVisible: false }); }
+  if (pausado) { atualizarBotaoNuvem(); mostrarHoraNaPausa(); $('pausaContinuar').focus({ preventScroll: true, focusVisible: false }); }
   else { fecharPaineis(); abrirMenu(false); document.activeElement?.blur(); }
   pedidoPulo = false;
   if (pausado) document.exitPointerLock?.();
@@ -1046,7 +1160,28 @@ function moverSelecao(camada, passo) {
   itens[prox].focus({ preventScroll: false, focusVisible: false });
   return true;
 }
+// muda o valor da opção focada (select: próxima opção; range: um passo; checkbox: liga/desliga) e
+// avisa o jogo pelo mesmo evento que o mouse geraria (change / input)
+function ajustarOpcao(el, passo) {
+  if (el instanceof HTMLSelectElement) {
+    const i = Math.min(el.options.length - 1, Math.max(0, el.selectedIndex + passo));
+    if (i === el.selectedIndex) return false;
+    el.selectedIndex = i; el.dispatchEvent(new Event('change', { bubbles: true })); som.foco(); return true;
+  }
+  if (el instanceof HTMLInputElement && el.type === 'range') {
+    if (passo > 0) el.stepUp(); else el.stepDown();
+    el.dispatchEvent(new Event('input', { bubbles: true })); return true;
+  }
+  if (el instanceof HTMLInputElement && el.type === 'checkbox') { el.click(); return true; }
+  return false;
+}
 addEventListener('keydown', e => {
+  const foco = document.activeElement;
+  if ((e.code === 'ArrowLeft' || e.code === 'ArrowRight') && foco instanceof HTMLSelectElement && telaDeCima()?.contains(foco)) {
+    if (ajustarOpcao(foco, e.code === 'ArrowRight' ? 1 : -1)) e.preventDefault();
+    return;
+  }
+  if (e.code === 'Enter' && foco instanceof HTMLInputElement && foco.type === 'checkbox') { e.preventDefault(); foco.click(); return; }
   if (e.code !== 'ArrowUp' && e.code !== 'ArrowDown') return;
   const camada = telaDeCima();
   if (camada && moverSelecao(camada, e.code === 'ArrowDown' ? 1 : -1)) e.preventDefault();
@@ -1073,6 +1208,7 @@ $('abrir-pausa').addEventListener('click', () => alternarPausa());
 $('pausaContinuar').addEventListener('click', () => alternarPausa());
 $('pausaVoltar').addEventListener('click', () => alternarPausa());
 $('pausaGraficos').addEventListener('click', () => abrirMenu(true));
+$('pausaMochila').addEventListener('click', () => { alternarPausa(); if (podeAbrirMochila()) abrirMochila('pausa'); });
 $('pausaControles').addEventListener('click', () => abrirPainel('config', 'controles'));
 // o progresso fica salvo nos pontos de controle; recarregar volta à tela inicial com "Continuar"
 $('pausaMenu').addEventListener('click', () => location.reload());
@@ -1862,7 +1998,7 @@ function medirDesempenho(dt) {
   if (medidor.tempo < 1) return;
   medidor.fps = medidor.quadros / medidor.tempo;
   medidor.quadros = medidor.tempo = 0;
-  hudFps.textContent = `${Math.round(medidor.fps)} fps`;
+  if (config.mostrarFps) hudFps.textContent = `${Math.round(medidor.fps)} fps`;
   if (estado !== 'jogando' || document.hidden || pausado) { orcamento.lento = orcamento.folga = 0; return; }
   const min = pisoResolucao(), max = nivel.resolucao[1];
   // meta: 45 fps no PC; no celular, 58 (a tela atualiza a 60 Hz ou mais e menos que isso se sente
@@ -1900,7 +2036,7 @@ function aplicarOrcamento() {
 }
 
 // barra de fôlego do sprint: só aparece quando não está cheia; anda por transform (sem redesenhar)
-const barraEnergia = $('energia'), preenchEnergia = barraEnergia?.firstElementChild;
+const barraEnergia = $('energia'), preenchEnergia = barraEnergia?.querySelector('.trilho i');
 let energiaMostrada = -1;
 function mostrarEnergia() {
   if (!barraEnergia) return;
@@ -1910,6 +2046,17 @@ function mostrarEnergia() {
   preenchEnergia.style.transform = `scaleX(${e})`;
   barraEnergia.classList.toggle('cheia', e >= 1);
   barraEnergia.classList.toggle('cansada', jogador.cansada);
+  botaoSuper.classList.toggle('indisponivel', jogador.cansada);
+}
+
+// contexto do HUD (design/ux/hud.md, "HUD States"): luta (objetivo a 60%, poder visível) e chefe
+// (objetivo e fragmentos somem). As classes do body só mudam quando o contexto muda.
+let contextoLuta = false, contextoChefe = false;
+function atualizarContextoHud() {
+  const chefe = estado === 'jogando' && !!vilao?.lutando && vilao.v.modo === 'chefe';
+  const luta = estado === 'jogando' && (chefe || !!vilao?.lutando || !!combate?.emLuta);
+  if (luta !== contextoLuta) { contextoLuta = luta; document.body.classList.toggle('em-luta', luta); }
+  if (chefe !== contextoChefe) { contextoChefe = chefe; document.body.classList.toggle('no-chefe', chefe); }
 }
 
 // ---------- Loop ----------
@@ -1929,7 +2076,7 @@ renderer.setAnimationLoop(() => {
   // nas janelas por cima do jogo parado, desenha só os quadros do fundo escurecido e para (volta a
   // desenhar se a janela mudar de tamanho ou o nível de gráficos trocar).
   if (tela.style.display !== 'none' && !tela.classList.contains('saindo')) return;
-  const parado = pausado || menuAberto;
+  const parado = pausado || menuAberto || mochila.aberta;
   if (parado && !estavaParado) quadrosParado = Math.max(quadrosParado, 2);
   estavaParado = parado;
   if (parado) { if (quadrosParado <= 0) return; quadrosParado--; }
@@ -1945,7 +2092,7 @@ renderer.setAnimationLoop(() => {
   if (estado === 'jogando' && mapa) {
     acumulado += dt;
     while (acumulado >= PASSO) { passoFisica(PASSO); acumulado -= PASSO; }
-    mostrarEnergia();
+    mostrarEnergia(); atualizarContextoHud();
       if (jogador.morta) { tempoMorte -= dt; if (tempoMorte <= 0) mostrarGameOver(); }
   }
   mundo?.atualizar(dt, t);
@@ -2087,6 +2234,7 @@ Promise.all([
       tremer: k => { impacto.tremor = Math.max(impacto.tremor, k); },
       morrer,
       chefe: () => vilao,
+      cameraLenta: () => config.cameraLenta,
     });
     aplicarEfeitos();
     configurarSombra();
@@ -2157,7 +2305,7 @@ Promise.all([
     progressoCarga(1); textoCarga('Pronto');
     dispatchEvent(new Event('jogo-pronto'));
     window.__jogo = {
-      jogador, personagem, get vilao() { return vilao; }, camera, camera3p, mapa, terreno, correntes, renderer, cena, sol, medidor, altos, mundo, inimigos, campanha, agua, nevoa, cachoeiras, praia, ceu: ceuJogo, get combate() { return combate; }, get animais() { return animais; },
+      lerVolumes, mostrarFuxicos, inventario, mochila, jogador, personagem, get vilao() { return vilao; }, camera, camera3p, mapa, terreno, correntes, renderer, cena, sol, medidor, altos, mundo, inimigos, campanha, agua, nevoa, cachoeiras, praia, ceu: ceuJogo, get combate() { return combate; }, get animais() { return animais; },
       terminarCapitulo, get mapaMundi() { return mapaMundi; }, get fuga() { return fuga; },
       animacao: () => animAtual, estado: () => estado, nivel: () => nomeNivel, aplicarNivel, ocioso, get oclusao() { return oclusao; },
     };

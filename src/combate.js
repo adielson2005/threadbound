@@ -4,6 +4,7 @@ import { aplicarPose } from './cambalhota.js';
 import { linhaLivre } from './colisao.js';
 import { brilhoDeDia } from './dia.js';
 import { dificuldade } from './dificuldade.js';
+import { ARMAS_BASE } from './itens.js';
 import { som } from './som.js';
 import { criarCorpo, lancar, passo as passoObjeto, aplicar, empurrar as empurrarCorpo } from './objetos.js';
 
@@ -45,12 +46,8 @@ const COMBO = ['soco2', 'soco4', 'socoFinal'];
 const JANELA_COMBO = 0.3; // (lâmina) a partir de quanto do golpe atual o próximo toque já fica guardado
 const FOLGA_COMBO = 0.4;  // (lâmina) segundos depois de um golpe em que um toque ainda continua a sequência
 
-const ARMAS = {
-  galho: { nome: 'Galho', dano: 2, alcance: 2.1, usos: 8 },
-  agulha: { nome: 'Agulha de Prata', dano: 3, alcance: 2.4, usos: 16 },
-  // metade da tesoura gigante da oficina de Aurélia: arma branca de verdade, com combo de 3 cortes
-  tesoura: { nome: 'Lâmina da Tesoura', dano: 2, alcance: 2.3, usos: 45, corte: true },
-};
+// as armas (dano, alcance, usos) moram no catálogo da Mochila (itens.js), que mostra o detalhe delas
+const ARMAS = ARMAS_BASE;
 // Explosão de Fios (o poder da Brisa): a barra enche acertando golpes, defendendo e esquivando na
 // hora certa; cheia (V, RT ou o botão ✦), uma onda de fios de luz empurra e atordoa todos em volta
 const PODER = { raio: 6.5, dano: 4, empurrao: 10, atordoa: 2.2, lento: 0.9 };
@@ -116,7 +113,9 @@ function modeloTesoura() {
 }
 
 // chefe: () => o vilão do capítulo (vilao.js) ou null; os golpes da Brisa acertam nele também
-export function criarCombate({ cena, mapa, mundo, terreno, inimigos, campanha, jogador, personagem, tremer, morrer, chefe = () => null }) {
+// cameraLenta: () => bool, a opção "Câmera lenta" das configurações (desligada, some só a câmera lenta;
+// o hitstop curto dos impactos continua)
+export function criarCombate({ cena, mapa, mundo, terreno, inimigos, campanha, jogador, personagem, tremer, morrer, chefe = () => null, cameraLenta = () => true }) {
   const $ = id => document.getElementById(id);
   const hudArma = $('arma'), hudGolpe = $('golpe');
   const rc = new THREE.Raycaster(); rc.firstHitOnly = true; rc.layers.enableAll();
@@ -257,12 +256,18 @@ export function criarCombate({ cena, mapa, mundo, terreno, inimigos, campanha, j
 
   // ---------- HUD ----------
   let pertoDe = null;
+  const USOS_BAIXOS = 0.25; // usos restantes <= 25%: ícone de rachadura e contorno de perigo
+  // (só roda quando o que ela segura ou o objeto perto muda: ver "chave" em atualizar)
+  const ICONE_ARMA = '<svg class="i" aria-hidden="true"><use href="#i-arma"/></svg>';
+  const ICONE_RACHA = '<svg class="i racha" aria-hidden="true"><use href="#i-rachadura"/></svg>';
   function atualizarHud() {
+    let baixo = false;
     if (segurando) {
-      const k = segurando.usosRestantes / segurando.usos;
-      hudArma.innerHTML = `<span class="nome">${segurando.nome}</span><i class="barrinha"><i style="width:${Math.round(k * 100)}%"></i></i><kbd title="soltar">F</kbd>`;
+      baixo = segurando.usosRestantes / segurando.usos <= USOS_BAIXOS;
+      hudArma.innerHTML = `${ICONE_ARMA}<span class="nome">${segurando.nome}</span><span class="usos">${segurando.usosRestantes}/${segurando.usos}</span>${baixo ? ICONE_RACHA : ''}<kbd title="soltar">F</kbd>`;
     } else if (pertoDe) hudArma.innerHTML = `<kbd>F</kbd><span class="nome">pegar ${pertoDe.nome}</span>`;
     else hudArma.textContent = '';
+    hudArma.classList.toggle('baixo', baixo);
   }
   let tempoAviso = null;
   // pequeno: mais embaixo e menor (o nome do que ela pegou)
@@ -538,6 +543,10 @@ export function criarCombate({ cena, mapa, mundo, terreno, inimigos, campanha, j
   // ---------- por quadro (visual) ----------
   const empurrador = { inicio: new THREE.Vector3(), fim: new THREE.Vector3(), raio: 0.2, vel: new THREE.Vector3() };
   let hudAntes = '';
+  // HUD de luta (poder visível, objetivo a 60%): estados do Retalho que contam como luta, e quanto
+  // tempo o HUD de luta fica depois do último (sem piscar entre um golpe e outro)
+  const ESTADOS_LUTA = new Set(['persegue', 'preparando', 'investida', 'recuperando', 'atordoado']);
+  const LUTA_SEGURA = 2.5;
   function atualizar(dt, t) {
     // física dos objetos soltos; a Brisa empurra (chuta) o que estiver nos pés dela
     const p = jogador.pos;
@@ -561,13 +570,16 @@ export function criarCombate({ cena, mapa, mundo, terreno, inimigos, campanha, j
       onda.scale.setScalar(0.5 + k * PODER.raio); matOnda.opacity = 0.9 * (1 - k);
       if (k >= 1) { tempoOnda = -1; onda.visible = false; }
     }
+    let algum = !!chefe()?.lutando;
+    if (!algum) for (const e of inimigos.lista) if (e.ativo && ESTADOS_LUTA.has(e.estado)) { algum = true; break; }
+    est.tempoLuta = algum ? LUTA_SEGURA : Math.max(0, (est.tempoLuta ?? 0) - dt);
     const chave = `${segurando?.usosRestantes}|${pertoDe?.nome}`;
     if (chave !== hudAntes) { hudAntes = chave; atualizarHud(); }
   }
   function avancarHitstop(dtReal) { est.hitstop = Math.max(0, est.hitstop - dtReal); est.lento = Math.max(0, est.lento - dtReal); }
 
   // ---------- Explosão de Fios (o poder da Brisa) ----------
-  const hudPoder = $('poder'), botaoPoder = $('tPoder');
+  const hudPoder = $('poder'), botaoPoder = $('tPoder'), preenchPoder = hudPoder?.querySelector('.trilho i');
   function ganharPoder(x) {
     const antes = est.poder;
     est.poder = Math.min(1, est.poder + x * dificuldade().ganhoPoder);
@@ -576,8 +588,13 @@ export function criarCombate({ cena, mapa, mundo, terreno, inimigos, campanha, j
     atualizarPoder();
   }
   function atualizarPoder() {
-    if (hudPoder) { hudPoder.querySelector('i').style.transform = `scaleX(${est.poder})`; hudPoder.classList.toggle('cheio', est.poder >= 1); }
+    if (hudPoder) {
+      preenchPoder.style.transform = `scaleX(${est.poder})`;
+      hudPoder.classList.toggle('cheio', est.poder >= 1); hudPoder.classList.toggle('vazio', est.poder <= 0);
+    }
     botaoPoder?.classList.toggle('pronto', est.poder >= 1);
+    botaoPoder?.classList.toggle('indisponivel', est.poder < 1);
+    botaoPoder?.style.setProperty('--carga', est.poder); // anel de carga em volta do botão (toque)
   }
   // onda: um anel de luz que cresce rente ao chão
   const matOnda = new THREE.MeshBasicMaterial({ color: '#ffe9a8', transparent: true, opacity: 0.9, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide });
@@ -680,7 +697,8 @@ export function criarCombate({ cena, mapa, mundo, terreno, inimigos, campanha, j
     get invulneravel() { return est.invulneravel; },
     get hitstop() { return est.hitstop; },
     // escala do tempo do jogo: quase parado no impacto (hitstop), câmera lenta nos momentos fortes
-    get escalaTempo() { return est.hitstop > 0 ? 0.08 : est.lento > 0 ? 0.35 : 1; },
+    get escalaTempo() { return est.hitstop > 0 ? 0.08 : est.lento > 0 && cameraLenta() ? 0.35 : 1; },
+    get emLuta() { return (est.tempoLuta ?? 0) > 0; },
     get poder() { return est.poder; },
     objetos,
   };

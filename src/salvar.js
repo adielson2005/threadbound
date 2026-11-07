@@ -1,11 +1,12 @@
 // Progresso e configurações guardados no navegador (localStorage). Sem armazenamento (modo
 // privado restrito), o jogo funciona igual: só não lembra de uma vez para outra.
-import { CAPITULO_ATUAL } from './capitulo.js';
+import { CAPITULO_ATUAL, TOTAL_CAPITULOS } from './capitulo.js';
 
 const CHAVE_PROGRESSO = 'threadbound.progresso';
 const CHAVE_CONFIG = 'threadbound.config';
 const CHAVE_CONCLUIDOS = 'threadbound.concluidos'; // capítulos terminados (desbloqueiam o seguinte)
 const CHAVE_ULTIMO = 'threadbound.ultimo';         // o último capítulo jogado (o "Continuar" do menu)
+const CHAVE_INVENTARIO = 'threadbound.inventario'; // Mochila, Fuxicos e melhorias: um só para o jogo todo (inventario.js)
 
 function ler(chave) { try { return JSON.parse(localStorage.getItem(chave)); } catch { return null; } }
 function gravar(chave, valor) { try { localStorage.setItem(chave, JSON.stringify(valor)); return true; } catch { return false; } }
@@ -32,9 +33,39 @@ export function lerConcluidos() {
   return [...lista];
 }
 export function marcarConcluido(n) { gravar(CHAVE_CONCLUIDOS, [...new Set([...lerConcluidos(), n])]); }
+// ---------- inventário (o jogo todo) ----------
+// sem inventário salvo (save de antes da Mochila): reconstrói os itens de história a partir das cartas e
+// lembranças já lidas nos progressos dos capítulos; os Fuxicos começam em 0
+export function lerInventario(migrar) {
+  const s = ler(CHAVE_INVENTARIO);
+  if (s && typeof s === 'object' && s.versao >= 1) return s;
+  const progressos = {};
+  for (let n = 1; n <= TOTAL_CAPITULOS; n++) progressos[n] = lerProgresso(n);
+  return migrar(progressos);
+}
+export function salvarInventario(estado) { return gravar(CHAVE_INVENTARIO, estado); }
 export function ultimoCapitulo() { const n = ler(CHAVE_ULTIMO); return Number.isInteger(n) ? n : 1; }
 
 // ---------- configurações ----------
-export const CONFIG_PADRAO = { volume: 0.8, sensibilidade: 1, tremor: true, texto: 1 };
-export function lerConfig() { return { ...CONFIG_PADRAO, ...(ler(CHAVE_CONFIG) ?? {}) }; }
+// texto: escala de todo o HUD (Normal / Grande / Maior); toqueTam: botões de toque P/M/G (48/56/64 dp);
+// reduzirFlashes: null = segue o sistema (prefers-reduced-motion) até a pessoa escolher
+export const ESCALAS_TEXTO = [1, 1.2, 1.5];
+export const TAMANHOS_TOQUE = ['P', 'M', 'G'];
+export const CONFIG_PADRAO = {
+  volume: 0.8, sensibilidade: 1, tremor: true, texto: 1,
+  reduzirFlashes: null, cameraLenta: true, toqueTam: 'M', inverterLados: false, mostrarFps: false,
+  musica: 0.8, efeitos: 0.8, // volumes separados (o "volume" antigo vale para os dois)
+};
+// saves antigos usavam 1,15 e 1,3: vão para o tamanho mais perto (1,2 e 1,5)
+const MIGRAR_TEXTO = { 1.15: 1.2, 1.3: 1.5 };
+export function lerConfig() {
+  const salvo = ler(CHAVE_CONFIG) ?? {};
+  const c = { ...CONFIG_PADRAO, ...salvo };
+  if (typeof salvo.volume === 'number' && salvo.musica === undefined) { c.musica = salvo.volume; c.efeitos = salvo.volume; }
+  delete c.volume;
+  c.texto = MIGRAR_TEXTO[c.texto] ?? (ESCALAS_TEXTO.includes(+c.texto) ? +c.texto : 1);
+  if (typeof c.reduzirFlashes !== 'boolean') c.reduzirFlashes = !!globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+  if (!TAMANHOS_TOQUE.includes(c.toqueTam)) c.toqueTam = CONFIG_PADRAO.toqueTam;
+  return c;
+}
 export function salvarConfig(c) { gravar(CHAVE_CONFIG, c); }

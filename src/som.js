@@ -4,20 +4,23 @@
 // O navegador só deixa tocar depois de um clique ou tecla: o contexto abre no primeiro toque.
 
 let ctx = null, mestre = null, efeitos = null, musica = null, ruidoBranco = null;
-let volume = 1;
-try { volume = Number(localStorage.getItem('jogo.volume') ?? 1); } catch { /* sem armazenamento */ }
+// volumes da pessoa (Configurações › Música e Efeitos): um ganho para cada grupo, antes do mestre.
+// ("musica" e "efeitos" continuam sendo os ganhos que o jogo mexe: a música da luta entra e sai)
+let volMusica = 1, volEfeitos = 1, ganhoMusica = null, ganhoEfeitos = null;
 
 function abrir() {
   if (ctx) { if (ctx.state === 'suspended') ctx.resume(); return; }
   try {
     ctx = new (window.AudioContext || window.webkitAudioContext)();
-    mestre = ctx.createGain(); mestre.gain.value = volume;
+    mestre = ctx.createGain(); mestre.gain.value = 1;
     // um compressor leve no fim: golpes seguidos não estouram e o som baixo continua audível no celular
     const comp = ctx.createDynamicsCompressor();
     comp.threshold.value = -16; comp.ratio.value = 4; comp.attack.value = 0.004; comp.release.value = 0.2;
     mestre.connect(comp).connect(ctx.destination);
-    efeitos = ctx.createGain(); efeitos.gain.value = 0.9; efeitos.connect(mestre);
-    musica = ctx.createGain(); musica.gain.value = 0; musica.connect(mestre);
+    ganhoEfeitos = ctx.createGain(); ganhoEfeitos.gain.value = volEfeitos; ganhoEfeitos.connect(mestre);
+    ganhoMusica = ctx.createGain(); ganhoMusica.gain.value = volMusica; ganhoMusica.connect(mestre);
+    efeitos = ctx.createGain(); efeitos.gain.value = 0.9; efeitos.connect(ganhoEfeitos);
+    musica = ctx.createGain(); musica.gain.value = 0; musica.connect(ganhoMusica);
     const n = ctx.sampleRate, b = ctx.createBuffer(1, n, n), d = b.getChannelData(0);
     for (let i = 0; i < n; i++) d[i] = Math.random() * 2 - 1;
     ruidoBranco = b;
@@ -26,7 +29,13 @@ function abrir() {
 addEventListener('pointerdown', abrir, { once: false, passive: true });
 addEventListener('keydown', abrir, { once: false });
 
-export function definirVolume(v) { volume = v; if (mestre) mestre.gain.value = v; }
+export function definirVolumes(m, e) {
+  volMusica = m; volEfeitos = e;
+  if (ganhoMusica) ganhoMusica.gain.value = m;
+  if (ganhoEfeitos) ganhoEfeitos.gain.value = e;
+}
+// (para os testes: o valor que está de fato em cada ganho)
+export function lerVolumes() { return { musica: ganhoMusica?.gain.value ?? null, efeitos: ganhoEfeitos?.gain.value ?? null, pedido: { musica: volMusica, efeitos: volEfeitos } }; }
 
 // ---------- peças ----------
 const agora = () => ctx.currentTime;

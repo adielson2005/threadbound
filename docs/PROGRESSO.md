@@ -10,6 +10,28 @@ Ponto de restauração anterior a tudo isto: tag `restauro-antes-reconstrucao`.
 emulação de celular.** O que falta depende de um aparelho de verdade: medir FPS num Android modesto
 (FASE 12) e ajustar a partir do que aparecer lá. A lista exata está no fim deste arquivo.
 
+## HUD "retalho de tecido" (05/11/2026, /team-ui fase 3)
+
+Implementado o HUD aprovado em `design/ux/hud.md` e `production/ui/hud/visual-design.md`:
+fundos 0,64 (fala, carta, memória e dica 0,72), pesponto, ícones SVG num sprite único; fôlego em
+carretéis com número e "!" no último; corrida com listras quando cansada; poder só na luta ou cheio,
+com "Pronto!"; chefe com número e marcas de fase (50% e 25%); vento com seta e folhas, piscando a
+2 Hz; fila única de aviso e memória; objetivo com destaque e ✓; carta com botão Fechar; hora na pausa;
+fps só com Gráficos › Mostrar desempenho. Configurações novas: Reduzir flashes, Câmera lenta,
+tamanho dos botões de toque (P/M/G = 48/56/64) e inverter lados; escala de texto 1 / 1,2 / 1,5
+valendo para todo o HUD (saves com 1,15 e 1,3 migram para 1,2 e 1,5).
+Medido com bot Playwright (Chromium sem GPU): botões de toque sem sobreposição e com 8 dp de espaço
+em P, M e G, com e sem lados invertidos, a 640×360; G cabe a 360 dp de altura. **Falta:** medir num
+Android de verdade e o "!" de golpe vindo como sprite 3D (parte separada).
+
+Acabamento (fase 5, revisão de UX): layout do celular deitado refeito para Grande/Maior em 640×360
+(zona A em uma linha, objetivo do lado oposto aos botões, poder como anel no botão Poder, aviso numa
+faixa própria); no chefe só avisos críticos e só as falas de virada; em luta as falas esperam; foco
+visível nas opções; ←/→ (teclado e controle) mudam selects e sliders; menus seguem o tamanho de texto
+e nada abaixo de 14 px; alvos dos menus no celular com 48 px e 8 px de espaço; volumes separados de
+Música e Efeitos (o volume antigo vale para os dois). Medido com bot: nenhuma sobreposição entre os
+elementos visíveis do HUD em Normal e Maior, com e sem inverter, na exploração e no chefe.
+
 ## Situação de cada fase
 
 | Fase | Situação | O que foi feito / o que falta |

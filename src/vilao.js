@@ -97,7 +97,13 @@ export async function criarVilao({ renderer, nivel, cena, mapa, jogador, ui }) {
   cena.add(b.raiz, sombra);
   const rc = new THREE.Raycaster(); rc.firstHitOnly = true; rc.layers.enableAll();
   const baixo = new THREE.Vector3(0, -1, 0), o = new THREE.Vector3();
-  if (ui) ui.firstChild.textContent = NOME_VILAO;
+  // barra do chefe (design/ux/hud.md): nome, número "vida/total", rastro do dano e as marcas das
+  // fases (50% e 25%) que acendem ao passar de fase; o DOM só muda quando o valor muda
+  const barraUi = ui && {
+    num: ui.querySelector('.num'), cheio: ui.querySelector('.barra > i'), rastro: ui.querySelector('.barra > s'),
+    marcas: ui.querySelectorAll('.marca'), vida: -1, total: -1, visivel: null,
+  };
+  if (ui) ui.querySelector('.nome').textContent = NOME_VILAO;
 
   // o objeto que o combate trata como um inimigo (aoSerAtacada mexe em vel, estado, atordoado, flash)
   const v = {
@@ -125,9 +131,17 @@ export async function criarVilao({ renderer, nivel, cena, mapa, jogador, ui }) {
   const vidaTotal = () => Math.round(VIDA * dificuldade().vidaVilao);
 
   function mostrarBarra(sim) {
-    if (!ui) return;
-    ui.style.opacity = sim ? 1 : 0;
-    ui.querySelector('i').style.transform = `scaleX(${Math.max(0, v.vida / vidaTotal())})`;
+    if (!barraUi) return;
+    if (sim !== barraUi.visivel) { barraUi.visivel = sim; ui.style.opacity = sim ? 1 : 0; }
+    const total = vidaTotal(), vida = Math.max(0, Math.ceil(v.vida));
+    if (vida === barraUi.vida && total === barraUi.total) return;
+    barraUi.vida = vida; barraUi.total = total;
+    const k = `scaleX(${Math.max(0, v.vida / total)})`;
+    barraUi.cheio.style.transform = k; barraUi.rastro.style.transform = k;
+    barraUi.num.textContent = `${vida}/${total}`;
+    ui.setAttribute('aria-label', `${NOME_VILAO}: ${vida} de ${total}`);
+    barraUi.marcas[0].classList.toggle('acesa', v.vida <= total / 2);
+    barraUi.marcas[1].classList.toggle('acesa', v.vida <= total * FASE3);
   }
   function noChaoEm(p) {
     rc.set(o.set(p.x, p.y + 4, p.z), baixo); rc.far = 12;
