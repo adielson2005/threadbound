@@ -40,6 +40,9 @@ import { criarCombate, GOLPES } from './combate.js';
 import { criarAjusteResolucao, ajustarResolucao } from './resolucao.js';
 import { INTRO, CHAMADA, AVISOS, GAMEOVER, CAPITULO, FIM, NOMES_CAPITULOS, DESCRICOES_CAPITULOS, CARTAS, MEMORIAS } from './historia.js';
 import { criarMochila } from './mochila.js';
+import { criarArmarinho } from './armarinho.js';
+import { criarPopups } from './popup.js';
+import { ITENS } from './itens.js';
 import { NIVEIS, nivelInicial, salvarNivel, detectarHardware, ajustarAoHardware } from './graficos.js';
 import { DIA } from './dia.js';
 import { criarDistancia } from './distancia.js';
@@ -545,8 +548,9 @@ function lerGamepad() {
     const ap = i => !!gp.buttons[i]?.pressed && !gpAntes[i];
     const ex = gp.axes[0] || 0, ey = gp.axes[1] || 0, incl = Math.max(Math.abs(ex), Math.abs(ey)) > 0.6;
     const novoEixo = incl && !gpEixoAntes; gpEixoAntes = incl;
-    mochila.controle({ cima: ap(12) || (novoEixo && ey < -0.6), baixo: ap(13) || (novoEixo && ey > 0.6), esq: ap(14) || (novoEixo && ex < -0.6), dir: ap(15) || (novoEixo && ex > 0.6),
-      a: ap(0), b: ap(1), lb: ap(4), rb: ap(5), select: ap(8) });
+    const c = { cima: ap(12) || (novoEixo && ey < -0.6), baixo: ap(13) || (novoEixo && ey > 0.6), esq: ap(14) || (novoEixo && ex < -0.6), dir: ap(15) || (novoEixo && ex > 0.6),
+      a: ap(0), b: ap(1), lb: ap(4), rb: ap(5), select: ap(8) };
+    if (!popups.controle(c) && !armarinho.controle(c)) mochila.controle(c); // o que está por cima recebe
     gpAntes = Object.fromEntries(gp.buttons.map((x, i) => [i, x.pressed]));
     return;
   }
@@ -832,8 +836,17 @@ function retratoDaBrisa() {
   g.putImageData(img, 0, 0);
   return tela2d.toDataURL('image/png');
 }
+// (a ordem importa: modal e Armarinho ouvem o teclado antes da Mochila)
+const popups = criarPopups({ raiz: $('popups'), som });
+const armarinho = criarArmarinho({ raiz: $('armarinho'), inventario, capitulo: CAPITULO_ATUAL, popups, som, aoFechar: () => mochila.retomar() });
+// item obtido no jogo: toast "Você achou: ..." (não rouba o foco)
+inventario.eventos.addEventListener('item-obtido', ev => {
+  const it = ITENS[ev.detail.id]; if (!it) return;
+  popups.toast({ icone: it.icone, texto: `Você achou: ${it.nome}`, sub: it.tipo === 'historia' || it.tipo === 'quebra' ? 'Veja na Mochila' : '' });
+});
 const mochila = criarMochila({
-  raiz: $('mochila'), inventario, capitulo: CAPITULO_ATUAL, textos: { cartas: CARTAS, lembrancas: MEMORIAS }, som,
+  raiz: $('mochila'), inventario, capitulo: CAPITULO_ATUAL, textos: { cartas: CARTAS, lembrancas: MEMORIAS }, som, popups,
+  abrirArmarinho: () => armarinho.abrir(),
   fragmentos: () => ({ pegos: campanha?.estado.pegos ?? 0, total: campanha?.fragmentos.length ?? 0 }),
   retrato: retratoDaBrisa,
   aoFechar: origem => { quadrosParado = Math.max(quadrosParado, 2); teclas.clear(); if (origem === 'pausa') alternarPausa(); },
@@ -2305,7 +2318,7 @@ Promise.all([
     progressoCarga(1); textoCarga('Pronto');
     dispatchEvent(new Event('jogo-pronto'));
     window.__jogo = {
-      lerVolumes, mostrarFuxicos, inventario, mochila, jogador, personagem, get vilao() { return vilao; }, camera, camera3p, mapa, terreno, correntes, renderer, cena, sol, medidor, altos, mundo, inimigos, campanha, agua, nevoa, cachoeiras, praia, ceu: ceuJogo, get combate() { return combate; }, get animais() { return animais; },
+      lerVolumes, mostrarFuxicos, inventario, mochila, armarinho, popups, jogador, personagem, get vilao() { return vilao; }, camera, camera3p, mapa, terreno, correntes, renderer, cena, sol, medidor, altos, mundo, inimigos, campanha, agua, nevoa, cachoeiras, praia, ceu: ceuJogo, get combate() { return combate; }, get animais() { return animais; },
       terminarCapitulo, get mapaMundi() { return mapaMundi; }, get fuga() { return fuga; },
       animacao: () => animAtual, estado: () => estado, nivel: () => nomeNivel, aplicarNivel, ocioso, get oclusao() { return oclusao; },
     };

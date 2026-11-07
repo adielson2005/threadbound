@@ -24,17 +24,18 @@ const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;',
 // raiz: o elemento #mochila (vazio no index.html). capitulo: o capítulo atual.
 // textos: { cartas: {nome: texto}, lembrancas: [texto] } do capítulo atual (historia.js)
 // fragmentos(): { pegos, total }. retrato(): dataURL da Brisa ou null. aoFechar(origem). som: o de som.js
-export function criarMochila({ raiz, inventario, capitulo, textos, fragmentos, retrato, aoFechar, som }) {
+export function criarMochila({ raiz, inventario, capitulo, textos, fragmentos, retrato, aoFechar, som, popups = null, abrirArmarinho = null }) {
   raiz.innerHTML = `
     <header class="mb-topo">
       <button class="mb-voltar" type="button" aria-label="Voltar">${icone('i-voltar')}<span>Voltar</span></button>
       <h1 class="mb-titulo" id="mbTitulo">Mochila</h1>
       <div class="mb-moedas">
         <span class="pilula-moeda" id="mbFragmentos" role="img">${icone('i-fragmento')}<b></b></span>
-        <span class="pilula-moeda" id="mbFuxicos" role="img">${icone('i-fuxico')}<b></b></span>
+        <button class="pilula-moeda mb-mais" id="mbFuxicos" type="button">${icone('i-fuxico')}<b></b><span class="mb-mais-sinal" aria-hidden="true">${icone('i-mais')}</span></button>
       </div>
     </header>
-    <nav class="mb-categorias" role="tablist" aria-label="Categorias"></nav>
+    <div class="mb-coluna"><nav class="mb-categorias" role="tablist" aria-label="Categorias"></nav>
+      <button class="mb-sec mb-armarinho" type="button">${icone('i-armarinho')}<span>Armarinho</span></button></div>
     <div class="mb-centro" aria-hidden="true"><div class="mb-retrato"></div><div class="mb-pedestal"></div></div>
     <section class="mb-painel">
       <div class="mb-abas" role="tablist" aria-label="Armas">
@@ -105,7 +106,7 @@ export function criarMochila({ raiz, inventario, capitulo, textos, fragmentos, r
     ui.frag.querySelector('b').textContent = `${f.pegos}/${f.total}`;
     ui.frag.setAttribute('aria-label', `${CONTADORES.fragmentos.nome}: ${f.pegos} de ${f.total}`);
     ui.fux.querySelector('b').textContent = inventario.saldo.toLocaleString('pt-BR');
-    ui.fux.setAttribute('aria-label', `${MOEDA.plural}: ${inventario.saldo}`);
+    ui.fux.setAttribute('aria-label', `${MOEDA.plural}: ${inventario.saldo}. Abrir o Armarinho`);
   }
   function desenharCategorias() {
     for (const b of ui.cats.children) {
@@ -197,6 +198,9 @@ export function criarMochila({ raiz, inventario, capitulo, textos, fragmentos, r
     const r = inventario.subirMelhoria(id);
     if (r.ok) som?.carregado?.(); else som?.aviso?.();
     redesenhar(); focarAcaoOuSlot();
+    if (r.ok && popups) popups.modal({ titulo: `Nível ${r.nivel}!`, faixa: 'laranja', icone: MELHORIAS[id].icone,
+      corpo: `<p><b>${esc(MELHORIAS[id].nome)}</b> agora está no nível ${r.nivel} de ${NIVEL_MAX}.</p>`, botoes: [{ id: 'ok', rotulo: 'Que bom!', primario: true, cancelar: true }] });
+    else if (!r.ok && r.motivo === 'salvar' && popups) popups.modal({ titulo: 'Não deu para salvar', icone: 'i-alerta', corpo: '<p>A melhoria não aconteceu e nada foi cobrado. Tente de novo.</p>' });
     return r;
   }
   // páginas para LER: cartas e lembranças do capítulo atual têm texto aqui; de outros capítulos, um aviso curto
@@ -239,10 +243,11 @@ export function criarMochila({ raiz, inventario, capitulo, textos, fragmentos, r
   function focarSlot(i = est.sel) { const b = ui.grade.children[i]; if (b) { est.sel = i; marcarSelecionado(); b.focus(); } else (ui.acao.hidden ? ui.cats.querySelector('.ativa') : ui.acao).focus(); }
   function focarAcaoOuSlot() { if (!ui.acao.hidden && !ui.acao.disabled) ui.acao.focus(); else focarSlot(); }
   function colunas() { return getComputedStyle(ui.grade).gridTemplateColumns.split(' ').length || 3; }
+  const primeiroAchado = () => Math.max(0, est.slots.findIndex(s => s.achado));
   function trocarCategoria(passo) {
     const i = CATEGORIAS.findIndex(c => c.id === est.cat);
     est.cat = CATEGORIAS[(i + passo + CATEGORIAS.length) % CATEGORIAS.length].id; est.aba = 'ver'; est.sel = 0;
-    redesenhar(); focarSlot(0); som?.foco?.();
+    redesenhar(); focarSlot(primeiroAchado()); som?.foco?.();
   }
   // direção: 'cima' | 'baixo' | 'esq' | 'dir'
   function mover(dir) {
@@ -254,9 +259,12 @@ export function criarMochila({ raiz, inventario, capitulo, textos, fragmentos, r
       else if (dir === 'dir') { if (i % c === c - 1 || i === n - 1) { if (!ui.acao.hidden) ui.acao.focus(); } else focarSlot(i + 1); }
       else if (dir === 'cima') { if (i - c >= 0) focarSlot(i - c); else (ui.abas.hidden ? raiz.querySelector('.mb-voltar') : ui.abas.querySelector('.ativa')).focus(); }
       else if (i + c < n) focarSlot(i + c); else if (!ui.acao.hidden) ui.acao.focus();
+    } else if (a?.classList.contains('mb-armarinho')) {
+      if (dir === 'cima') ui.cats.lastElementChild.focus(); else if (dir === 'dir') focarSlot();
     } else if (a?.classList.contains('mb-cat')) {
       const cs = [...ui.cats.children], i = cs.indexOf(a);
-      if (dir === 'cima' || dir === 'baixo') { const j = (i + (dir === 'baixo' ? 1 : -1) + cs.length) % cs.length; est.cat = cs[j].dataset.cat; est.aba = 'ver'; est.sel = 0; redesenhar(); cs[j].focus(); som?.foco?.(); }
+      if (dir === 'baixo' && i === cs.length - 1 && abrirArmarinho) raiz.querySelector('.mb-armarinho').focus();
+      else if (dir === 'cima' || dir === 'baixo') { const j = (i + (dir === 'baixo' ? 1 : -1) + cs.length) % cs.length; est.cat = cs[j].dataset.cat; est.aba = 'ver'; est.sel = 0; redesenhar(); cs[j].focus(); som?.foco?.(); }
       else if (dir === 'dir') focarSlot(0);
     } else if (a?.classList.contains('mb-aba')) {
       if (dir === 'esq' || dir === 'dir') { est.aba = dir === 'dir' ? 'melhorar' : 'ver'; est.sel = 0; redesenhar(); ui.abas.querySelector('.ativa').focus(); }
@@ -277,7 +285,8 @@ export function criarMochila({ raiz, inventario, capitulo, textos, fragmentos, r
   raiz.addEventListener('click', e => {
     const b = e.target.closest('button'); if (!b || b.disabled) return;
     if (b.classList.contains('mb-voltar')) return voltar();
-    if (b.classList.contains('mb-cat')) { est.cat = b.dataset.cat; est.aba = 'ver'; est.sel = 0; redesenhar(); som?.foco?.(); return focarSlot(0); }
+    if (b.classList.contains('mb-cat')) { est.cat = b.dataset.cat; est.aba = 'ver'; est.sel = 0; redesenhar(); som?.foco?.(); return focarSlot(primeiroAchado()); }
+    if ((b.classList.contains('mb-armarinho') || b.id === 'mbFuxicos') && abrirArmarinho) return abrirArmarinho();
     if (b.classList.contains('mb-aba')) { est.aba = b.dataset.aba; est.sel = 0; redesenhar(); return b.focus(); }
     if (b.classList.contains('mb-slot')) {
       const i = +b.dataset.i;
@@ -296,13 +305,13 @@ export function criarMochila({ raiz, inventario, capitulo, textos, fragmentos, r
   const TECLAS = { ArrowUp: 'cima', ArrowDown: 'baixo', ArrowLeft: 'esq', ArrowRight: 'dir' };
   addEventListener('keydown', e => {
     if (!est.aberta) return;
-    e.stopPropagation();
+    e.stopImmediatePropagation();
     if (TECLAS[e.code]) { e.preventDefault(); mover(TECLAS[e.code]); }
     else if (e.code === 'Enter' || e.code === 'Space') { e.preventDefault(); if (!e.repeat) ativar(); }
     else if ((e.code === 'Escape' || e.code === 'KeyI') && !e.repeat) { e.preventDefault(); voltar(); }
     else if ((e.code === 'KeyQ' || e.code === 'KeyE') && !e.repeat && !est.leitura) trocarCategoria(e.code === 'KeyE' ? 1 : -1);
   }, true);
-  addEventListener('keyup', e => { if (est.aberta) e.stopPropagation(); }, true);
+  addEventListener('keyup', e => { if (est.aberta) e.stopImmediatePropagation(); }, true);
 
   // ---------- abrir e fechar ----------
   function montar() {
@@ -329,6 +338,7 @@ export function criarMochila({ raiz, inventario, capitulo, textos, fragmentos, r
     som?.foco?.();
     if (montar()) {
       if (foco) { const c = Object.entries(ITENS).find(([id]) => id === foco)?.[1]; if (c) { est.cat = c.tipo === 'arma' ? 'armas' : c.tipo; est.sel = Math.max(0, slotsDa(est.cat, 'ver').findIndex(s => s.id === foco)); redesenhar(); } }
+      if (!foco) { est.sel = 0; desenharGrade(); est.sel = primeiroAchado(); marcarSelecionado(); }
       focarSlot(est.sel);
       // o retrato da Brisa (uma vez por abertura) vem no quadro seguinte: a tela já abriu e responde
       if (est.retratoUrl === undefined) {
@@ -366,8 +376,10 @@ export function criarMochila({ raiz, inventario, capitulo, textos, fragmentos, r
     return true;
   }
 
+  // voltando do Armarinho: saldo e níveis podem ter mudado
+  function retomar() { if (!est.aberta) return; redesenhar(); raiz.querySelector('.mb-armarinho').focus(); }
   return {
-    abrir, fechar, controle,
+    abrir, fechar, controle, retomar,
     get aberta() { return est.aberta; },
     get retratosTirados() { return est.retratos; },
     get msAbrir() { return est.msAbrir; },
