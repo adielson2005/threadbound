@@ -38,7 +38,8 @@ import { DIFICULDADES, dificuldade, definirDificuldade } from './dificuldade.js'
 import { criarCampanha } from './campanha.js';
 import { criarCombate, GOLPES } from './combate.js';
 import { criarAjusteResolucao, ajustarResolucao } from './resolucao.js';
-import { INTRO, CHAMADA, AVISOS, GAMEOVER, CAPITULO, FIM, NOMES_CAPITULOS, DESCRICOES_CAPITULOS } from './historia.js';
+import { INTRO, CHAMADA, AVISOS, GAMEOVER, CAPITULO, FIM, NOMES_CAPITULOS, DESCRICOES_CAPITULOS, CARTAS, MEMORIAS } from './historia.js';
+import { criarMochila } from './mochila.js';
 import { NIVEIS, nivelInicial, salvarNivel, detectarHardware, ajustarAoHardware } from './graficos.js';
 import { DIA } from './dia.js';
 import { criarDistancia } from './distancia.js';
@@ -419,6 +420,7 @@ addEventListener('keydown', e => {
   const emControle = document.activeElement?.matches?.('button, input, select, a');
   if (!emControle && (e.code.startsWith('Arrow') || e.code === 'Space')) e.preventDefault();
   if (e.code === 'KeyG' && !e.repeat) { abrirMenu(); return; }
+  if (e.code === 'KeyI' && !e.repeat && podeAbrirMochila()) { abrirMochila('teclado'); return; }
   if (menuAberto) { if (e.code === 'Escape') abrirMenu(false); return; }
   // com um painel aberto (capítulos, configurações) as teclas ficam com ele; Esc fecha (abaixo)
   if (paineis.classList.contains('aberto')) return;
@@ -538,6 +540,16 @@ let gpAntes = {}, gpEixoAntes = false, gpEixoXAntes = false, gpSuper = false;
 function lerGamepad() {
   const gp = [...(navigator.getGamepads?.() || [])].find(Boolean);
   if (!gp) return;
+  // Mochila aberta: as bordas dos botões vão para ela (direcional/analógico, A, B, LB/RB, Select)
+  if (mochila.aberta) {
+    const ap = i => !!gp.buttons[i]?.pressed && !gpAntes[i];
+    const ex = gp.axes[0] || 0, ey = gp.axes[1] || 0, incl = Math.max(Math.abs(ex), Math.abs(ey)) > 0.6;
+    const novoEixo = incl && !gpEixoAntes; gpEixoAntes = incl;
+    mochila.controle({ cima: ap(12) || (novoEixo && ey < -0.6), baixo: ap(13) || (novoEixo && ey > 0.6), esq: ap(14) || (novoEixo && ex < -0.6), dir: ap(15) || (novoEixo && ex > 0.6),
+      a: ap(0), b: ap(1), lb: ap(4), rb: ap(5), select: ap(8) });
+    gpAntes = Object.fromEntries(gp.buttons.map((x, i) => [i, x.pressed]));
+    return;
+  }
   const ax = i => (Math.abs(gp.axes[i] || 0) > 0.15 ? gp.axes[i] : 0), b = i => !!gp.buttons[i]?.pressed;
   const borda = i => b(i) && !gpAntes[i];
   // com uma tela de menu por cima: direcional ou analógico passam pelas opções, A confirma, B volta
@@ -582,7 +594,7 @@ function lerGamepad() {
   if (borda(4)) campanha?.interagir(); // LB: interagir
   b(0) ? teclas.add('GamepadPulo') : teclas.delete('GamepadPulo');
   if (borda(9)) alternarPausa();
-  if (borda(8)) abrirMenu();
+  if (borda(8) && podeAbrirMochila()) abrirMochila('controle'); // Select: Mochila (Gráficos fica na pausa)
   gpAntes = Object.fromEntries(gp.buttons.map((x, i) => [i, x.pressed]));
 }
 
@@ -796,6 +808,46 @@ function atualizarPontoNovo() {
 }
 inventario.eventos.addEventListener('item-obtido', atualizarPontoNovo);
 atualizarPontoNovo();
+
+// ---------- Mochila (mochila.js): tela cheia, jogo pausado ----------
+// retrato da Brisa: a própria cena desenhada UMA vez por abertura numa textura pequena (câmera de frente
+// para ela), lida para uma imagem. Sem jogo carregado ou se falhar, a Mochila mostra o ícone no lugar.
+const RETRATO = { largura: 192, altura: 256, distancia: 3.2, alturaCam: 0.95, alturaOlhar: 0.75, fov: 30 };
+const camRetrato = new THREE.PerspectiveCamera(RETRATO.fov, RETRATO.largura / RETRATO.altura, 0.1, 60);
+let alvoRetrato = null;
+function retratoDaBrisa() {
+  if (!campanha) return null;
+  const { largura: w, altura: h } = RETRATO;
+  if (!alvoRetrato) { alvoRetrato = new THREE.WebGLRenderTarget(w, h); alvoRetrato.texture.colorSpace = THREE.SRGBColorSpace; }
+  const P = jogador.pos, a = jogador.angulo;
+  camRetrato.position.set(P.x + Math.sin(a) * RETRATO.distancia, P.y + RETRATO.alturaCam, P.z + Math.cos(a) * RETRATO.distancia);
+  camRetrato.lookAt(P.x, P.y + RETRATO.alturaOlhar, P.z); camRetrato.updateMatrixWorld();
+  const antes = renderer.getRenderTarget();
+  renderer.setRenderTarget(alvoRetrato); renderer.clear(); renderer.render(cena, camRetrato);
+  const px = new Uint8Array(w * h * 4); renderer.readRenderTargetPixels(alvoRetrato, 0, 0, w, h, px);
+  renderer.setRenderTarget(antes);
+  const tela2d = document.createElement('canvas'); tela2d.width = w; tela2d.height = h;
+  const g = tela2d.getContext('2d'), img = g.createImageData(w, h);
+  for (let y = 0; y < h; y++) img.data.set(px.subarray((h - 1 - y) * w * 4, (h - y) * w * 4), y * w * 4); // (a textura vem de cabeça para baixo)
+  g.putImageData(img, 0, 0);
+  return tela2d.toDataURL('image/png');
+}
+const mochila = criarMochila({
+  raiz: $('mochila'), inventario, capitulo: CAPITULO_ATUAL, textos: { cartas: CARTAS, lembrancas: MEMORIAS }, som,
+  fragmentos: () => ({ pegos: campanha?.estado.pegos ?? 0, total: campanha?.fragmentos.length ?? 0 }),
+  retrato: retratoDaBrisa,
+  aoFechar: origem => { quadrosParado = Math.max(quadrosParado, 2); teclas.clear(); if (origem === 'pausa') alternarPausa(); },
+});
+// abre no jogo (não em cena, cinema, carta, menu ou game over)
+function podeAbrirMochila() {
+  return estado === 'jogando' && !pausado && !menuAberto && !mochila.aberta && !document.body.classList.contains('cinema') && !campanha?.lendo && !jogador.morta;
+}
+function abrirMochila(origem) {
+  teclas.clear(); document.exitPointerLock?.();
+  mochila.abrir(origem);
+}
+botaoMochila.removeAttribute('aria-disabled'); botaoMochila.setAttribute('aria-label', 'Mochila (I)'); botaoMochila.title = 'Mochila (I)';
+botaoMochila.addEventListener('click', () => { if (podeAbrirMochila()) abrirMochila('hud'); });
 
 // ---------- vento na arena (3ª fase do Ravi) ----------
 const hudVento = $('ventoArena'), _direitaCam = new THREE.Vector3();
@@ -1156,6 +1208,7 @@ $('abrir-pausa').addEventListener('click', () => alternarPausa());
 $('pausaContinuar').addEventListener('click', () => alternarPausa());
 $('pausaVoltar').addEventListener('click', () => alternarPausa());
 $('pausaGraficos').addEventListener('click', () => abrirMenu(true));
+$('pausaMochila').addEventListener('click', () => { alternarPausa(); if (podeAbrirMochila()) abrirMochila('pausa'); });
 $('pausaControles').addEventListener('click', () => abrirPainel('config', 'controles'));
 // o progresso fica salvo nos pontos de controle; recarregar volta à tela inicial com "Continuar"
 $('pausaMenu').addEventListener('click', () => location.reload());
@@ -2023,7 +2076,7 @@ renderer.setAnimationLoop(() => {
   // nas janelas por cima do jogo parado, desenha só os quadros do fundo escurecido e para (volta a
   // desenhar se a janela mudar de tamanho ou o nível de gráficos trocar).
   if (tela.style.display !== 'none' && !tela.classList.contains('saindo')) return;
-  const parado = pausado || menuAberto;
+  const parado = pausado || menuAberto || mochila.aberta;
   if (parado && !estavaParado) quadrosParado = Math.max(quadrosParado, 2);
   estavaParado = parado;
   if (parado) { if (quadrosParado <= 0) return; quadrosParado--; }
@@ -2252,7 +2305,7 @@ Promise.all([
     progressoCarga(1); textoCarga('Pronto');
     dispatchEvent(new Event('jogo-pronto'));
     window.__jogo = {
-      lerVolumes, mostrarFuxicos, inventario, jogador, personagem, get vilao() { return vilao; }, camera, camera3p, mapa, terreno, correntes, renderer, cena, sol, medidor, altos, mundo, inimigos, campanha, agua, nevoa, cachoeiras, praia, ceu: ceuJogo, get combate() { return combate; }, get animais() { return animais; },
+      lerVolumes, mostrarFuxicos, inventario, mochila, jogador, personagem, get vilao() { return vilao; }, camera, camera3p, mapa, terreno, correntes, renderer, cena, sol, medidor, altos, mundo, inimigos, campanha, agua, nevoa, cachoeiras, praia, ceu: ceuJogo, get combate() { return combate; }, get animais() { return animais; },
       terminarCapitulo, get mapaMundi() { return mapaMundi; }, get fuga() { return fuga; },
       animacao: () => animAtual, estado: () => estado, nivel: () => nomeNivel, aplicarNivel, ocioso, get oclusao() { return oclusao; },
     };

@@ -7,7 +7,7 @@
 <!-- fontes da interface (sem internet, caem para a fonte do sistema) -->
 <link rel="icon" href="data:,">
 <link rel="stylesheet" href="vendor/fontes/fontes.css">
-<meta name="versao-site" content="9c5521e004">
+<meta name="versao-site" content="28b73395ca">
 <script>
   // O GitHub Pages deixa o navegador reaproveitar esta página por até 10 minutos (e um endereço
   // que já foi aberto, como "?v=22", pode continuar vindo da memória). Aqui a página pergunta ao site,
@@ -1010,9 +1010,160 @@
     #pausa .corpo { padding: 8px 16px 4px; }
     #tela h1 { font-size: 52px; }
   }
+  /* ==================== MOCHILA (etapa e; mochila.js) ====================
+     design/ux/mochila-loja-popups.md §3 (wireframes) + interaction-patterns.md 2.1–2.7, 2.11–2.12 + visual-design §1.9.
+     Tela cheia sobre o jogo pausado: céu com losangos, barra de topo, categorias (losango / card ativo laranja),
+     retrato da Brisa, grade de slots, detalhe e botão de ação inclinado. A escala de texto vale para tudo. */
+  #mochila { --anel-foco: 0 0 0 3px var(--tinta), 0 0 0 5px var(--branco);
+    position: fixed; inset: 0; z-index: 12; box-sizing: border-box; overflow: auto; color: var(--tinta); font-family: var(--fonte-ui);
+    background: var(--losangos-mb) center / 170px, var(--fundo-ceu);
+    --losangos-mb: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='170' height='170'%3E%3Crect x='25' y='25' width='120' height='120' transform='rotate(45 85 85)' fill='%23ffffff' fill-opacity='.08' stroke='%23ffffff' stroke-opacity='.35' stroke-width='2'/%3E%3C/svg%3E");
+    display: grid; grid-template-columns: 220px minmax(0, 0.9fr) minmax(0, 1.3fr); grid-template-rows: auto minmax(0, 1fr); gap: 16px 24px;
+    padding: max(16px, env(safe-area-inset-top)) max(24px, env(safe-area-inset-right)) max(16px, env(safe-area-inset-bottom)) max(24px, env(safe-area-inset-left));
+    animation: abrirMochila .18s var(--ease-ui); }
+  #mochila[hidden] { display: none; }
+  @keyframes abrirMochila { from { opacity: 0; transform: scale(.97); } }
+  body.sem-flashes #mochila { animation: abrirMochilaFade .1s linear; }
+  @keyframes abrirMochilaFade { from { opacity: 0; } }
+  #mochila > * { zoom: var(--escala-texto); }
+  #mochila :is(button):focus { outline: none; box-shadow: var(--anel-foco); }
+  /* barra de topo (IP 2.1) */
+  #mochila .mb-topo { grid-column: 1 / -1; display: flex; align-items: center; gap: 16px; min-width: 0; }
+  #mochila .mb-voltar { display: flex; align-items: center; gap: 6px; min-width: 56px; min-height: 56px; padding: 0 14px; border: 0; border-radius: 14px; background: var(--azul-vivo); color: var(--branco); font: 800 16px var(--fonte-ui); text-transform: uppercase; cursor: pointer; }
+  #mochila .mb-voltar .i { width: 24px; height: 24px; }
+  #mochila .mb-titulo { margin: 0; padding: 8px 40px 8px 20px; background: var(--azul-vivo); color: var(--branco); font: 800 28px var(--fonte-ui); text-transform: uppercase;
+    transform: skewX(var(--incl-titulo)); clip-path: polygon(0 0, calc(100% - var(--corte)) 0, 100% var(--corte), 100% 100%, 0 100%); }
+  #mochila .mb-moedas { margin-left: auto; display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+  .pilula-moeda { display: inline-flex; align-items: center; gap: 6px; min-height: 40px; padding: 2px 14px 2px 6px; box-sizing: border-box; border-radius: 999px;
+    background: var(--azul-fundo-pilula); color: var(--branco); font: 800 18px var(--fonte-ui); font-variant-numeric: tabular-nums; outline: var(--pesponto-claro); outline-offset: -5px; }
+  .pilula-moeda .i { width: 28px; height: 28px; color: var(--start-b); }
+  /* categorias (IP 2.3): losango inativo, card largo laranja ativo com canto cortado */
+  #mochila .mb-categorias { display: flex; flex-direction: column; gap: 12px; min-height: 0; }
+  #mochila .mb-cat { position: relative; display: grid; grid-template-columns: 64px 1fr; grid-template-rows: auto auto; align-items: center; column-gap: 10px; min-height: 64px; padding: 4px 8px 4px 0;
+    border: 0; background: none; color: var(--tinta); font: 800 16px var(--fonte-ui); text-align: left; text-transform: uppercase; cursor: pointer; border-radius: 12px; }
+  #mochila .mb-losango { grid-row: 1 / 3; display: grid; place-items: center; width: 52px; height: 52px; margin: 6px; transform: rotate(45deg); border-radius: 10px; background: var(--branco); border: 2px solid var(--ceu-2); box-shadow: var(--sombra-suave); }
+  #mochila .mb-cat-icone { width: 40px; height: 40px; transform: rotate(-45deg); }
+  #mochila .mb-cat-nome { align-self: end; }
+  #mochila .mb-cat-conta { align-self: start; font: 800 14px var(--fonte-ui); color: var(--tinta-2); }
+  #mochila .mb-cat.ativa { background: var(--laranja); color: var(--branco); padding-right: 16px; clip-path: polygon(0 0, 100% 0, 100% calc(100% - var(--corte)), calc(100% - var(--corte)) 100%, 0 100%); }
+  #mochila .mb-cat.ativa .mb-cat-conta { color: var(--branco); }
+  #mochila .mb-cat.ativa .mb-losango { transform: none; border-radius: 50%; border-color: var(--branco); }
+  #mochila .mb-cat.ativa .mb-cat-icone { transform: none; }
+  .mb-novo { position: absolute; top: 2px; right: 2px; padding: 0 6px; border-radius: 999px; background: var(--laranja); color: var(--branco); border: 2px solid var(--branco); font: 800 14px/18px var(--fonte-ui); text-transform: uppercase; animation: pulsoNovo 1s ease-in-out infinite alternate; }
+  .mb-novo[hidden] { display: none; }
+  #mochila .mb-cat.ativa .mb-novo { background: var(--branco); color: var(--laranja); }
+  @keyframes pulsoNovo { to { transform: scale(1.08); } }
+  body.sem-flashes .mb-novo { animation: none; }
+  /* retrato da Brisa sobre pedestal de losango */
+  #mochila .mb-centro { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 0; }
+  #mochila .mb-retrato { position: relative; z-index: 1; display: grid; place-items: center; width: min(100%, 300px); aspect-ratio: 3 / 4; }
+  #mochila .mb-retrato img { width: 100%; height: 100%; object-fit: cover; border-radius: var(--r-painel); border: 4px solid var(--branco); box-shadow: var(--sombra-suave); }
+  #mochila .mb-retrato-falta { width: 60%; height: 60%; color: var(--azul-vivo); }
+  #mochila .mb-pedestal { width: min(80%, 260px); height: 36px; margin-top: -18px; border-radius: 50%; background: rgba(255, 255, 255, 0.6); box-shadow: 0 6px 0 var(--ceu-2); }
+  /* painel: abas, grade (IP 2.5/2.6), detalhe (2.11), ação (2.7) */
+  #mochila .mb-painel { display: grid; grid-template-rows: auto auto auto 1fr auto; gap: 12px; min-height: 0; min-width: 0; }
+  #mochila .mb-abas { display: flex; gap: 8px; }
+  #mochila .mb-abas[hidden] { display: none; }
+  #mochila .mb-aba { min-height: 48px; padding: 0 22px; border: 2px solid var(--ceu-2); border-radius: 999px; background: var(--branco); color: var(--tinta); font: 800 16px var(--fonte-ui); text-transform: uppercase; cursor: pointer; }
+  #mochila .mb-aba.ativa { background: var(--azul-vivo); border-color: var(--azul-vivo); color: var(--branco); }
+  #mochila .mb-aba.ativa::before { content: '✓ '; }
+  #mochila .mb-grade { display: grid; grid-template-columns: repeat(4, 88px); gap: 12px; padding: 16px; border-radius: var(--r-painel); background: rgba(244, 251, 255, 0.92); box-shadow: var(--sombra-suave); align-content: start; justify-content: start; }
+  #mochila .mb-slot { position: relative; display: grid; place-items: center; width: 88px; height: 88px; padding: 0; border: 2px solid transparent; border-radius: var(--r-slot); background: var(--slot); color: var(--tinta); cursor: pointer; }
+  #mochila .mb-slot-icone { width: 64px; height: 64px; }
+  #mochila .mb-slot.trancado { background: rgba(207, 233, 250, 0.6); }
+  #mochila .mb-slot.trancado .mb-cadeado { width: 28px; height: 28px; color: var(--cadeado); }
+  #mochila .mb-slot-nome { position: absolute; bottom: 4px; font: 800 14px var(--fonte-ui); color: var(--tinta-2); }
+  #mochila .mb-slot.selecionado { background: var(--limao); border: 3px solid var(--tinta); }
+  #mochila .mb-slot.selecionado::after { content: '✓'; position: absolute; top: -8px; left: -8px; display: grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; background: var(--limao); border: 2px solid var(--tinta); font: 800 14px/1 var(--fonte-ui); color: var(--tinta); }
+  #mochila .mb-slot .mb-novo { top: -8px; right: -8px; }
+  #mochila .mb-nivel { position: absolute; right: 4px; bottom: 4px; padding: 0 6px; border-radius: 999px; background: var(--branco); border: 2px solid var(--ceu-2); font: 800 14px/18px var(--fonte-ui); }
+  #mochila .mb-vazio { display: flex; align-items: center; gap: 12px; margin: 0; padding: 16px; border-radius: var(--r-painel); background: var(--branco); font: 700 16px var(--fonte-ui); }
+  #mochila .mb-vazio[hidden] { display: none; }
+  #mochila .mb-vazio-icone { width: 48px; height: 48px; color: var(--azul-vivo); }
+  #mochila .mb-detalhe { min-height: 0; overflow: auto; padding: 16px; border-radius: var(--r-painel); background: var(--branco); box-shadow: var(--sombra-suave); font: 600 16px/1.45 var(--fonte-ui); }
+  #mochila .mb-detalhe p { margin: 6px 0 0; }
+  #mochila .mb-det-cab { display: flex; align-items: center; gap: 12px; }
+  #mochila .mb-det-cab h3 { margin: 0; font: 800 20px var(--fonte-ui); }
+  #mochila .mb-det-icone { width: 72px; height: 72px; flex: none; }
+  #mochila .mb-det-icone.trancado { width: 40px; height: 40px; color: var(--cadeado); }
+  #mochila .mb-etiqueta { display: inline-block; margin-top: 2px; padding: 0 10px; border-radius: 999px; background: var(--azul-vivo); color: var(--branco); font: 800 14px var(--fonte-ui); }
+  #mochila .mb-stat { display: grid; grid-template-columns: 110px 1fr 44px; align-items: center; gap: 8px; margin-top: 6px; }
+  #mochila .mb-barra { height: 12px; border-radius: 999px; background: var(--slot); overflow: hidden; }
+  #mochila .mb-barra i { display: block; height: 100%; background: var(--azul-vivo); }
+  #mochila .mb-niveis { display: flex; align-items: center; gap: 6px; margin-top: 8px; }
+  #mochila .mb-niveis i { width: 40px; height: 12px; border-radius: 999px; background: var(--slot); box-shadow: inset 0 0 0 1.5px var(--tinta-2); }
+  #mochila .mb-niveis i.cheio { background: var(--laranja); box-shadow: inset 0 0 0 1.5px var(--tinta); }
+  #mochila .mb-niveis b { margin-left: 6px; }
+  #mochila .mb-preco { display: flex; align-items: center; gap: 8px; }
+  /* botão de ação inclinado (IP 2.7), sem borda: texto branco com contorno escuro */
+  #mochila .mb-acao { position: relative; isolation: isolate; justify-self: end; min-width: 160px; min-height: 64px; padding: 0 28px; border: 0; background: none; cursor: pointer; color: var(--branco);
+    font: 800 20px var(--fonte-ui); text-transform: uppercase; transform: skewX(var(--incl-texto-botao));
+    text-shadow: 0 2px 0 var(--contorno-btn), 0 -2px 0 var(--contorno-btn), 2px 0 0 var(--contorno-btn), -2px 0 0 var(--contorno-btn), 1.5px 1.5px 0 var(--contorno-btn), -1.5px 1.5px 0 var(--contorno-btn), 1.5px -1.5px 0 var(--contorno-btn), -1.5px -1.5px 0 var(--contorno-btn), 0 3px 0 var(--contorno-btn); }
+  #mochila .mb-acao::before { content: ''; position: absolute; inset: 0; z-index: -1; border-radius: 12px; transform: skewX(-8deg); background: linear-gradient(90deg, var(--start-a), var(--start-b)); box-shadow: var(--sombra-botao); outline: var(--pesponto-claro); outline-offset: -6px; }
+  #mochila .mb-acao:focus { box-shadow: none; } #mochila .mb-acao:focus::before { box-shadow: var(--anel-foco), var(--sombra-botao); }
+  #mochila .mb-acao:active { transform: skewX(var(--incl-texto-botao)) translateY(2px); }
+  #mochila .mb-acao[hidden] { display: none; }
+  #mochila .mb-acao:disabled { color: var(--tinta-2); text-shadow: none; cursor: not-allowed; font-size: 16px; }
+  #mochila .mb-acao:disabled::before { background: var(--desab-fundo); box-shadow: none; outline-color: rgba(74, 94, 115, .4); }
+  #mochila .mb-sec { display: inline-flex; align-items: center; gap: 6px; min-height: 48px; padding: 0 18px; border: 2px solid var(--azul-vivo); border-radius: 999px; background: var(--branco); color: var(--tinta); font: 800 16px var(--fonte-ui); text-transform: uppercase; cursor: pointer; }
+  #mochila .mb-sec[hidden] { display: none; } #mochila .mb-sec:disabled { opacity: .6; cursor: not-allowed; }
+  #mochila .mb-sec .i { width: 20px; height: 20px; }
+  /* leitor de carta / lembrança e erro: modal (IP 2.9) */
+  #mochila :is(.mb-leitor, .mb-erro) { position: fixed; inset: 0; z-index: 2; display: grid; place-items: center; padding: 16px; background: rgba(15, 42, 71, 0.4); zoom: 1; }
+  #mochila :is(.mb-leitor, .mb-erro)[hidden] { display: none; }
+  #mochila .mb-papel { width: min(520px, 100%); max-height: 100%; overflow: auto; box-sizing: border-box; padding: 0 0 16px; border-radius: 12px; background: var(--papel); box-shadow: var(--sombra-suave); zoom: var(--escala-texto);
+    background-image: repeating-linear-gradient(transparent 0 31px, rgba(205, 235, 251, 0.4) 31px 32px); }
+  #mochila .mb-faixa { margin: 0 0 8px; padding: 10px 28px 10px 20px; width: fit-content; background: var(--azul-vivo); color: var(--branco); font: 800 20px var(--fonte-ui); text-transform: uppercase; clip-path: polygon(0 0, calc(100% - var(--corte)) 0, 100% var(--corte), 100% 100%, 0 100%); }
+  #mochila .mb-texto { margin: 0; padding: 4px 22px 0; font: 600 17px/1.75 var(--fonte-ui); color: var(--tinta); white-space: pre-line; }
+  #mochila .mb-leitor-botoes { display: flex; flex-wrap: wrap; gap: 8px; justify-content: flex-end; align-items: center; padding: 16px 22px 0; }
+  /* carregando: esqueleto de slots (1 Hz; parado com Reduzir flashes) */
+  #mochila.carregando .mb-slot { background: var(--desab-fundo); animation: esqueleto 1s ease-in-out infinite alternate; }
+  #mochila.carregando .mb-slot > * { visibility: hidden; }
+  @keyframes esqueleto { to { opacity: .55; } }
+  body.sem-flashes #mochila.carregando .mb-slot { animation: none; }
+  /* com a Mochila aberta, o HUD e os botões de toque somem (ela cobre a tela) */
+  body:has(#mochila:not([hidden])) :is(#hud, #objetivo, #dica, #dicaTutorial, #fala, #interagir, #golpe, #aviso, #memoria, .toque, #tutorial) { visibility: hidden; }
+  /* celular deitado: sem o retrato grande (vira miniatura no topo), categorias só losangos, 3 colunas */
+  @media (max-height: 520px) and (orientation: landscape) {
+    #mochila { grid-template-columns: auto minmax(0, 1fr) minmax(0, 1fr); gap: 8px 12px; }
+    #mochila .mb-centro { display: none; }
+    #mochila .mb-titulo { font-size: 22px; padding: 6px 32px 6px 16px; }
+    #mochila .mb-cat { grid-template-columns: 64px; padding: 0; min-width: 64px; }
+    #mochila .mb-cat :is(.mb-cat-nome, .mb-cat-conta) { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+    #mochila .mb-cat.ativa { padding: 0; clip-path: none; border-radius: 50%; width: 64px; }
+    #mochila .mb-categorias { gap: 8px; }
+    #mochila .mb-painel { grid-column: 2 / 4; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-template-rows: auto 1fr auto; column-gap: 12px; }
+    #mochila .mb-abas { grid-column: 1 / -1; }
+    #mochila .mb-grade { grid-template-columns: repeat(3, 64px); gap: 8px; padding: 8px; grid-row: 2 / 4; }
+    #mochila .mb-vazio { grid-row: 2; }
+    #mochila .mb-slot { width: 64px; height: 64px; } #mochila .mb-slot-icone { width: 48px; height: 48px; }
+    #mochila .mb-detalhe { grid-column: 2; grid-row: 2; padding: 10px; }
+    #mochila .mb-det-icone { width: 48px; height: 48px; }
+    #mochila .mb-acao { grid-column: 2; grid-row: 3; min-height: 56px; }
+    #mochila .pilula-moeda { min-height: 40px; font-size: 16px; }
+  }
+  /* celular em pé: uma coluna; categorias em faixa horizontal que rola; retrato some */
+  @media (max-width: 600px) and (orientation: portrait) {
+    #mochila { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto auto minmax(0, 1fr); gap: 12px; padding-left: max(12px, env(safe-area-inset-left)); padding-right: max(12px, env(safe-area-inset-right)); }
+    #mochila .mb-topo { flex-wrap: wrap; gap: 8px; }
+    #mochila .mb-titulo { font-size: 22px; padding: 6px 30px 6px 14px; }
+    #mochila .mb-centro { display: none; }
+    #mochila .mb-categorias { flex-direction: row; overflow-x: auto; gap: 8px; padding: 4px 2px 6px; }
+    #mochila .mb-cat { flex: none; grid-template-columns: 64px; min-width: 64px; padding: 0; }
+    #mochila .mb-cat :is(.mb-cat-nome, .mb-cat-conta) { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+    #mochila .mb-cat.ativa { padding: 0 12px 0 0; grid-template-columns: 64px auto; }
+    #mochila .mb-cat.ativa :is(.mb-cat-nome, .mb-cat-conta) { position: static; width: auto; height: auto; clip-path: none; }
+    #mochila .mb-grade { grid-template-columns: repeat(3, 72px); gap: 8px; padding: 10px; justify-content: center; }
+    #mochila .mb-slot { width: 72px; height: 72px; } #mochila .mb-slot-icone { width: 52px; height: 52px; }
+    #mochila .mb-painel { grid-template-rows: auto auto auto auto auto; }
+  }
+  /* Maior: a grade perde colunas em vez de cortar */
+  :root[data-texto-grande="sim"] #mochila .mb-grade { grid-template-columns: repeat(3, 88px); }
+  @media (max-height: 520px) and (orientation: landscape) { :root[data-texto-grande="sim"] #mochila .mb-grade { grid-template-columns: repeat(2, 64px); } }
+  @media (max-width: 600px) and (orientation: portrait) { :root[data-texto-grande="sim"] #mochila .mb-grade { grid-template-columns: repeat(2, 72px); } }
 </style>
 <!-- bibliotecas na própria pasta (vendor/): three 0.165.0, three-mesh-bvh 0.7.6, meshoptimizer 0.21.0. O jogo roda sem internet (e dentro do APK) -->
-<script type="importmap">{"imports":{"three":"./vendor/three/build/three.module.js","three/addons/":"./vendor/three/examples/jsm/","three-mesh-bvh":"./vendor/three-mesh-bvh/build/index.module.js","meshoptimizer/simplifier":"./vendor/meshoptimizer/meshopt_simplifier.module.js","./src/agua.js":"./src/agua.js?v=e2a2da6b9b","./src/altos.js":"./src/altos.js?v=ac761e4342","./src/animLuta.js":"./src/animLuta.js?v=ba5d6f9de7","./src/animais.js":"./src/animais.js?v=5a63b0bc33","./src/boneca.js":"./src/boneca.js?v=0eef2507c2","./src/bonecaNova.js":"./src/bonecaNova.js?v=7ea290af16","./src/cachoeira.js":"./src/cachoeira.js?v=f700bc46b9","./src/cambalhota.js":"./src/cambalhota.js?v=aff8debf26","./src/campanha.js":"./src/campanha.js?v=47fb9ee53d","./src/canvasTextura.js":"./src/canvasTextura.js?v=8ddd89e18a","./src/capitulo.js":"./src/capitulo.js?v=5631f04f86","./src/casas.js":"./src/casas.js?v=f3dfa565ca","./src/ceu.js":"./src/ceu.js?v=8ffb931fd1","./src/chuva.js":"./src/chuva.js?v=6cf0295986","./src/colisao.js":"./src/colisao.js?v=ac6260ec0b","./src/combate.js":"./src/combate.js?v=9715b4a5a7","./src/dia.js":"./src/dia.js?v=e05b6cc395","./src/dificuldade.js":"./src/dificuldade.js?v=cfdf2ff62e","./src/distancia.js":"./src/distancia.js?v=9a5844420e","./src/estilo.js":"./src/estilo.js?v=0c453af42f","./src/fisica.js":"./src/fisica.js?v=7949a2cbcf","./src/folhas.js":"./src/folhas.js?v=0703e7d0dd","./src/graficos.js":"./src/graficos.js?v=66a6779bf1","./src/historia.js":"./src/historia.js?v=7aff3796aa","./src/ilha.js":"./src/ilha.js?v=670fb485d3","./src/inimigos.js":"./src/inimigos.js?v=39857a4c33","./src/inventario.js":"./src/inventario.js?v=d297dc14e0","./src/itens.js":"./src/itens.js?v=18789ccafe","./src/jogo.js":"./src/jogo.js?v=f51deeb5ba","./src/lotes.js":"./src/lotes.js?v=f3831174bf","./src/mapa.js":"./src/mapa.js?v=eb1d8bbcc0","./src/mapaMundi.js":"./src/mapaMundi.js?v=3eb13da7fc","./src/mundo.js":"./src/mundo.js?v=262a267749","./src/nevoa.js":"./src/nevoa.js?v=9bccad8ac5","./src/objetos.js":"./src/objetos.js?v=a78546e0b2","./src/oclusao.js":"./src/oclusao.js?v=a1ec74f05f","./src/particulas.js":"./src/particulas.js?v=efad11a94e","./src/pegaso.js":"./src/pegaso.js?v=08c8aa3a88","./src/pes.js":"./src/pes.js?v=9f8ed5d180","./src/praia.js":"./src/praia.js?v=700cd3c717","./src/praiaForma.js":"./src/praiaForma.js?v=79c406a618","./src/reparos.js":"./src/reparos.js?v=e805cead1a","./src/resolucao.js":"./src/resolucao.js?v=0d1e50cb15","./src/salvar.js":"./src/salvar.js?v=9149d1a3c4","./src/simplificar.js":"./src/simplificar.js?v=a439e6c6ca","./src/som.js":"./src/som.js?v=d812dac563","./src/sombraBoneca.js":"./src/sombraBoneca.js?v=02b8ff3403","./src/suavizar.js":"./src/suavizar.js?v=042d8dcf4b","./src/terreno.js":"./src/terreno.js?v=30a71b0a42","./src/texturas.js":"./src/texturas.js?v=5b74c7049c","./src/tutorial.js":"./src/tutorial.js?v=1f1fb0bc8d","./src/vilao.js":"./src/vilao.js?v=5742a89aa1"}}</script>
+<script type="importmap">{"imports":{"three":"./vendor/three/build/three.module.js","three/addons/":"./vendor/three/examples/jsm/","three-mesh-bvh":"./vendor/three-mesh-bvh/build/index.module.js","meshoptimizer/simplifier":"./vendor/meshoptimizer/meshopt_simplifier.module.js","./src/agua.js":"./src/agua.js?v=e2a2da6b9b","./src/altos.js":"./src/altos.js?v=ac761e4342","./src/animLuta.js":"./src/animLuta.js?v=ba5d6f9de7","./src/animais.js":"./src/animais.js?v=5a63b0bc33","./src/boneca.js":"./src/boneca.js?v=0eef2507c2","./src/bonecaNova.js":"./src/bonecaNova.js?v=7ea290af16","./src/cachoeira.js":"./src/cachoeira.js?v=f700bc46b9","./src/cambalhota.js":"./src/cambalhota.js?v=aff8debf26","./src/campanha.js":"./src/campanha.js?v=47fb9ee53d","./src/canvasTextura.js":"./src/canvasTextura.js?v=8ddd89e18a","./src/capitulo.js":"./src/capitulo.js?v=5631f04f86","./src/casas.js":"./src/casas.js?v=f3dfa565ca","./src/ceu.js":"./src/ceu.js?v=8ffb931fd1","./src/chuva.js":"./src/chuva.js?v=6cf0295986","./src/colisao.js":"./src/colisao.js?v=ac6260ec0b","./src/combate.js":"./src/combate.js?v=9715b4a5a7","./src/dia.js":"./src/dia.js?v=e05b6cc395","./src/dificuldade.js":"./src/dificuldade.js?v=cfdf2ff62e","./src/distancia.js":"./src/distancia.js?v=9a5844420e","./src/estilo.js":"./src/estilo.js?v=0c453af42f","./src/fisica.js":"./src/fisica.js?v=7949a2cbcf","./src/folhas.js":"./src/folhas.js?v=0703e7d0dd","./src/graficos.js":"./src/graficos.js?v=66a6779bf1","./src/historia.js":"./src/historia.js?v=7aff3796aa","./src/ilha.js":"./src/ilha.js?v=670fb485d3","./src/inimigos.js":"./src/inimigos.js?v=39857a4c33","./src/inventario.js":"./src/inventario.js?v=d297dc14e0","./src/itens.js":"./src/itens.js?v=18789ccafe","./src/jogo.js":"./src/jogo.js?v=66590d2f4f","./src/lotes.js":"./src/lotes.js?v=f3831174bf","./src/mapa.js":"./src/mapa.js?v=eb1d8bbcc0","./src/mapaMundi.js":"./src/mapaMundi.js?v=3eb13da7fc","./src/mochila.js":"./src/mochila.js?v=1786c811e0","./src/mundo.js":"./src/mundo.js?v=262a267749","./src/nevoa.js":"./src/nevoa.js?v=9bccad8ac5","./src/objetos.js":"./src/objetos.js?v=a78546e0b2","./src/oclusao.js":"./src/oclusao.js?v=a1ec74f05f","./src/particulas.js":"./src/particulas.js?v=efad11a94e","./src/pegaso.js":"./src/pegaso.js?v=08c8aa3a88","./src/pes.js":"./src/pes.js?v=9f8ed5d180","./src/praia.js":"./src/praia.js?v=700cd3c717","./src/praiaForma.js":"./src/praiaForma.js?v=79c406a618","./src/reparos.js":"./src/reparos.js?v=e805cead1a","./src/resolucao.js":"./src/resolucao.js?v=0d1e50cb15","./src/salvar.js":"./src/salvar.js?v=9149d1a3c4","./src/simplificar.js":"./src/simplificar.js?v=a439e6c6ca","./src/som.js":"./src/som.js?v=d812dac563","./src/sombraBoneca.js":"./src/sombraBoneca.js?v=02b8ff3403","./src/suavizar.js":"./src/suavizar.js?v=042d8dcf4b","./src/terreno.js":"./src/terreno.js?v=30a71b0a42","./src/texturas.js":"./src/texturas.js?v=5b74c7049c","./src/tutorial.js":"./src/tutorial.js?v=1f1fb0bc8d","./src/vilao.js":"./src/vilao.js?v=5742a89aa1"}}</script>
 </head>
 <body>
 <!-- ícones da nova UI (production/ui/nova-ui/visual-design.md §4; gerado por um script, um símbolo por linha):
@@ -1317,7 +1468,7 @@
       <p id="perfil-pc"></p>
       <label class="opcao marcar"><input type="checkbox" id="cfgFps"> Mostrar desempenho (fps)</label>
       <div id="aviso-aa">O antisserrilhado deste nível só muda ao abrir o jogo de novo.</div>
-      <p id="versao">versão 06/11/2026 23:56 · f51dee</p>
+      <p id="versao">versão 07/11/2026 00:04 · 66590d</p>
     </div>
     <footer><button id="fechar-graficos" class="voltar"><kbd>Esc</kbd>Voltar</button></footer>
   </div>
@@ -1328,7 +1479,7 @@
     <div class="corpo">
       <p class="pausa-hora" id="pausaHora"><svg class="i" aria-hidden="true"><use id="pausaHoraIcone" href="#i-sol"/></svg><span id="pausaHoraTexto">10:00</span></p>
       <button id="pausaContinuar" class="item-menu">Continuar</button>
-      <button class="item-menu" id="pausaMochila" disabled aria-label="Mochila (em breve)"><svg class="i" aria-hidden="true"><use href="#i-mochila"/></svg><span>Mochila</span><small>em breve</small></button>
+      <button class="item-menu" id="pausaMochila"><svg class="i" aria-hidden="true"><use href="#i-mochila"/></svg><span>Mochila</span><small>I</small></button>
       <button class="item-menu" id="pausaNuvem"><svg class="i cadeado" aria-hidden="true"><use href="#i-cadeado"/></svg><span>Chamar o Nuvem</span><small id="pausaNuvemMotivo"></small></button>
       <button class="item-menu" data-painel="config"><svg class="i" aria-hidden="true"><use href="#i-engrenagem"/></svg><span>Configurações</span></button>
       <button class="item-menu" id="pausaGraficos"><svg class="i" aria-hidden="true"><use href="#i-graficos"/></svg><span>Gráficos</span></button>
@@ -1369,6 +1520,7 @@
 <div class="toque" id="tPegar" role="button" aria-label="Pegar"><svg viewBox="0 0 24 24"><path d="M8 13V6a1.5 1.5 0 0 1 3 0v5M11 11V4.5a1.5 1.5 0 0 1 3 0V11M14 11V6a1.5 1.5 0 0 1 3 0v6M17 12V9a1.5 1.5 0 0 1 3 0v4a8 8 0 0 1-8 8h-.5a7 7 0 0 1-5.6-2.8L3.5 15a1.5 1.5 0 0 1 2.4-1.8L8 15"/></svg></div>
 <div class="toque" id="tSuper" role="button" aria-label="Corrida super rápida" title="Corrida super rápida"><svg viewBox="0 0 24 24"><use href="#i-raio"/></svg></div>
 <div id="golpe"></div>
+<div id="mochila" role="dialog" aria-modal="true" aria-labelledby="mbTitulo" hidden></div>
 <script>
   // se o jogo não conseguir carregar (um arquivo que não veio, versões misturadas no cache), a tela
   // mostra o erro e um botão para recarregar, em vez de ficar parada em "Costurando a ilha…"
@@ -1387,6 +1539,6 @@
     msg.appendChild(b);
   }, true);
 </script>
-<script type="module" src="src/jogo.js?v=f51deeb5ba"></script>
+<script type="module" src="src/jogo.js?v=66590d2f4f"></script>
 </body>
 </html>
